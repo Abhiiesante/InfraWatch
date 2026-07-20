@@ -42,8 +42,12 @@ export class AssetService {
     const { page = 1, limit = 20, search, typeId, status } = options;
     const skip = (page - 1) * limit;
 
-    // Prisma extension auto-injects tenantId
+    // tenantId is included explicitly (belt-and-suspenders). The Prisma extension
+    // also auto-injects it, and Postgres RLS enforces it independently — but we never
+    // rely on the auto-injection alone in a list query. See:
+    // ../11-multi-tenancy/01-prisma-rls-extensions.md
     const where: Prisma.AssetWhereInput = {
+      tenantId,
       deletedAt: null, // Always exclude soft-deleted
       ...(search && { name: { contains: search, mode: 'insensitive' } }),
       ...(typeId && { assetTypeId: typeId }),

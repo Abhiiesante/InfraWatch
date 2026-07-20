@@ -31,8 +31,8 @@ Our architecture is secured at every layer:
 
 1. **Network Layer:** VPC with private subnets for data, strict Security Groups, and AWS WAF (Web Application Firewall) protecting the Application Load Balancer.
 2. **Infrastructure Layer:** ECS Fargate tasks running as non-root users, automated OS patching by AWS, and IAM role isolation.
-3. **Application Layer:** Express middleware enforcing strict Multi-Tenancy (Row-Level Security concept enforced via Prisma), Rate Limiting, and CORS.
-4. **Data Layer:** Encryption at rest (AES-256) for RDS, ElastiCache, and S3. Encryption in transit (TLS 1.2+) everywhere.
+3. **Application Layer:** Express middleware enforcing strict Multi-Tenancy (a Prisma Client Extension auto-injects `tenantId` on every tenant-scoped query), Rate Limiting, and CORS.
+4. **Data Layer:** PostgreSQL Row-Level Security (RLS) policies enforce tenant isolation independently of the application layer (see [Tenant Scoping](../11-multi-tenancy/01-prisma-rls-extensions.md)). Encryption at rest (AES-256) for RDS, ElastiCache, and S3. Encryption in transit (TLS 1.2+) everywhere.
 5. **CI/CD Layer:** Automated SAST and SCA scanning on every Pull Request.
 
 ---

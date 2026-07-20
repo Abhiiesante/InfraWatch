@@ -19,7 +19,7 @@
 
 ## Database Isolation
 
-As detailed in [Prisma RLS Extensions](./01-prisma-rls-extensions.md), database isolation is enforced exclusively at the application layer via our custom Prisma extensions. 
+As detailed in [Prisma Tenant Scoping (Canonical Implementation)](./01-prisma-rls-extensions.md), database isolation is enforced in **two independent layers**: the application layer (a Prisma Client Extension that auto-injects `tenantId`) and the database layer (PostgreSQL RLS policies keyed on `app.current_tenant_id`). Neither layer alone is trusted to be sufficient.
 
 To prevent ID Guessing attacks (Insecure Direct Object Reference - IDOR):
 1. **Never Trust User Input for Tenant IDs:** The `tenantId` must ALWAYS be extracted from the cryptographically signed JWT token, never from the request body or URL path.

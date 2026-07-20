@@ -27,7 +27,19 @@ We use a **Shared Database, Shared Schema** architecture. All data for all tenan
 - *Pros of Shared:* Easiest to manage migrations, cheapest to run, fastest to onboard new customers.
 - *Cons of Shared:* Highest risk of accidental data leakage if a developer forgets to add `WHERE tenantId = ?` to a query.
 
-We mitigate this risk using Prisma Client Extensions (Application-level RLS).
+We mitigate this risk with **two independent layers** (defense in depth):
+
+1. **Application layer** — a Prisma Client Extension auto-injects `tenantId` into every tenant-scoped query and mutation.
+2. **Database layer** — PostgreSQL Row-Level Security (RLS) policies filter by `app.current_tenant_id` as an independent safety net.
+
+Both layers are wired together by the single tenant-aware Prisma client. See the [canonical implementation](./01-prisma-rls-extensions.md) for details.
+
+> [!NOTE]
+> Earlier drafts of this KB stated that Postgres RLS had been rejected as "too complex
+> with PgBouncer." That is no longer accurate and was inconsistent with the RLS policies
+> that actually ship in [Migration V001](../01-database/02-migration-V001-baseline.md#row-level-security-policies).
+> The PgBouncer concern is resolved by scoping `app.current_tenant_id` to a **transaction**
+> (via `SET LOCAL` / `set_config(..., true)`), which is safe under transaction-mode pooling.
 
 ---
 
@@ -60,6 +72,7 @@ Not all tables belong to a tenant.
 
 ## Related Documents
 
-- **Implementation:** [Prisma RLS Extensions](./01-prisma-rls-extensions.md)
-- **Database:** [Database Schema](../01-database/00-schema-design.md)
+- **Implementation:** [Prisma Tenant Scoping (Canonical Implementation)](./01-prisma-rls-extensions.md)
+- **Database:** [Data Model Overview](../01-database/00-data-model-overview.md)
+- **RLS policies:** [Migration V001 — Baseline Schema](../01-database/02-migration-V001-baseline.md#row-level-security-policies)
 - **Index:** [IEKB Master Index](../00-foundation/00-IEKB-index.md)

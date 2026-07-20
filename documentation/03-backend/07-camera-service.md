@@ -42,7 +42,11 @@ export class CameraService {
     const { page = 1, limit = 20, assetId, status, type } = options;
     const skip = (page - 1) * limit;
 
+    // tenantId is included explicitly (belt-and-suspenders). The Prisma extension
+    // also auto-injects it, and Postgres RLS enforces it independently. See:
+    // ../11-multi-tenancy/01-prisma-rls-extensions.md
     const where: Prisma.CameraWhereInput = {
+      tenantId,
       ...(assetId && { assetId }),
       ...(status && { status }),
       ...(type && { cameraType: type }),

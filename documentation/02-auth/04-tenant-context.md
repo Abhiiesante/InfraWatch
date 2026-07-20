@@ -59,9 +59,11 @@ export const tenantMiddleware = (req: Request, res: Response, next: NextFunction
     userRole: role,
   };
 
-  // Also set PostgreSQL session variable for RLS (if using transaction-level RLS)
-  // See section below on Prisma Client Extension
-
+  // NOTE: This snippet shows only context extraction. The production middleware wraps
+  // the rest of the request in `withTenantTransaction(tenantId, ...)`, which both
+  // populates AsyncLocalStorage (app-level scoping) and sets `app.current_tenant_id`
+  // (database-level RLS). See "Wrapping Requests in AsyncLocalStorage" below and the
+  // canonical implementation: ../11-multi-tenancy/01-prisma-rls-extensions.md
   next();
 };
 ```
@@ -156,70 +158,39 @@ class AssetService {
 
 ## Prisma Client Extension (Advanced Isolation)
 
-While explicitly passing `tenantId` is good practice, human error (forgetting to add `tenantId` to a `where` clause) can cause data leaks. 
+While explicitly passing `tenantId` is good practice, human error (forgetting to add `tenantId` to a `where` clause) can cause data leaks. To make that class of bug impossible, InfraWatch scopes the Prisma client automatically.
 
-InfraWatch V0 implements a **Prisma Client Extension** to automatically inject the `tenantId` into all queries.
+> [!IMPORTANT]
+> The construction of the tenant-aware Prisma client, the `AsyncLocalStorage`
+> context, and the `withTenantTransaction` wrapper are defined **once** in the
+> canonical implementation doc:
+> [Prisma Tenant Scoping (Canonical Implementation)](../11-multi-tenancy/01-prisma-rls-extensions.md).
+> This document does not redefine `src/config/prisma.ts`; it only shows how the auth
+> layer feeds tenant identity into it. If the two ever disagree, the canonical doc wins.
 
-```typescript
-// src/config/prisma.ts
-import { PrismaClient } from '@prisma/client';
-import { AsyncLocalStorage } from 'async_hooks';
+In short:
 
-// AsyncLocalStorage holds context across async operations without passing it manually
-export const tenantStorage = new AsyncLocalStorage<{ tenantId: number }>();
-
-const prismaBase = new PrismaClient();
-
-// The Extended Prisma Client
-export const prisma = prismaBase.$extends({
-  query: {
-    $allModels: {
-      async $allOperations({ model, operation, args, query }) {
-        // Models that are NOT tenant-scoped
-        const globalModels = ['Organization', 'RefreshToken'];
-        if (globalModels.includes(model)) return query(args);
-
-        const store = tenantStorage.getStore();
-        
-        // If we are in a tenant context, enforce it
-        if (store?.tenantId) {
-          const tenantId = store.tenantId;
-
-          // Automatically inject tenantId into WHERE clauses
-          if (['findUnique', 'findFirst', 'findMany', 'update', 'updateMany', 'delete', 'deleteMany', 'count'].includes(operation)) {
-            args.where = { ...args.where, tenantId };
-          }
-          
-          // Automatically inject tenantId into CREATE data
-          if (['create', 'createMany'].includes(operation)) {
-            if (Array.isArray(args.data)) {
-              args.data = args.data.map(item => ({ ...item, tenantId }));
-            } else {
-              args.data = { ...args.data, tenantId };
-            }
-          }
-        }
-        
-        return query(args);
-      },
-    },
-  },
-});
-```
+- `src/config/prisma.ts` exports a single, already tenant-aware `prisma` client. There is **no** `getTenantPrisma()` factory — services just `import { prisma }` and use it.
+- The extension reads the current `tenantId` from `AsyncLocalStorage` and injects it into every query and mutation on tenant-scoped models. If no tenant context is present, tenant-scoped queries **fail closed** rather than returning cross-tenant rows.
+- The same wrapper sets the Postgres session variable `app.current_tenant_id`, which activates the database-level RLS policies from [Migration V001](../01-database/02-migration-V001-baseline.md#row-level-security-policies). Application scoping and RLS are the **two layers** of our defense-in-depth model.
 
 ### Wrapping Requests in AsyncLocalStorage
 
-The `tenantMiddleware` wraps the `next()` call in the storage run context:
+The `tenantMiddleware` establishes both layers by wrapping the remainder of the request
+in `withTenantTransaction` (defined in the canonical doc). This both populates the
+`AsyncLocalStorage` store and sets `app.current_tenant_id` for RLS:
 
 ```typescript
-// Updated src/middleware/tenant.ts
+// src/middleware/tenant.ts
+import { withTenantTransaction } from '@/config/prisma';
+
 export const tenantMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // ... extraction logic ...
-  
-  // Wrap the rest of the request lifecycle in the async local storage context
-  tenantStorage.run({ tenantId: req.user.tenantId }, () => {
+  // ... extraction logic (see above) ...
+
+  // Establishes app-level scoping AND database-level RLS for the whole request.
+  withTenantTransaction(req.user.tenantId, async () => {
     next();
-  });
+  }).catch(next);
 };
 ```
 
@@ -229,17 +200,17 @@ export const tenantMiddleware = (req: Request, res: Response, next: NextFunction
 
 By design, **cross-tenant operations are impossible** through the standard API. 
 
-If an operation genuinely requires cross-tenant access (e.g., a system background job aggregating anonymous usage stats, or super-admin scripts), it must bypass the API entirely and use a separate, raw `PrismaClient` instance that does not have the extension applied.
+If an operation genuinely requires cross-tenant access (e.g., a system background job aggregating anonymous usage stats, or super-admin scripts), it must use the **single, audited** system client — `getSystemPrisma()` — described in the [canonical implementation doc](../11-multi-tenancy/01-prisma-rls-extensions.md#the-system-unscoped-client). Instantiating a bare `new PrismaClient()` anywhere in the codebase is prohibited and blocked by an ESLint rule.
 
 ```typescript
 // src/jobs/system-stats.ts
-import { PrismaClient } from '@prisma/client';
+import { getSystemPrisma } from '@/config/prisma';
 
-// Raw client, no extensions, bypasses tenant isolation
-const rawPrisma = new PrismaClient(); 
+// Audited, unscoped client. Allowed only in allow-listed paths (jobs/admin/db).
+const systemPrisma = getSystemPrisma();
 
 async function generateGlobalStats() {
-  const totalAssets = await rawPrisma.asset.count(); // Counts across ALL tenants
+  const totalAssets = await systemPrisma.asset.count(); // Counts across ALL tenants
   // ...
 }
 ```
@@ -249,7 +220,7 @@ async function generateGlobalStats() {
 ## Related Documents
 
 - **Previous:** [RBAC Model](./03-rbac-model.md)
-- **Multi-Tenancy:** [Data Isolation Strategy](../11-multi-tenancy/01-data-isolation.md)
+- **Multi-Tenancy:** [Prisma Tenant Scoping (Canonical Implementation)](../11-multi-tenancy/01-prisma-rls-extensions.md)
 - **Middleware:** [Middleware Pipeline](../03-backend/03-middleware-pipeline.md)
 - **Index:** [IEKB Master Index](../00-foundation/00-IEKB-index.md)
 
