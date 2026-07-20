@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ORGANIZATION (Tenant)
+// ============================================================================
+
+model Organization {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  domain    String?  @unique @db.VarChar(255)
+  plan      String   @default("STARTER") @db.VarChar(50)
+  logoUrl   String?  @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  users      User[]
+  assets     Asset[]
+  cameras    Camera[]
+  assetTypes AssetType[]
+  inspections Inspection[]
+  incidents  Incident[]
+  reports    Report[]
+
+  @@map("organizations")
+}
+
+// ============================================================================
+// USER
+// ============================================================================
+
+model User {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  name          String   @db.VarChar(255)
+  email         String   @db.VarChar(320)
+  hashedPassword String  @db.Text
+  role          String   @default("INSPECTOR") @db.VarChar(20)
+  avatarUrl     String?  @db.Text
+  phone         String?  @db.VarChar(20)
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime? @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  inspections  Inspection[]
+  incidents    Incident[]
+  incidentAssignments IncidentAssignment[]
+  auditLogs    AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+// ============================================================================
+// ASSET_TYPE
+// ============================================================================
+
+model AssetType {
+  id        Int      @id @default(autoincrement())
+  tenantId  Int
+  name      String   @db.VarChar(255)
+  description String? @db.Text
+  icon      String?  @db.VarChar(50)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assets   Asset[]
+
+  @@index([tenantId])
+  @@map("asset_types")
+}
+
+// ============================================================================
+// ASSET
+// ============================================================================
+
+model Asset {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  assetTypeId Int
+  createdById Int
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  latitude    Decimal? @db.Decimal(10, 8)
+  longitude   Decimal? @db.Decimal(11, 8)
+  address     String?  @db.VarChar(500)
+  metadata    Json?    @db.JsonB
+  status      String   @default("ACTIVE") @db.VarChar(50)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assetType   AssetType @relation(fields: [assetTypeId], references: [id], onDelete: Restrict)
+  cameras     Camera[]
+  inspections Inspection[]
+  incidents   Incident[]
+
+  @@index([tenantId])
+  @@index([assetTypeId])
+  @@map("assets")
+}
+
+// ============================================================================
+// CAMERA
+// ============================================================================
+
+model Camera {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  assetId         Int
+  name            String   @db.VarChar(255)
+  cameraType      String   @db.VarChar(100)
+  rtspUrl         String   @db.Text
+  ipAddress       String?  @db.VarChar(45)
+  config          Json?    @db.JsonB
+  status          String   @default("OFFLINE") @db.VarChar(50)
+  installationDate DateTime? @db.Date
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  inspectionImages InspectionImage[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@map("cameras")
+}
+
+// ============================================================================
+// INSPECTION
+// ============================================================================
+
+model Inspection {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  assetId         Int
+  inspectorId     Int
+  scheduledDate   DateTime @db.Date
+  completedAt     DateTime? @db.Timestamptz(6)
+  notes           String?  @db.Text
+  status          String   @default("SCHEDULED") @db.VarChar(50)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  inspector   User @relation(fields: [inspectorId], references: [id], onDelete: Restrict)
+  inspectionImages InspectionImage[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@index([inspectorId])
+  @@map("inspections")
+}
+
+// ============================================================================
+// INSPECTION_IMAGE
+// ============================================================================
+
+model InspectionImage {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  inspectionId  Int
+  cameraId      Int?
+  imageUrl      String   @db.Text
+  caption       String?  @db.VarChar(255)
+  metadata      Json?    @db.JsonB
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  inspection  Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  camera      Camera? @relation(fields: [cameraId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([inspectionId])
+  @@index([cameraId])
+  @@map("inspection_images")
+}
+
+// ============================================================================
+// INCIDENT
+// ============================================================================
+
+model Incident {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  assetId         Int?
+  reporterId      Int
+  title           String   @db.VarChar(255)
+  description     String?  @db.Text
+  severity        String   @default("MEDIUM") @db.VarChar(50)
+  status          String   @default("OPEN") @db.VarChar(50)
+  attachmentUrls  String[] @db.Array(String)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  reporter     User @relation(fields: [reporterId], references: [id], onDelete: Restrict)
+  assignments  IncidentAssignment[]
+  comments     IncidentComment[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@index([reporterId])
+  @@map("incidents")
+}
+
+// ============================================================================
+// INCIDENT_ASSIGNMENT
+// ============================================================================
+
+model IncidentAssignment {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  incidentId  Int
+  assignedTo  Int
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [assignedTo], references: [id], onDelete: Cascade)
+
+  @@unique([incidentId, assignedTo])
+  @@index([tenantId])
+  @@map("incident_assignments")
+}
+
+// ============================================================================
+// INCIDENT_COMMENT
+// ============================================================================
+
+model IncidentComment {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  incidentId  Int
+  authorId    Int
+  content     String   @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([incidentId])
+  @@map("incident_comments")
+}
+
+// ============================================================================
+// REPORT (for future reporting features)
+// ============================================================================
+
+model Report {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  title       String   @db.VarChar(255)
+  type        String   @db.VarChar(50)
+  data        Json?    @db.JsonB
+  generatedAt DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("reports")
+}
+
+// ============================================================================
+// AUDIT_LOG
+// ============================================================================
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  userId      Int
+  action      String   @db.VarChar(50)
+  entity      String   @db.VarChar(50)
+  entityId    Int?
+  changes     Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

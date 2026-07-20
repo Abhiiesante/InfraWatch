@@ -1,0 +1,108 @@
+# Production Docker Compose
+
+version: '3.8'
+
+services:
+  backend:
+    image: infrawatch/backend:latest
+    container_name: infrawatch-backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://infrawatch:${DB_PASSWORD}@postgres:5432/infrawatch
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      LOG_LEVEL: info
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: always
+    networks:
+      - infrawatch
+
+  frontend:
+    image: infrawatch/frontend:latest
+    container_name: infrawatch-frontend
+    environment:
+      VITE_API_URL: ${FRONTEND_API_URL:-http://localhost/api}
+    ports:
+      - '80:3000'
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - infrawatch
+
+  workers:
+    image: infrawatch/workers:latest
+    container_name: infrawatch-workers
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOG_LEVEL: info
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+    networks:
+      - infrawatch
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: infrawatch-postgres
+    environment:
+      POSTGRES_USER: infrawatch
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: infrawatch
+      POSTGRES_INITDB_ARGS: '-c max_connections=200'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U infrawatch']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - infrawatch
+
+  redis:
+    image: redis:7-alpine
+    container_name: infrawatch-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - infrawatch
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  infrawatch:
+    driver: bridge

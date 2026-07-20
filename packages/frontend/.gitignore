@@ -1,0 +1,11 @@
+node_modules
+dist
+.env.local
+coverage
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

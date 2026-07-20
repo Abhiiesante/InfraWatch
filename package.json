@@ -1,0 +1,27 @@
+{
+  "name": "infrawatch",
+  "version": "0.1.0",
+  "description": "Multi-tenant SaaS platform for infrastructure monitoring and asset management",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/backend",
+    "packages/frontend",
+    "packages/workers",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "type-check": "npm run type-check --workspaces",
+    "db:migrate": "npm run migrate --workspace=packages/backend",
+    "db:seed": "npm run seed --workspace=packages/backend",
+    "db:studio": "npm run studio --workspace=packages/backend"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

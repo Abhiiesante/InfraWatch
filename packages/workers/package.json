@@ -1,0 +1,29 @@
+{
+  "name": "@infrawatch/workers",
+  "version": "0.1.0",
+  "description": "InfraWatch background job workers",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "bullmq": "^5.0.0",
+    "redis": "^4.6.0",
+    "dotenv": "^16.3.0",
+    "zod": "^3.22.0",
+    "winston": "^3.11.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0",
+    "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
+    "vitest": "^1.0.0"
+  }
+}
