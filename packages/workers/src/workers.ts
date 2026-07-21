@@ -35,8 +35,8 @@ export const reportWorker = new Worker(
         
         data = {
           totalAssets: assets.length,
-          activeAssets: assets.filter(a => a.status === 'ACTIVE').length,
-          byType: assets.reduce((acc: any, asset) => {
+          activeAssets: assets.filter((a: any) => a.status === 'ACTIVE').length,
+          byType: assets.reduce((acc: any, asset: any) => {
             const typeName = asset.assetType.name;
             acc[typeName] = (acc[typeName] || 0) + 1;
             return acc;
