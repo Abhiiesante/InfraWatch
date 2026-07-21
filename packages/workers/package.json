@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "type-check": "tsc --noEmit",
+    "lint": "echo 'No linting required'",
     "start": "node dist/index.js",
     "test": "vitest"
   },

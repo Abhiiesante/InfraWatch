@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAssets } from '../api/useAssets';
 import { Building2, Search, Plus, Loader2 } from 'lucide-react';
+import { AddAssetModal } from '../components/AddAssetModal';
 
 export const AssetsListPage = () => {
   const [page, setPage] = useState(1);
@@ -17,10 +18,12 @@ export const AssetsListPage = () => {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Assets Directory</h1>
           <p className="text-slate-500 mt-2">Manage your organization's physical infrastructure.</p>
         </div>
-        <button className="bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 transition flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Add Asset
-        </button>
+        <AddAssetModal>
+          <button className="bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 transition flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Add Asset
+          </button>
+        </AddAssetModal>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

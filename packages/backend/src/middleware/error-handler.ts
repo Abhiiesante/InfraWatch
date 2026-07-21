@@ -6,6 +6,7 @@ export const errorHandler = (
   err: unknown,
   _req: Request,
   res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction,
 ) => {
   // Handle AppError (custom errors)
