@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma.js';
 import { hashPassword } from '@/lib/crypto.js';
-import { NotFoundError, ConflictError, ForbiddenError } from '@/lib/errors.js';
+import { NotFoundError, ConflictError } from '@/lib/errors.js';
 
 export class UserService {
   async getUserById(id: number, tenantId: number) {

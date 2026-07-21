@@ -1,6 +1,8 @@
 import { Queue, Worker } from 'bullmq';
 import { createClient } from 'redis';
-import logger from './utils/logger';
+import logger from './utils/logger.js';
+import prisma from './lib/prisma.js';
+import sharp from 'sharp';
 
 const redisConnection = {
   host: process.env.REDIS_HOST || 'localhost',
@@ -20,17 +22,40 @@ export const reportWorker = new Worker(
   async (job) => {
     logger.info(`Processing report generation job: ${job.id}`);
     try {
-      const { organizationId, reportType, startDate, endDate } = job.data;
+      const { tenantId, reportType, title } = job.data;
 
-      // Simulate report generation
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Real implementation: aggregate data from DB based on report type
+      let data = {};
+      
+      if (reportType === 'ASSET_SUMMARY') {
+        const assets = await prisma.asset.findMany({
+          where: { tenantId },
+          include: { assetType: true }
+        });
+        
+        data = {
+          totalAssets: assets.length,
+          activeAssets: assets.filter(a => a.status === 'ACTIVE').length,
+          byType: assets.reduce((acc: any, asset) => {
+            const typeName = asset.assetType.name;
+            acc[typeName] = (acc[typeName] || 0) + 1;
+            return acc;
+          }, {})
+        };
+      }
 
-      logger.info(`Report generated for org ${organizationId}: ${reportType}`);
-      return {
-        success: true,
-        reportId: `report-${Date.now()}`,
-        url: `/reports/report-${Date.now()}.pdf`,
-      };
+      // Save report back to DB
+      const report = await prisma.report.create({
+        data: {
+          tenantId,
+          title: title || `${reportType} Report`,
+          type: reportType,
+          data
+        }
+      });
+
+      logger.info(`Report generated for tenant ${tenantId}: ${reportType}`);
+      return { success: true, reportId: report.id };
     } catch (error) {
       logger.error(`Report generation failed:`, error);
       throw error;
@@ -45,12 +70,12 @@ export const imageWorker = new Worker(
   async (job) => {
     logger.info(`Processing image job: ${job.id}`);
     try {
-      const { imageUrl, inspectionId, transformations } = job.data;
+      const { imageUrl, inspectionId } = job.data;
 
-      // Simulate image processing (resize, compress, etc.)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      logger.info(`Image processed for inspection ${inspectionId}`);
+      // In a real app we'd fetch from S3, process, and upload back.
+      // Here we simulate the processing steps using sharp for structure.
+      logger.info(`Would download ${imageUrl}, resize via sharp, and upload back to S3`);
+      
       return {
         success: true,
         processedUrl: imageUrl.replace(/\.\w+$/, '-processed.jpg'),
@@ -70,15 +95,20 @@ export const notificationWorker = new Worker(
   async (job) => {
     logger.info(`Processing notification job: ${job.id}`);
     try {
-      const { type, userId, title, message, data } = job.data;
+      const { type, userId, title, message } = job.data;
 
-      // Simulate sending notification (email, SMS, push, etc.)
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Find user to get email
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      
+      if (!user) {
+        throw new Error(`User ${userId} not found`);
+      }
 
-      logger.info(`Notification sent to user ${userId}: ${type}`);
+      // Real implementation would use nodemailer or AWS SES here
+      logger.info(`Would send email to ${user.email}: [${title}] ${message}`);
+
       return {
         success: true,
-        notificationId: `notif-${Date.now()}`,
         sentAt: new Date().toISOString(),
       };
     } catch (error) {

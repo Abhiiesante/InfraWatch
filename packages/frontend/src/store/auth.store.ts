@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, org, accessToken, refreshToken) => {
         set({
           user,
-          organization,
+          organization: org,
           accessToken,
           refreshToken,
           error: null,

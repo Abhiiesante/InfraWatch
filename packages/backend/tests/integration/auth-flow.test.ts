@@ -27,11 +27,11 @@ describe('InfraWatch E2E Tests', () => {
       expect(response.status).toBe(201);
       expect(response.data.user).toBeDefined();
       expect(response.data.organization).toBeDefined();
-      expect(response.data.accessToken).toBeDefined();
-      expect(response.data.refreshToken).toBeDefined();
+      expect(response.data.tokens.accessToken).toBeDefined();
+      expect(response.data.tokens.refreshToken).toBeDefined();
 
-      accessToken = response.data.accessToken;
-      refreshToken = response.data.refreshToken;
+      accessToken = response.data.tokens.accessToken;
+      refreshToken = response.data.tokens.refreshToken;
       userId = response.data.user.id;
       tenantId = response.data.organization.id;
     });
@@ -44,7 +44,7 @@ describe('InfraWatch E2E Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.data.user.email).toBe(testEmail);
-      expect(response.data.accessToken).toBeDefined();
+      expect(response.data.tokens.accessToken).toBeDefined();
     });
 
     it('should fail with invalid credentials', async () => {
@@ -65,8 +65,8 @@ describe('InfraWatch E2E Tests', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(response.data.accessToken).toBeDefined();
-      accessToken = response.data.accessToken;
+      expect(response.data.tokens.accessToken).toBeDefined();
+      accessToken = response.data.tokens.accessToken;
     });
   });
 

@@ -41,4 +41,5 @@ export const errorHandler = (
     error: 'Internal server error',
     code: 'INTERNAL_SERVER_ERROR',
   });
+  return;
 };

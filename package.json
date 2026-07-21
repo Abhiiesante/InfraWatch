@@ -5,10 +5,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/backend",
-    "packages/frontend",
-    "packages/workers",
-    "packages/shared"
+    "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspaces",

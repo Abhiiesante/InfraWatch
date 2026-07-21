@@ -41,7 +41,7 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const payload = verifyRefreshToken(req.body.refreshToken);
-      const tokens = await authService.refreshTokens(payload.userId, payload.tenantId);
+      const tokens = await authService.refreshTokens(payload.userId);
       res.json(tokens);
     } catch (error) {
       next(error);
@@ -50,7 +50,7 @@ router.post(
 );
 
 // POST /api/auth/logout
-router.post('/logout', (req: Request, res: Response) => {
+router.post('/logout', (_req: Request, res: Response) => {
   // Client-side logout - just return success
   // Token invalidation could be handled via Redis/blacklist if needed
   res.json({ message: 'Logged out successfully' });

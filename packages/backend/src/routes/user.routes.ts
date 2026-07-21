@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { userService } from '@/services/user.service.js';
-import { authMiddleware, requireAuth, requireRole } from '@/middleware/auth.js';
+import { authMiddleware, requireRole } from '@/middleware/auth.js';
 import { validateRequest } from '@/middleware/validation.js';
 import { createUserSchema, updateUserSchema } from '@/lib/validation.js';
 
@@ -60,7 +60,8 @@ router.put(
       // Users can only update themselves, admins can update anyone
       const targetId = parseInt(req.params.id);
       if (req.userId !== targetId && req.auth?.role !== 'ADMIN') {
-        return res.status(403).json({ error: 'Cannot update other users' });
+        res.status(403).json({ error: 'Cannot update other users' });
+        return;
       }
 
       const user = await userService.updateUser(targetId, req.tenantId!, req.body);

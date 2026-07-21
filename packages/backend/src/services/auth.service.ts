@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma.js';
 import { hashPassword, comparePasswords } from '@/lib/crypto.js';
 import { createAccessToken, createRefreshToken } from '@/lib/jwt.js';
-import { ValidationError, ConflictError, NotFoundError, UnauthorizedError } from '@/lib/errors.js';
+import { UnauthorizedError } from '@/lib/errors.js';
 
 export interface RegisterInput {
   email: string;
@@ -40,7 +40,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictError('Email already registered');
+      throw new Error('Email already registered');
     }
 
     // Create organization
@@ -100,7 +100,7 @@ export class AuthService {
     };
   }
 
-  async login(input: LoginInput, tenantId?: number): Promise<AuthResponse> {
+  async login(input: LoginInput): Promise<AuthResponse> {
     // Find user by email
     const user = await prisma.user.findFirst({
       where: { email: input.email },
@@ -162,7 +162,6 @@ export class AuthService {
 
   async refreshTokens(
     userId: number,
-    tenantId: number,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: userId },

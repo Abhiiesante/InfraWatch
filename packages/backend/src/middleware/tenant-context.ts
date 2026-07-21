@@ -1,20 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 
-declare global {
-  namespace Express {
-    interface Request {
-      tenantId?: number;
-      userId?: string;
+// Tenant context is extracted from the JWT token in the auth middleware.
+// This middleware provides a fallback for unauthenticated routes that
+// might receive a tenant hint via header (e.g., login/register).
+export const tenantContext = (req: Request, _res: Response, next: NextFunction) => {
+  // If tenantId wasn't set by auth middleware, check for header hint
+  if (!req.tenantId) {
+    const tenantIdHeader = req.headers['x-tenant-id'] as string;
+    if (tenantIdHeader) {
+      const parsed = parseInt(tenantIdHeader, 10);
+      if (!isNaN(parsed)) {
+        req.tenantId = parsed;
+      }
     }
-  }
-}
-
-export const tenantContext = (req: Request, res: Response, next: NextFunction) => {
-  // Extract tenant ID from header or subdomain
-  const tenantIdHeader = req.headers['x-tenant-id'] as string;
-
-  if (tenantIdHeader) {
-    req.tenantId = parseInt(tenantIdHeader);
   }
 
   next();

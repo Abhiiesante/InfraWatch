@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { useAuthStore } from '@/store/auth.store';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -183,3 +183,81 @@ export const inspectionApi = {
     return response.data;
   },
 };
+
+export const userApi = {
+  list: async (skip = 0, take = 20) => {
+    const response = await apiClient.get('/users', { params: { skip, take } });
+    return response.data;
+  },
+  get: async (id: number) => {
+    const response = await apiClient.get(`/users/${id}`);
+    return response.data;
+  },
+};
+
+export const cameraApi = {
+  list: async (skip = 0, take = 20, assetId?: number) => {
+    const response = await apiClient.get('/cameras', { params: { skip, take, assetId } });
+    return response.data;
+  },
+  get: async (id: number) => {
+    const response = await apiClient.get(`/cameras/${id}`);
+    return response.data;
+  },
+  create: async (data: any) => {
+    const response = await apiClient.post('/cameras', data);
+    return response.data;
+  },
+  update: async (id: number, data: any) => {
+    const response = await apiClient.put(`/cameras/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    await apiClient.delete(`/cameras/${id}`);
+  },
+};
+
+export const assetTypeApi = {
+  list: async (skip = 0, take = 50) => {
+    const response = await apiClient.get('/asset-types', { params: { skip, take } });
+    return response.data;
+  },
+  get: async (id: number) => {
+    const response = await apiClient.get(`/asset-types/${id}`);
+    return response.data;
+  },
+  create: async (data: any) => {
+    const response = await apiClient.post('/asset-types', data);
+    return response.data;
+  },
+  update: async (id: number, data: any) => {
+    const response = await apiClient.put(`/asset-types/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    await apiClient.delete(`/asset-types/${id}`);
+  },
+};
+
+export const dashboardApi = {
+  getStats: async () => {
+    const response = await apiClient.get('/dashboard/stats');
+    return response.data;
+  },
+};
+
+export const reportApi = {
+  list: async (skip = 0, take = 20) => {
+    const response = await apiClient.get('/reports', { params: { skip, take } });
+    return response.data;
+  },
+  get: async (id: number) => {
+    const response = await apiClient.get(`/reports/${id}`);
+    return response.data;
+  },
+  create: async (data: any) => {
+    const response = await apiClient.post('/reports', data);
+    return response.data;
+  },
+};
+

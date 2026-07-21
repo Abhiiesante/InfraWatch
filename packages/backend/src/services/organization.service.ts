@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma.js';
-import { NotFoundError, ForbiddenError } from '@/lib/errors.js';
+import { NotFoundError } from '@/lib/errors.js';
 
 export class OrganizationService {
   async getOrganization(id: number) {

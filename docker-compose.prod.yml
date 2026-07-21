@@ -10,7 +10,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: postgresql://infrawatch:${DB_PASSWORD}@postgres:5432/infrawatch
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       FRONTEND_URL: ${FRONTEND_URL}
@@ -38,7 +38,7 @@ services:
     environment:
       VITE_API_URL: ${FRONTEND_API_URL:-http://localhost/api}
     ports:
-      - '80:3000'
+      - '80:80'
     depends_on:
       - backend
     restart: always

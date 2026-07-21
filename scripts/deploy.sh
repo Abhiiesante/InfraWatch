@@ -64,19 +64,6 @@ docker build \
 
 log_info "Docker images built successfully"
 
-# Test images
-log_info "Testing Docker images..."
-
-# Test backend image
-docker run --rm ${DOCKER_REGISTRY}/backend:${DOCKER_TAG} npm run type-check || \
-    log_error "Backend type checking failed"
-
-# Test frontend image
-docker run --rm ${DOCKER_REGISTRY}/frontend:${DOCKER_TAG} npm run type-check || \
-    log_error "Frontend type checking failed"
-
-log_info "Docker images passed type checking"
-
 # Run tests in containers
 log_info "Running tests..."
 

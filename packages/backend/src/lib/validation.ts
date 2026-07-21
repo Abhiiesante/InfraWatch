@@ -101,3 +101,6 @@ export const createAssetTypeSchema = z.object({
   description: z.string().optional(),
   icon: z.string().max(50).optional(),
 });
+
+export const updateAssetTypeSchema = createAssetTypeSchema.partial();
+

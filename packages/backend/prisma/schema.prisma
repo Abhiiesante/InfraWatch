@@ -53,9 +53,11 @@ model User {
 
   // Relations
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  createdAssets Asset[] @relation("AssetCreatedBy")
   inspections  Inspection[]
   incidents    Incident[]
   incidentAssignments IncidentAssignment[]
+  incidentComments IncidentComment[] @relation("UserIncidentComments")
   auditLogs    AuditLog[]
 
   @@unique([tenantId, email])
@@ -108,6 +110,7 @@ model Asset {
   // Relations
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assetType   AssetType @relation(fields: [assetTypeId], references: [id], onDelete: Restrict)
+  createdBy   User @relation("AssetCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   cameras     Camera[]
   inspections Inspection[]
   incidents   Incident[]
@@ -262,7 +265,7 @@ model IncidentComment {
 
   // Relations
   incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  user        User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author      User @relation("UserIncidentComments", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([incidentId])

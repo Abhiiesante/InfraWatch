@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { organizationService } from '@/services/organization.service.js';
-import { authMiddleware, requireAuth, requireRole } from '@/middleware/auth.js';
+import { authMiddleware, requireRole } from '@/middleware/auth.js';
 
 const router = Router();
 

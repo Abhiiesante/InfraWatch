@@ -11,14 +11,14 @@ export interface JwtPayload {
 }
 
 export const createAccessToken = (payload: Omit<JwtPayload, 'type'>): string => {
-  return jwt.sign({ ...payload, type: 'access' }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
+  return jwt.sign({ ...payload, type: 'access' }, env.JWT_SECRET as any, {
+    expiresIn: env.JWT_EXPIRES_IN as any,
   });
 };
 
 export const createRefreshToken = (payload: Omit<JwtPayload, 'type'>): string => {
-  return jwt.sign({ ...payload, type: 'refresh' }, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+  return jwt.sign({ ...payload, type: 'refresh' }, env.JWT_REFRESH_SECRET as any, {
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN as any,
   });
 };
 
