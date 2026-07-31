@@ -40,7 +40,7 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
     const payload = verifyAccessToken(token);
     req.auth = payload;
 
-    const tenantId = Number(payload.tenantId);
+    let tenantId = Number(payload.tenantId);
     const userId = Number(payload.userId);
 
     // Validate that the tenantId exists in database
