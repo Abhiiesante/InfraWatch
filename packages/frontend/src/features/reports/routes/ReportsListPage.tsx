@@ -1,14 +1,26 @@
 import { useState } from 'react';
 import { useReports } from '../api/useReports';
-import { FileText, Search, Plus, Loader2, Download } from 'lucide-react';
+import { useGenerateAIReport } from '@/features/ai/api/useAI';
+import { FileText, Search, Loader2, Download, Sparkles, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const ReportsListPage = () => {
   const [page, setPage] = useState(1);
+  const [aiReportResult, setAiReportResult] = useState<any>(null);
   const take = 10;
   const skip = (page - 1) * take;
 
   const { data, isLoading } = useReports({ skip, take });
+  const { mutateAsync: generateAiReport, isPending: isGenerating } = useGenerateAIReport();
+
+  const handleGenerateAiReport = async () => {
+    try {
+      const res = await generateAiReport({ reportType: 'EXECUTIVE_SUMMARY', dateRange: 'Last 30 Days' });
+      setAiReportResult(res);
+    } catch (error) {
+      console.error('Failed to generate AI report:', error);
+    }
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 w-full animate-in fade-in">
@@ -16,15 +28,66 @@ export const ReportsListPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 drop-shadow-sm">
-            Reports
+            Reports & Analytics
           </h1>
-          <p className="text-slate-500 mt-2 text-lg font-medium">Generate and view automated compliance and summary reports.</p>
+          <p className="text-slate-500 mt-2 text-lg font-medium">Generate and view automated compliance, audit, and AI narrative reports.</p>
         </div>
-        <button className="bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Generate Report
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleGenerateAiReport}
+            disabled={isGenerating}
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
+          >
+            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+            Generate AI Narrative Report
+          </button>
+        </div>
       </div>
+
+      {/* AI Generated Narrative Display Modal */}
+      {aiReportResult && (
+        <div className="glass rounded-2xl border border-purple-500/30 p-8 shadow-2xl space-y-6 relative overflow-hidden animate-in fade-in">
+          <button
+            onClick={() => setAiReportResult(null)}
+            className="absolute top-6 right-6 p-2 rounded-full hover:bg-black/5 text-slate-400 hover:text-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">{aiReportResult.title}</h2>
+              <p className="text-xs text-slate-500 font-medium">Generated at {format(new Date(aiReportResult.generatedAt), 'PPpp')}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200">
+              <p className="text-xs font-extrabold text-purple-600 dark:text-purple-300">Total Assets</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{aiReportResult.metrics?.totalAssets}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200">
+              <p className="text-xs font-extrabold text-purple-600 dark:text-purple-300">Total Incidents</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{aiReportResult.metrics?.totalIncidents}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200">
+              <p className="text-xs font-extrabold text-rose-600 dark:text-rose-300">High Risk Incidents</p>
+              <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">{aiReportResult.metrics?.criticalIncidents}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200">
+              <p className="text-xs font-extrabold text-purple-600 dark:text-purple-300">Scheduled Audits</p>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{aiReportResult.metrics?.pendingInspections}</p>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-white/20 font-serif text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap text-sm shadow-inner">
+            {aiReportResult.executiveSummary}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="glass rounded-2xl border border-white/20 overflow-hidden shadow-xl slide-in-bottom relative">

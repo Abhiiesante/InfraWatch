@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useInspections } from '../api/useInspections';
-import { ClipboardCheck, Search, Plus, Loader2 } from 'lucide-react';
+import { ClipboardCheck, Search, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const InspectionsListPage = () => {
@@ -79,7 +79,7 @@ export const InspectionsListPage = () => {
                 </tr>
               ) : (
                 data?.inspections?.map((inspection: any) => (
-                  <tr key={inspection.id} className="group hover:bg-white/60 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer">
+                  <tr key={inspection.id} className="group hover:bg-white/60 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer" onClick={() => window.location.href = `/inspections/${inspection.id}`}>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-xl text-slate-700 dark:text-slate-300 shadow-inner group-hover:shadow-md transition-all">

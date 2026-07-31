@@ -37,7 +37,7 @@ export class IncidentService {
         asset: true,
         reporter: { select: { id: true, name: true, email: true } },
         assignments: { include: { user: { select: { id: true, name: true } } } },
-        comments: { include: { user: { select: { id: true, name: true } } } },
+        comments: { include: { author: { select: { id: true, name: true } } } },
       },
     });
 

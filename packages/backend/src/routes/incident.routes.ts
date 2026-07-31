@@ -54,9 +54,11 @@ router.post(
   validateRequest(createIncidentSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const userId = req.userId || req.auth?.userId;
+      const tenantId = req.tenantId || req.auth?.tenantId;
       const incident = await incidentService.createIncident(
-        req.tenantId!,
-        req.userId!,
+        tenantId!,
+        userId!,
         req.body,
       );
       res.status(201).json(incident);

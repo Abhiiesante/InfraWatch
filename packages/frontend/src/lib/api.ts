@@ -54,7 +54,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         useAuthStore.getState().logout();
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
+      }
+    }
+
+    if (error.response?.status === 401 && originalRequest._retry) {
+      useAuthStore.getState().logout();
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
       }
     }
 
@@ -260,4 +270,41 @@ export const reportApi = {
     return response.data;
   },
 };
+
+export const bimApi = {
+  getModels: async () => {
+    const response = await apiClient.get('/v4/bim/models');
+    return response.data;
+  },
+};
+
+export const scadaApi = {
+  getGridStatus: async () => {
+    const response = await apiClient.get('/v4/scada/grid-status');
+    return response.data;
+  },
+  executeCommand: async (actuatorId: string, action: string) => {
+    const response = await apiClient.post('/v4/scada/execute-command', { actuatorId, action });
+    return response.data;
+  },
+};
+
+export const droneApi = {
+  getFleet: async () => {
+    const response = await apiClient.get('/v4/drones/fleet');
+    return response.data;
+  },
+  dispatchMission: async (droneId: string, missionType: string) => {
+    const response = await apiClient.post('/v4/drones/dispatch-mission', { droneId, missionType });
+    return response.data;
+  },
+};
+
+export const complianceApi = {
+  getAuditSummary: async () => {
+    const response = await apiClient.get('/v4/compliance/audit-summary');
+    return response.data;
+  },
+};
+
 

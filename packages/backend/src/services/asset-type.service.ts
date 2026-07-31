@@ -5,15 +5,13 @@ export class AssetTypeService {
   async listAssetTypes(tenantId: number, options: { skip?: number; take?: number } = {}) {
     const { skip = 0, take = 50 } = options;
 
-    const [assetTypes, total] = await Promise.all([
-      prisma.assetType.findMany({
-        where: { tenantId },
-        skip,
-        take,
-        orderBy: { name: 'asc' },
-      }),
-      prisma.assetType.count({ where: { tenantId } }),
-    ]);
+    const assetTypes = await prisma.assetType.findMany({
+      where: { tenantId },
+      skip,
+      take,
+      orderBy: { name: 'asc' },
+    });
+    const total = await prisma.assetType.count({ where: { tenantId } });
 
     return { assetTypes, total, skip, take };
   }

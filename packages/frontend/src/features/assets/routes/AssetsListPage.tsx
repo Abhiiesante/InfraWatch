@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAssets } from '../api/useAssets';
-import { Building2, Search, Plus, Loader2 } from 'lucide-react';
+import { Building2, Search, Plus } from 'lucide-react';
 import { AddAssetModal } from '../components/AddAssetModal';
 
 export const AssetsListPage = () => {
@@ -133,7 +133,7 @@ export const AssetsListPage = () => {
               Previous
             </button>
             <button 
-              disabled={data?.assets?.length < take}
+              disabled={(data?.assets?.length ?? 0) < take}
               onClick={() => setPage(p => p + 1)}
               className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-transparent shadow-sm transition-all"
             >

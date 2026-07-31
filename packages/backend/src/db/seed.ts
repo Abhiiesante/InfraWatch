@@ -5,14 +5,18 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function seed() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Resetting and seeding database with 10 Real-World Original Infrastructure Facilities...');
 
-  // Clean up existing data
+  // Clean up existing data in correct dependency order
   await prisma.incidentComment.deleteMany({});
   await prisma.incidentAssignment.deleteMany({});
   await prisma.incident.deleteMany({});
   await prisma.inspectionImage.deleteMany({});
   await prisma.inspection.deleteMany({});
+  await prisma.telemetryReading.deleteMany({});
+  await prisma.sensorRule.deleteMany({});
+  await prisma.workOrder.deleteMany({});
+  await prisma.assetPrediction.deleteMany({});
   await prisma.camera.deleteMany({});
   await prisma.asset.deleteMany({});
   await prisma.assetType.deleteMany({});
@@ -22,22 +26,21 @@ async function seed() {
   // Create demo organization
   const org = await prisma.organization.create({
     data: {
-      name: 'Demo Tower Company',
-      domain: 'demo.infrawatch.local',
-      plan: 'PROFESSIONAL',
+      name: 'InfraWatch Global Engineering Operations',
+      domain: 'infrawatch.io',
+      plan: 'ENTERPRISE',
       isActive: true,
     },
   });
 
   console.log(`✅ Organization created: ${org.name}`);
 
-  // Create demo users
   const hashedPassword = await bcrypt.hash('Demo@Password123', 12);
 
   const adminUser = await prisma.user.create({
     data: {
       tenantId: org.id,
-      name: 'Admin User',
+      name: 'Dr. Rajesh Sharma (Chief Infrastructure Officer)',
       email: 'admin@demo.local',
       hashedPassword,
       role: 'ADMIN',
@@ -45,10 +48,10 @@ async function seed() {
     },
   });
 
-  const managerUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       tenantId: org.id,
-      name: 'John Manager',
+      name: 'Priya Patel (Grid Operations Manager)',
       email: 'manager@demo.local',
       hashedPassword,
       role: 'MANAGER',
@@ -59,7 +62,7 @@ async function seed() {
   const inspectorUser = await prisma.user.create({
     data: {
       tenantId: org.id,
-      name: 'Alice Inspector',
+      name: 'Aarav Kumar (Lead Robotics Inspector)',
       email: 'inspector@demo.local',
       hashedPassword,
       role: 'INSPECTOR',
@@ -67,223 +70,394 @@ async function seed() {
     },
   });
 
-  console.log(`✅ Users created: ${adminUser.email}, ${managerUser.email}, ${inspectorUser.email}`);
+  console.log(`✅ Users created: ${adminUser.email}`);
 
-  // Create demo asset types
-  const towerType = await prisma.assetType.create({
+  // Create Real-World Asset Types
+  const fusionType = await prisma.assetType.create({
     data: {
       tenantId: org.id,
-      name: 'Communication Tower',
-      description: 'Cellular and communication towers',
-      icon: 'tower',
+      name: 'Fusion & High-Energy Physics Complex',
+      description: 'Nuclear fusion tokamak reactors, particle accelerator rings, and cryogenic vacuum vessels',
+      icon: 'zap',
       isActive: true,
     },
   });
 
-  const panelType = await prisma.assetType.create({
+  const bridgeType = await prisma.assetType.create({
     data: {
       tenantId: org.id,
-      name: 'Solar Panel Array',
-      description: 'Solar power generation panels',
+      name: 'Cable-Stayed & Arch Structural Mega Bridge',
+      description: 'High-span railway arch bridges, marine cable-stayed links, and suspension corridors',
+      icon: 'bridge',
+      isActive: true,
+    },
+  });
+
+  const hydroType = await prisma.assetType.create({
+    data: {
+      tenantId: org.id,
+      name: 'Hydroelectric Power Dam & Lock Complex',
+      description: 'Ultra-scale hydroelectric dams, spillways, Francis turbines, and reservoir barriers',
+      icon: 'droplet',
+      isActive: true,
+    },
+  });
+
+  const tunnelType = await prisma.assetType.create({
+    data: {
+      tenantId: org.id,
+      name: 'Deep Subsurface Transit Tunnel',
+      description: 'Deep-overburden high-speed rail tubes and underwater transit conduits',
+      icon: 'layers',
+      isActive: true,
+    },
+  });
+
+  const windType = await prisma.assetType.create({
+    data: {
+      tenantId: org.id,
+      name: 'Offshore Wind Energy Farm',
+      description: 'Deep-sea monopile & jacket offshore wind turbine arrays',
+      icon: 'wind',
+      isActive: true,
+    },
+  });
+
+  const solarType = await prisma.assetType.create({
+    data: {
+      tenantId: org.id,
+      name: 'Photovoltaic Mega Solar Park',
+      description: 'Multi-gigawatt tracker-based solar panel arrays and sub-stations',
       icon: 'sun',
       isActive: true,
     },
   });
 
-  console.log(`✅ Asset types created: ${towerType.name}, ${panelType.name}`);
-
-  // Create demo assets
-  const tower1 = await prisma.asset.create({
+  // Create 10 Real-World Original Iconic Facilities
+  const asset1 = await prisma.asset.create({
     data: {
+      id: 999,
       tenantId: org.id,
-      assetTypeId: towerType.id,
+      assetTypeId: fusionType.id,
       createdById: adminUser.id,
-      name: 'Tower Alpha-01',
-      description: 'Primary communication tower in sector 1',
-      latitude: new Decimal('40.7128'),
-      longitude: new Decimal('-74.0060'),
-      address: '123 Tech Avenue, New York, NY 10001',
+      name: 'ITER Tokamak Fusion Reactor Core & Cryostat Complex',
+      description: 'World largest magnetic confinement plasma tokamak reactor core with 18 superconducting toroidal field D-coils, central solenoid core, and cryostat containment shielding',
+      latitude: new Decimal('43.6888'),
+      longitude: new Decimal('5.7661'),
+      address: 'ITER Headquarters, Route de Vinon-sur-Verdon, 13115 Saint-Paul-lès-Durance, France',
       status: 'ACTIVE',
+      healthScore: 99,
       metadata: {
-        height: 150,
-        installDate: '2023-01-15',
-        manufacturer: 'Tower Solutions Inc',
-        lastMaintenance: '2026-06-01',
+        bimType: 'TOKAMAK_FUSION_REACTOR',
+        elementCount: 84920,
+        plasmaTempMillionC: 150,
+        magneticFieldTesla: 11.8,
+        operationalStatus: 'SUPERCONDUCTING_MAGNETS_NOMINAL',
       },
     },
   });
 
-  const tower2 = await prisma.asset.create({
+  const asset2 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetTypeId: towerType.id,
+      assetTypeId: fusionType.id,
       createdById: adminUser.id,
-      name: 'Tower Beta-02',
-      description: 'Secondary communication tower in sector 2',
-      latitude: new Decimal('40.7580'),
-      longitude: new Decimal('-73.9855'),
-      address: '456 Innovation Drive, New York, NY 10002',
+      name: 'CERN Large Hadron Collider (LHC) ATLAS Cavern & Tunnel',
+      description: '27-kilometer superconducting particle accelerator ring and ATLAS detector experimental cavern',
+      latitude: new Decimal('46.2330'),
+      longitude: new Decimal('6.0557'),
+      address: 'CERN, Esplanade des Particules 1, 1211 Meyrin, Geneva, Switzerland',
       status: 'ACTIVE',
+      healthScore: 98,
       metadata: {
-        height: 120,
-        installDate: '2022-08-20',
-        manufacturer: 'Global Tower Corp',
-        lastMaintenance: '2026-05-15',
+        ringLengthKm: 27,
+        collisionEnergyTeV: 13.6,
+        cryoTempKelvin: 1.9,
+        operationalStatus: 'BEAM_CIRCULATING',
       },
     },
   });
 
-  const solarFarm = await prisma.asset.create({
+  const asset3 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetTypeId: panelType.id,
+      assetTypeId: bridgeType.id,
       createdById: adminUser.id,
-      name: 'Solar Farm A',
-      description: 'Large-scale solar panel array',
-      latitude: new Decimal('40.7489'),
-      longitude: new Decimal('-73.9680'),
-      address: '789 Green Energy Blvd, New York, NY 10003',
+      name: 'Chenab Railway Arch Bridge (World Highest Railway Bridge)',
+      description: 'Steel arch railway bridge spanning 359 meters above the Chenab riverbed in Jammu & Kashmir',
+      latitude: new Decimal('33.1492'),
+      longitude: new Decimal('74.8824'),
+      address: 'Bakkal - Kauri Rail Line, Reasi District, Jammu & Kashmir 182311, India',
       status: 'ACTIVE',
+      healthScore: 96,
       metadata: {
-        capacity: 5000,
-        panels: 1200,
-        installDate: '2023-03-10',
-        manufacturer: 'SunPower',
+        heightAboveRiverbedM: 359,
+        lengthMeters: 1315,
+        windResistanceKmH: 266,
+        operationalStatus: 'FULLY_OPERATIONAL',
       },
     },
   });
 
-  console.log(`✅ Assets created: ${tower1.name}, ${tower2.name}, ${solarFarm.name}`);
-
-  // Create demo cameras
-  const camera1 = await prisma.camera.create({
+  const asset4 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetId: tower1.id,
-      name: 'Camera - Tower Alpha Main',
-      cameraType: 'PTZ HD',
-      rtspUrl: 'rtsp://camera1.local/stream',
-      ipAddress: '192.168.1.100',
-      status: 'ONLINE',
-      config: {
-        resolution: '1920x1080',
-        fps: 30,
-        recordingEnabled: true,
+      assetTypeId: bridgeType.id,
+      createdById: adminUser.id,
+      name: 'Bandra-Worli Sea Link (Rajiv Gandhi Sea Link)',
+      description: '5.6 km 8-lane cable-stayed bridge spanning Mahim Bay in Mumbai, Maharashtra',
+      latitude: new Decimal('19.0330'),
+      longitude: new Decimal('72.8185'),
+      address: 'Bandra-Worli Sea Link, Mumbai, Maharashtra 400050, India',
+      status: 'ACTIVE',
+      healthScore: 94,
+      metadata: {
+        lengthKm: 5.6,
+        trafficLanes: 8,
+        steelCableLengthKm: 37500,
+        operationalStatus: 'OPTIMAL',
       },
     },
   });
 
-  const camera2 = await prisma.camera.create({
+  const asset5 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetId: tower2.id,
-      name: 'Camera - Tower Beta Main',
-      cameraType: 'Fixed HD',
-      rtspUrl: 'rtsp://camera2.local/stream',
-      ipAddress: '192.168.1.101',
-      status: 'ONLINE',
-      config: {
-        resolution: '1280x720',
-        fps: 24,
-        recordingEnabled: true,
+      assetTypeId: hydroType.id,
+      createdById: adminUser.id,
+      name: 'Three Gorges Hydroelectric Power Dam & Lock Complex',
+      description: '22,500 MW hydroelectric gravity dam spanning the Yangtze River in Hubei Province',
+      latitude: new Decimal('30.8242'),
+      longitude: new Decimal('111.0028'),
+      address: 'Sandouping Town, Yiling District, Yichang, Hubei, China',
+      status: 'ACTIVE',
+      healthScore: 97,
+      metadata: {
+        capacityMW: 22500,
+        damHeightM: 185,
+        reservoirCapacityBillionM3: 39.3,
+        operationalStatus: 'MAXIMUM_POWER_GENERATION',
       },
     },
   });
 
-  console.log(`✅ Cameras created: ${camera1.name}, ${camera2.name}`);
-
-  // Create demo inspections
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const inspection1 = await prisma.inspection.create({
+  const asset6 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetId: tower1.id,
-      inspectorId: inspectorUser.id,
-      scheduledDate: tomorrow,
-      status: 'SCHEDULED',
-      notes: 'Routine quarterly inspection',
+      assetTypeId: tunnelType.id,
+      createdById: adminUser.id,
+      name: 'Gotthard Base Tunnel (World Longest & Deepest Railway Tunnel)',
+      description: '57.1 km twin single-track high-speed rail tunnel under the Swiss Alps',
+      latitude: new Decimal('46.5458'),
+      longitude: new Decimal('8.7186'),
+      address: 'Gotthard Base Tunnel, Erstfeld to Bodio, Switzerland',
+      status: 'ACTIVE',
+      healthScore: 95,
+      metadata: {
+        lengthKm: 57.09,
+        maxDepthMeters: 2450,
+        dailyTrains: 260,
+        operationalStatus: 'NOMINAL',
+      },
     },
   });
 
-  const inspection2 = await prisma.inspection.create({
+  const asset7 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetId: tower2.id,
-      inspectorId: inspectorUser.id,
-      scheduledDate: new Date(),
-      status: 'IN_PROGRESS',
-      notes: 'Post-maintenance inspection',
+      assetTypeId: bridgeType.id,
+      createdById: adminUser.id,
+      name: 'Akashi Kaikyo Suspension Bridge (Pearl Bridge)',
+      description: 'Dual-deck suspension bridge spanning the Akashi Strait with a central span of 1,991 meters',
+      latitude: new Decimal('34.6167'),
+      longitude: new Decimal('135.0219'),
+      address: 'Tarumi-ku, Kobe, Hyogo 655-0047, Japan',
+      status: 'ACTIVE',
+      healthScore: 93,
+      metadata: {
+        mainSpanMeters: 1991,
+        towerHeightM: 298.3,
+        seismicRating: '8.5_RICHTER',
+        operationalStatus: 'OPERATIONAL',
+      },
     },
   });
 
-  console.log(
-    `✅ Inspections created: ${inspection1.id} (${tower1.name}), ${inspection2.id} (${tower2.name})`,
-  );
-
-  // Create demo incidents
-  const incident1 = await prisma.incident.create({
+  const asset8 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetId: tower1.id,
-      reporterId: inspectorUser.id,
-      title: 'Tower Sway Detected',
-      description: 'Unusual sway detected during inspection. Wind speed 45mph.',
-      severity: 'HIGH',
-      status: 'INVESTIGATING',
+      assetTypeId: hydroType.id,
+      createdById: adminUser.id,
+      name: 'Hoover Hydroelectric Dam & Colorado River Reservoir',
+      description: '2,080 MW concrete arch-gravity dam impounding Lake Mead on the Nevada-Arizona border',
+      latitude: new Decimal('36.0156'),
+      longitude: new Decimal('-114.7378'),
+      address: 'Hoover Dam Access Rd, Clark County, NV / Mohave County, AZ, USA',
+      status: 'ACTIVE',
+      healthScore: 91,
+      metadata: {
+        capacityMW: 2080,
+        heightM: 221.4,
+        turbinesCount: 17,
+        operationalStatus: 'NOMINAL',
+      },
     },
   });
 
-  const incident2 = await prisma.incident.create({
+  const asset9 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      assetId: solarFarm.id,
-      reporterId: managerUser.id,
-      title: 'Panel Efficiency Drop',
-      description: 'Output down 15% below expected. Requires diagnostics.',
-      severity: 'MEDIUM',
-      status: 'OPEN',
+      assetTypeId: windType.id,
+      createdById: adminUser.id,
+      name: 'Hornsea Wind 2 Offshore Wind Energy Farm',
+      description: '1.32 GW offshore wind power facility with 165 Siemens Gamesa 8 MW turbines in the North Sea',
+      latitude: new Decimal('53.8860'),
+      longitude: new Decimal('1.8540'),
+      address: 'North Sea, 89 km off the Yorkshire Coast, United Kingdom',
+      status: 'ACTIVE',
+      healthScore: 96,
+      metadata: {
+        capacityGW: 1.32,
+        turbinesCount: 165,
+        offshoreDistanceKm: 89,
+        operationalStatus: 'MAXIMUM_OUTPUT',
+      },
     },
   });
 
-  console.log(`✅ Incidents created: ${incident1.title}, ${incident2.title}`);
-
-  // Assign incidents
-  await prisma.incidentAssignment.create({
+  const asset10 = await prisma.asset.create({
     data: {
       tenantId: org.id,
-      incidentId: incident1.id,
-      assignedTo: managerUser.id,
+      assetTypeId: solarType.id,
+      createdById: adminUser.id,
+      name: 'Bhadla Ultra Mega Solar Power Park',
+      description: '2,245 MW total capacity solar park covering 14,000 acres in Rajasthan',
+      latitude: new Decimal('27.5398'),
+      longitude: new Decimal('71.9152'),
+      address: 'Bhadla, Jodhpur District, Rajasthan 342301, India',
+      status: 'ACTIVE',
+      healthScore: 98,
+      metadata: {
+        capacityMW: 2245,
+        areaAcres: 14000,
+        solarPanelsMillion: 4.5,
+        operationalStatus: 'PEAK_GENERATION',
+      },
     },
   });
 
-  console.log(`✅ Incident assignments created`);
+  console.log(`✅ 10 Real-World Iconic Facilities Created in Database`);
 
-  // Add incident comments
-  await prisma.incidentComment.create({
-    data: {
-      tenantId: org.id,
-      incidentId: incident1.id,
-      authorId: inspectorUser.id,
-      content: 'Initial assessment: structural integrity appears sound',
-    },
-  });
+  // Create 10 Live 24/7 Cameras (1 per Asset) with Official Media & Live Stream Links
+  const assets = [asset1, asset2, asset3, asset4, asset5, asset6, asset7, asset8, asset9, asset10];
+  const officialImages = [
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/ITER_Tokamak_diagram.svg/1280px-ITER_Tokamak_diagram.svg.png',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Atlas_Detector_at_CERN.jpg/1280px-Atlas_Detector_at_CERN.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Chenab_Rail_Bridge%2C_Reasi_district%2C_Jammu_and_Kashmir%2C_India.jpg/1280px-Chenab_Rail_Bridge%2C_Reasi_district%2C_Jammu_and_Kashmir%2C_India.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Bandra_Worli_Sea_link_Mumbai.jpg/1280px-Bandra_Worli_Sea_link_Mumbai.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Three_Gorges_Dam%2C_China.jpg/1280px-Three_Gorges_Dam%2C_China.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Gotthard-Basistunnel_Erstfeld.jpg/1280px-Gotthard-Basistunnel_Erstfeld.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Akashi_Bridge.jpg/1280px-Akashi_Bridge.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Hoover_dam_from_air.jpg/1280px-Hoover_dam_from_air.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Offshore_wind_turbines_in_the_North_Sea.jpg/1280px-Offshore_wind_turbines_in_the_North_Sea.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Solar_panels_in_Rajasthan.jpg/1280px-Solar_panels_in_Rajasthan.jpg',
+  ];
+  const videoUrls = [
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-suspension-bridge-and-the-sea-41566-large.mp4',
+    'https://assets.mixkit.co/videos/preview/mixkit-traffic-on-a-highway-bridge-41551-large.mp4',
+    'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-dam-and-reservoir-41573-large.mp4',
+    'https://assets.mixkit.co/videos/preview/mixkit-wind-turbines-in-a-field-41564-large.mp4',
+    'https://assets.mixkit.co/videos/preview/mixkit-industrial-plant-with-smoke-41577-large.mp4',
+  ];
 
-  console.log(`✅ Incident comments created`);
+  for (let i = 0; i < assets.length; i++) {
+    const a = assets[i];
+    await prisma.camera.create({
+      data: {
+        tenantId: org.id,
+        assetId: a.id,
+        name: `${a.name.split(' ')[0]} Official 24/7 Live Monitoring Stream`,
+        cameraType: i % 2 === 0 ? '360° DOME PTZ' : 'OPTICAL 4K STRUCTURAL',
+        rtspUrl: `rtsp://cam-${a.id}.infrawatch.io/live`,
+        ipAddress: `10.205.30.${100 + i}`,
+        status: 'ONLINE',
+        config: {
+          resolution: '3840x2160',
+          fps: 60,
+          streamUrl: videoUrls[i],
+          imageUrl: officialImages[i],
+          recordingEnabled: true,
+        },
+      },
+    });
+  }
 
-  console.log('');
-  console.log('✅ Seed complete! Demo data ready.');
-  console.log('');
-  console.log('Demo Credentials:');
-  console.log('  Admin:     admin@demo.local / Demo@Password123');
-  console.log('  Manager:   manager@demo.local / Demo@Password123');
-  console.log('  Inspector: inspector@demo.local / Demo@Password123');
+  console.log(`✅ 10 Live 4K Cameras Created & Linked`);
+
+  // Create Scheduled Inspections (For Drone Missions)
+  for (let i = 0; i < assets.length; i++) {
+    const a = assets[i];
+    await prisma.inspection.create({
+      data: {
+        tenantId: org.id,
+        assetId: a.id,
+        inspectorId: inspectorUser.id,
+        scheduledDate: new Date(Date.now() + (i + 1) * 3600000 * 4),
+        status: i === 0 ? 'IN_PROGRESS' : (i < 4 ? 'SCHEDULED' : 'COMPLETED'),
+        notes: `Autonomous robotic flight path inspection for ${a.name}`,
+        isPredictive: true,
+      },
+    });
+  }
+
+  console.log(`✅ Scheduled Autonomous Inspections Created`);
+
+  // Create Historical Telemetry Readings using batch createMany
+  const sensorTypes = ['VIBRATION', 'TEMPERATURE', 'AMPERAGE', 'FREQUENCY', 'VOLTAGE'];
+  const now = Date.now();
+  const readingsToInsert: any[] = [];
+
+  for (const a of assets) {
+    for (const sensor of sensorTypes) {
+      for (let step = 0; step < 15; step++) {
+        const time = new Date(now - (14 - step) * 15000);
+        let baseVal = 20;
+        if (sensor === 'VIBRATION') baseVal = 2.14;
+        if (sensor === 'TEMPERATURE') baseVal = 42.5;
+        if (sensor === 'AMPERAGE') baseVal = 84.2;
+        if (sensor === 'FREQUENCY') baseVal = 68.2;
+        if (sensor === 'VOLTAGE') baseVal = 400.2;
+
+        const wave = Math.sin((time.getTime() + a.id * 1000) / 10000) * (baseVal * 0.1);
+        const val = +(baseVal + wave).toFixed(2);
+
+        readingsToInsert.push({
+          tenantId: org.id,
+          assetId: a.id,
+          sensorType: sensor,
+          value: new Decimal(val),
+          unit: sensor === 'VIBRATION' ? 'mm/s' : (sensor === 'TEMPERATURE' ? '°C' : (sensor === 'FREQUENCY' ? 'dB' : '%')),
+          isAnomaly: val > baseVal * 1.2,
+          timestamp: time,
+        });
+      }
+    }
+  }
+
+  await prisma.telemetryReading.createMany({ data: readingsToInsert });
+
+  console.log(`✅ Real Time-Series Telemetry Readings Seeded for all Assets`);
+  console.log('🚀 Database Seeding Complete!');
 }
 
 seed()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {

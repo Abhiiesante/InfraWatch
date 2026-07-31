@@ -38,6 +38,7 @@ export class ReportService {
       data: {
         tenantId,
         ...data,
+        data: data.data as any,
       },
     });
   }

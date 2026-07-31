@@ -1,0 +1,24 @@
+{
+  "modelName": "test_model_disk",
+  "version": "v1.0-test",
+  "savedAt": "2026-07-31T16:09:07.684Z",
+  "metrics": {
+    "accuracy": 0.95,
+    "f1Score": 0.94
+  },
+  "parameters": {
+    "alpha": 1
+  },
+  "weights": {
+    "weights": [
+      0.1,
+      0.4,
+      0.8
+    ],
+    "vocabulary": [
+      "fire",
+      "leak",
+      "power"
+    ]
+  }
+}

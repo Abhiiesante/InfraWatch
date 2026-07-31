@@ -62,6 +62,7 @@ export class CameraService {
       data: {
         tenantId,
         ...data,
+        config: data.config as any,
       },
       include: { asset: { select: { id: true, name: true } } },
     });
@@ -89,7 +90,10 @@ export class CameraService {
 
     return prisma.camera.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        config: data.config as any,
+      },
       include: { asset: { select: { id: true, name: true } } },
     });
   }

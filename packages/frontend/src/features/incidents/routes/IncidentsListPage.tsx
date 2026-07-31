@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useIncidents } from '../api/useIncidents';
-import { AlertTriangle, Search, Plus, Loader2, MessageSquare } from 'lucide-react';
+import { AlertTriangle, Search, Plus, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
+import { CreateIncidentModal } from '../components/CreateIncidentModal';
 
 export const IncidentsListPage = () => {
   const [page, setPage] = useState(1);
@@ -29,10 +30,12 @@ export const IncidentsListPage = () => {
           </h1>
           <p className="text-slate-500 mt-2 text-lg font-medium">Track and resolve reported infrastructure issues.</p>
         </div>
-        <button className="bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-          <Plus className="w-5 h-5" />
-          Report Incident
-        </button>
+        <CreateIncidentModal>
+          <button className="bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Report Incident
+          </button>
+        </CreateIncidentModal>
       </div>
 
       {/* Main Content Area */}
@@ -89,7 +92,7 @@ export const IncidentsListPage = () => {
                 </tr>
               ) : (
                 data?.incidents?.map((incident: any) => (
-                  <tr key={incident.id} className="group hover:bg-white/60 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer">
+                  <tr key={incident.id} className="group hover:bg-white/60 dark:hover:bg-white/5 transition-colors duration-200 cursor-pointer" onClick={() => window.location.href = `/incidents/${incident.id}`}>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-xl text-slate-700 dark:text-slate-300 shadow-inner group-hover:shadow-md transition-all">

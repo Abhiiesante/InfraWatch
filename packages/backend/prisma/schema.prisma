@@ -22,13 +22,21 @@ model Organization {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   // Relations
-  users      User[]
-  assets     Asset[]
-  cameras    Camera[]
-  assetTypes AssetType[]
-  inspections Inspection[]
-  incidents  Incident[]
-  reports    Report[]
+  users             User[]
+  assets            Asset[]
+  cameras           Camera[]
+  assetTypes        AssetType[]
+  inspections       Inspection[]
+  incidents         Incident[]
+  reports           Report[]
+  notifications     Notification[]
+  incidentCategories IncidentCategory[]
+  anomalies         AnomalyDetection[]
+  aiConfig          TenantAIConfig?
+  predictions       AssetPrediction[]
+  telemetryReadings TelemetryReading[]
+  sensorRules       SensorRule[]
+  workOrders        WorkOrder[]
 
   @@map("organizations")
 }
@@ -59,6 +67,9 @@ model User {
   incidentAssignments IncidentAssignment[]
   incidentComments IncidentComment[] @relation("UserIncidentComments")
   auditLogs    AuditLog[]
+  notifications Notification[]
+  reviewedAnomalies AnomalyDetection[] @relation("AnomalyReviewer")
+  assignedWorkOrders WorkOrder[] @relation("WorkOrderAssignedTo")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -92,20 +103,22 @@ model AssetType {
 // ============================================================================
 
 model Asset {
-  id          Int      @id @default(autoincrement())
-  tenantId    Int
-  assetTypeId Int
-  createdById Int
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  latitude    Decimal? @db.Decimal(10, 8)
-  longitude   Decimal? @db.Decimal(11, 8)
-  address     String?  @db.VarChar(500)
-  metadata    Json?    @db.JsonB
-  status      String   @default("ACTIVE") @db.VarChar(50)
-  deletedAt   DateTime? @db.Timestamptz(6)
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  assetTypeId       Int
+  createdById       Int
+  name              String   @db.VarChar(255)
+  description       String?  @db.Text
+  latitude          Decimal? @db.Decimal(10, 8)
+  longitude         Decimal? @db.Decimal(11, 8)
+  address           String?  @db.VarChar(500)
+  metadata          Json?    @db.JsonB
+  status            String   @default("ACTIVE") @db.VarChar(50)
+  healthScore       Int      @default(100)
+  lastPredictionAt  DateTime? @db.Timestamptz(6)
+  deletedAt         DateTime? @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
 
   // Relations
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -114,6 +127,10 @@ model Asset {
   cameras     Camera[]
   inspections Inspection[]
   incidents   Incident[]
+  predictions AssetPrediction[]
+  telemetryReadings TelemetryReading[]
+  sensorRules       SensorRule[]
+  workOrders        WorkOrder[]
 
   @@index([tenantId])
   @@index([assetTypeId])
@@ -142,6 +159,7 @@ model Camera {
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
   inspectionImages InspectionImage[]
+  anomalies   AnomalyDetection[]
 
   @@index([tenantId])
   @@index([assetId])
@@ -161,6 +179,8 @@ model Inspection {
   completedAt     DateTime? @db.Timestamptz(6)
   notes           String?  @db.Text
   status          String   @default("SCHEDULED") @db.VarChar(50)
+  isPredictive    Boolean  @default(false)
+  predictionId    Int?
   createdAt       DateTime @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @db.Timestamptz(6)
 
@@ -169,6 +189,7 @@ model Inspection {
   asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
   inspector   User @relation(fields: [inspectorId], references: [id], onDelete: Restrict)
   inspectionImages InspectionImage[]
+  prediction  AssetPrediction? @relation(fields: [predictionId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([assetId])
@@ -201,28 +222,57 @@ model InspectionImage {
 }
 
 // ============================================================================
+// INCIDENT CATEGORY (Phase 2)
+// ============================================================================
+
+model IncidentCategory {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  incidents    Incident[]
+
+  @@index([tenantId])
+  @@map("incident_categories")
+}
+
+// ============================================================================
 // INCIDENT
 // ============================================================================
 
 model Incident {
-  id              Int      @id @default(autoincrement())
-  tenantId        Int
-  assetId         Int?
-  reporterId      Int
-  title           String   @db.VarChar(255)
-  description     String?  @db.Text
-  severity        String   @default("MEDIUM") @db.VarChar(50)
-  status          String   @default("OPEN") @db.VarChar(50)
-  attachmentUrls  String[]
-  createdAt       DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int
+  assetId             Int?
+  reporterId          Int
+  categoryId          Int?
+  title               String   @db.VarChar(255)
+  description         String?  @db.Text
+  severity            String   @default("MEDIUM") @db.VarChar(50)
+  status              String   @default("OPEN") @db.VarChar(50)
+  attachmentUrls      String[]
+  
+  // Phase 2 AI Triage Fields
+  aiSuggestedSeverity String?  @db.VarChar(50)
+  aiSuggestedCategory String?  @db.VarChar(255)
+  aiConfidence        Decimal? @db.Decimal(5, 2)
+  aiTriagedAt         DateTime? @db.Timestamptz(6)
+
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
 
   // Relations
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   asset        Asset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
   reporter     User @relation(fields: [reporterId], references: [id], onDelete: Restrict)
+  category     IncidentCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   assignments  IncidentAssignment[]
   comments     IncidentComment[]
+  anomaly      AnomalyDetection?
+  workOrders   WorkOrder[]
 
   @@index([tenantId])
   @@index([assetId])
@@ -273,7 +323,105 @@ model IncidentComment {
 }
 
 // ============================================================================
-// REPORT (for future reporting features)
+// NOTIFICATION (Phase 1)
+// ============================================================================
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  userId      Int
+  type        String   @db.VarChar(50)
+  title       String   @db.VarChar(255)
+  message     String   @db.Text
+  isRead      Boolean  @default(false)
+  entityType  String?  @db.VarChar(50)
+  entityId    Int?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ============================================================================
+// ANOMALY DETECTION (Phase 3 Computer Vision)
+// ============================================================================
+
+model AnomalyDetection {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int
+  cameraId      Int
+  imageUrl      String   @db.Text
+  detections    Json     @db.JsonB
+  status        String   @default("PENDING_REVIEW") @db.VarChar(50)
+  confidence    Decimal  @db.Decimal(5, 2)
+  reviewedById  Int?
+  reviewedAt    DateTime? @db.Timestamptz(6)
+  incidentId    Int?     @unique
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  camera      Camera @relation(fields: [cameraId], references: [id], onDelete: Cascade)
+  reviewer    User? @relation("AnomalyReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  incident    Incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([cameraId])
+  @@index([status])
+  @@map("anomaly_detections")
+}
+
+// ============================================================================
+// TENANT AI CONFIG (Phase 3)
+// ============================================================================
+
+model TenantAIConfig {
+  id                    Int      @id @default(autoincrement())
+  tenantId              Int      @unique
+  cvEnabled             Boolean  @default(true)
+  cvConfidenceThreshold Decimal  @default(0.75) @db.Decimal(3, 2)
+  nlpEnabled            Boolean  @default(true)
+  aiProvider            String   @default("GEMINI") @db.VarChar(50)
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_ai_configs")
+}
+
+// ============================================================================
+// ASSET PREDICTION (Phase 4 Predictive Maintenance)
+// ============================================================================
+
+model AssetPrediction {
+  id                           Int      @id @default(autoincrement())
+  tenantId                     Int
+  assetId                      Int
+  failureProbability           Decimal  @db.Decimal(5, 2)
+  predictedFailureDate         DateTime @db.Date
+  recommendedAction            String   @db.Text
+  confidence                   Decimal  @db.Decimal(5, 2)
+  analysisData                 Json?    @db.JsonB
+  autoScheduledInspectionId   Int?
+  status                       String   @default("ACTIVE") @db.VarChar(50)
+  createdAt                    DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  inspections  Inspection[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@map("asset_predictions")
+}
+
+// ============================================================================
+// REPORT
 // ============================================================================
 
 model Report {
@@ -314,3 +462,80 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// ============================================================================
+// TELEMETRY READING (Phase 5 IoT Real-time Stream)
+// ============================================================================
+
+model TelemetryReading {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  assetId     Int
+  sensorType  String   @db.VarChar(50)
+  value       Decimal  @db.Decimal(10, 2)
+  unit        String   @db.VarChar(20)
+  isAnomaly   Boolean  @default(false)
+  timestamp   DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@index([timestamp])
+  @@map("telemetry_readings")
+}
+
+// ============================================================================
+// SENSOR RULE (Phase 5 Threshold Rules)
+// ============================================================================
+
+model SensorRule {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  assetId      Int?
+  sensorType   String   @db.VarChar(50)
+  minThreshold Decimal? @db.Decimal(10, 2)
+  maxThreshold Decimal? @db.Decimal(10, 2)
+  action       String   @default("ALERT") @db.VarChar(50)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset? @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("sensor_rules")
+}
+
+// ============================================================================
+// WORK ORDER (Phase 6 SLA & Dispatch)
+// ============================================================================
+
+model WorkOrder {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  incidentId   Int?
+  assetId      Int
+  assignedToId Int?
+  title        String   @db.VarChar(255)
+  description  String?  @db.Text
+  priority     String   @default("MEDIUM") @db.VarChar(50)
+  status       String   @default("PENDING") @db.VarChar(50)
+  slaDeadline  DateTime @db.Timestamptz(6)
+  completedAt  DateTime? @db.Timestamptz(6)
+  signatureUrl String?  @db.Text
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  incident     Incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  assignedTo   User? @relation("WorkOrderAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([assignedToId])
+  @@map("work_orders")
+}
+

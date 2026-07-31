@@ -5,16 +5,14 @@ export class AssetService {
   async listAssets(tenantId: number, options: { skip?: number; take?: number } = {}) {
     const { skip = 0, take = 20 } = options;
 
-    const [assets, total] = await Promise.all([
-      prisma.asset.findMany({
-        where: { tenantId, deletedAt: null },
-        include: { assetType: true, cameras: true },
-        skip,
-        take,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.asset.count({ where: { tenantId, deletedAt: null } }),
-    ]);
+    const assets = await prisma.asset.findMany({
+      where: { tenantId, deletedAt: null },
+      include: { assetType: true, cameras: true },
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+    });
+    const total = await prisma.asset.count({ where: { tenantId, deletedAt: null } });
 
     return { assets, total, skip, take };
   }

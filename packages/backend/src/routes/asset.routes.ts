@@ -45,7 +45,9 @@ router.post(
   validateRequest(createAssetSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const asset = await assetService.createAsset(req.tenantId!, req.userId!, req.body);
+      const userId = req.userId || req.auth?.userId;
+      const tenantId = req.tenantId || req.auth?.tenantId;
+      const asset = await assetService.createAsset(tenantId!, userId!, req.body);
       res.status(201).json(asset);
     } catch (error) {
       next(error);

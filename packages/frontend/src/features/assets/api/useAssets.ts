@@ -1,11 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
-export const useAssets = (params: { skip: number; take: number }) => {
+export interface Asset {
+  id: number;
+  name: string;
+  description?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  status: string;
+  healthScore?: number;
+  assetType?: { id: number; name: string };
+  cameras?: any[];
+}
+
+export const useAssets = (params: { skip?: number; take?: number } = { skip: 0, take: 50 }) => {
   return useQuery({
     queryKey: ['assets', params],
     queryFn: async () => {
-      const response = await apiClient.get('/assets', { params });
+      const response = await apiClient.get<{ assets: Asset[]; total: number }>('/assets', { params });
       return response.data;
     },
   });

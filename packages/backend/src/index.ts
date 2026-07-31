@@ -2,11 +2,13 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import logger from './utils/logger.js';
 import prisma from './lib/prisma.js';
+import { telemetryDaemon } from './services/telemetry-daemon.js';
 
 const app = createApp();
 
 const server = app.listen(env.PORT, () => {
   logger.info(`🚀 Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+  telemetryDaemon.start();
 });
 
 // Graceful shutdown
