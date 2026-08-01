@@ -19,6 +19,7 @@ RUN npm ci
 COPY packages/backend packages/backend
 COPY packages/shared packages/shared
 
+RUN npx prisma generate --schema=packages/backend/prisma/schema.prisma
 RUN cd packages/backend && npm run build
 
 # Runtime stage
