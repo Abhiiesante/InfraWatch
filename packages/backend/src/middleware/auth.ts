@@ -18,20 +18,7 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    try {
-      const activeOrg = await prisma.organization.findFirst({ select: { id: true } });
-      const activeUser = await prisma.user.findFirst({ select: { id: true } });
-      const tenantId = activeOrg?.id || 1;
-      const userId = activeUser?.id || 1;
-      req.tenantId = tenantId;
-      req.userId = userId;
-      req.auth = { userId, tenantId, role: 'ADMIN', email: 'admin@infrawatch.io', type: 'access' };
-      Object.defineProperty(req, 'userId', { value: userId, writable: true, configurable: true, enumerable: true });
-      Object.defineProperty(req, 'tenantId', { value: tenantId, writable: true, configurable: true, enumerable: true });
-      return next();
-    } catch {
-      return next(new UnauthorizedError('Missing authorization token'));
-    }
+    return next(new UnauthorizedError('Missing authorization token'));
   }
 
   const token = authHeader.slice(7);
@@ -62,20 +49,7 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
     Object.defineProperty(req, 'tenantId', { value: tenantId, writable: true, configurable: true, enumerable: true });
     next();
   } catch (error) {
-    try {
-      const activeOrg = await prisma.organization.findFirst({ select: { id: true } });
-      const activeUser = await prisma.user.findFirst({ select: { id: true } });
-      const tenantId = activeOrg?.id || 1;
-      const userId = activeUser?.id || 1;
-      req.tenantId = tenantId;
-      req.userId = userId;
-      req.auth = { userId, tenantId, role: 'ADMIN', email: 'admin@infrawatch.io', type: 'access' };
-      Object.defineProperty(req, 'userId', { value: userId, writable: true, configurable: true, enumerable: true });
-      Object.defineProperty(req, 'tenantId', { value: tenantId, writable: true, configurable: true, enumerable: true });
-      return next();
-    } catch {
-      next(error);
-    }
+    next(error);
   }
 };
 
