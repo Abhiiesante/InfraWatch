@@ -18,7 +18,6 @@ RUN npm ci --only=production
 # Build application
 COPY packages/backend packages/backend
 COPY packages/shared packages/shared
-COPY tsconfig.json ./
 
 RUN cd packages/backend && npm run build
 
