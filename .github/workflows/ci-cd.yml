@@ -74,6 +74,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret-minimum-32-characters-long-123456
           JWT_REFRESH_SECRET: test-refresh-secret-minimum-32-characters-long
+          FRONTEND_URL: http://localhost:5173
         run: npm run test --workspace=@infrawatch/backend -- --run --maxConcurrency=1
 
       - name: Run frontend tests
@@ -202,6 +203,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret-minimum-32-characters-long-123456
           JWT_REFRESH_SECRET: test-refresh-secret-minimum-32-characters-long
+          FRONTEND_URL: http://localhost:5173
         run: npm run test --workspace=@infrawatch/backend -- --run
 
   notify:
