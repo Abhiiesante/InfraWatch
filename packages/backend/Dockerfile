@@ -32,12 +32,9 @@ RUN apk add --no-cache dumb-init
 
 # Copy built application from builder
 COPY --from=builder /app/packages/backend/dist dist
-COPY --from=builder /app/packages/backend/node_modules node_modules
+COPY --from=builder /app/node_modules node_modules
 COPY --from=builder /app/packages/backend/package.json package.json
 COPY packages/backend/.env.example .env.example
-
-# Prisma dependencies
-COPY --from=builder /app/packages/backend/node_modules/.prisma node_modules/.prisma
 COPY packages/backend/prisma prisma
 
 # Create non-root user
