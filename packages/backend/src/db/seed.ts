@@ -2,7 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const rawDbUrl = process.env.DATABASE_URL || '';
+const dbUrl = rawDbUrl.includes('?') ? `${rawDbUrl}&connection_limit=1` : `${rawDbUrl}?connection_limit=1`;
+const prisma = new PrismaClient({
+  datasources: { db: { url: dbUrl } },
+});
 
 async function seed() {
   console.log('🌱 Resetting and seeding database with 10 Real-World Original Infrastructure Facilities...');
@@ -363,16 +367,26 @@ async function seed() {
     'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Solar_panels_in_Rajasthan.jpg/1280px-Solar_panels_in_Rajasthan.jpg',
   ];
   const videoUrls = [
+    // 1. ITER Tokamak Fusion Reactor
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    // 2. CERN Large Hadron Collider (LHC)
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    // 3. Chenab Railway Arch Bridge
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    // 4. Bandra-Worli Sea Link
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    // 5. Three Gorges Dam
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-suspension-bridge-and-the-sea-41566-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-traffic-on-a-highway-bridge-41551-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-dam-and-reservoir-41573-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-wind-turbines-in-a-field-41564-large.mp4',
-    'https://assets.mixkit.co/videos/preview/mixkit-industrial-plant-with-smoke-41577-large.mp4',
+    // 6. Gotthard Base Tunnel
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    // 7. Akashi Kaikyo Bridge
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    // 8. Hoover Dam
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackComplexity.mp4',
+    // 9. Hornsea Offshore Wind Farm
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    // 10. Bhadla Solar Park
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
   ];
 
   for (let i = 0; i < assets.length; i++) {
@@ -416,6 +430,78 @@ async function seed() {
   }
 
   console.log(`✅ Scheduled Autonomous Inspections Created`);
+
+  // Create Real Sensor Rules for IoT Threshold Engine
+  await prisma.sensorRule.createMany({
+    data: [
+      { tenantId: org.id, assetId: asset1.id, sensorType: 'TEMPERATURE', minThreshold: new Decimal(10), maxThreshold: new Decimal(85), action: 'ALERT', isActive: true },
+      { tenantId: org.id, assetId: asset3.id, sensorType: 'VIBRATION', minThreshold: new Decimal(0), maxThreshold: new Decimal(5), action: 'ALERT', isActive: true },
+      { tenantId: org.id, assetId: asset4.id, sensorType: 'VOLTAGE', minThreshold: new Decimal(360), maxThreshold: new Decimal(440), action: 'TRIP', isActive: true },
+      { tenantId: org.id, assetId: asset5.id, sensorType: 'AMPERAGE', minThreshold: new Decimal(100), maxThreshold: new Decimal(4000), action: 'WARN', isActive: true },
+    ],
+  });
+
+  console.log(`✅ Active Sensor Threshold Rules Created`);
+
+  // Create Real Digital Work Orders across SLA states
+  await prisma.workOrder.createMany({
+    data: [
+      {
+        tenantId: org.id,
+        assetId: asset1.id,
+        assignedToId: inspectorUser.id,
+        title: 'Calibrate ITER Tokamak Cryostat Vacuum Pressure Transducer',
+        description: 'Perform routine quarterly calibration on sensor array CH-04 and verify helium leak tightness.',
+        priority: 'CRITICAL',
+        status: 'PENDING',
+        slaDeadline: new Date(Date.now() + 4 * 3600000),
+      },
+      {
+        tenantId: org.id,
+        assetId: asset3.id,
+        assignedToId: inspectorUser.id,
+        title: 'Inspect Chenab Arch Bridge Pier Bolt Tension & Structural Heatmap',
+        description: 'Verify high-torque anchor bolt pre-load using ultrasound gauge on Kauri approach span.',
+        priority: 'HIGH',
+        status: 'IN_PROGRESS',
+        slaDeadline: new Date(Date.now() + 8 * 3600000),
+      },
+      {
+        tenantId: org.id,
+        assetId: asset4.id,
+        assignedToId: adminUser.id,
+        title: 'Replace Emergency Cooling Intake Pump Mechanical Seal #2',
+        description: 'Replace degraded nitrile O-ring on high-pressure seawater pump impeller casing.',
+        priority: 'HIGH',
+        status: 'IN_PROGRESS',
+        slaDeadline: new Date(Date.now() + 12 * 3600000),
+      },
+      {
+        tenantId: org.id,
+        assetId: asset8.id,
+        assignedToId: inspectorUser.id,
+        title: 'Perform Vibrational Frequency Sweep on Hoover Dam Turbine #12',
+        description: 'Acoustic spectrum analysis on Francis turbine bearing housing to isolate shaft whip anomaly.',
+        priority: 'MEDIUM',
+        status: 'PENDING',
+        slaDeadline: new Date(Date.now() + 24 * 3600000),
+      },
+      {
+        tenantId: org.id,
+        assetId: asset9.id,
+        assignedToId: adminUser.id,
+        title: 'Routine Nacelle Yaw Drive Lubrication on Hornsea Turbine #44',
+        description: 'Completed semi-annual synthetic lubricant flush and gear teeth inspection.',
+        priority: 'MEDIUM',
+        status: 'COMPLETED',
+        slaDeadline: new Date(Date.now() - 24 * 3600000),
+        completedAt: new Date(Date.now() - 12 * 3600000),
+        signatureUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="white">Aarav Kumar</text></svg>',
+      },
+    ],
+  });
+
+  console.log(`✅ Real Digital Work Orders Created`);
 
   // Create Historical Telemetry Readings using batch createMany
   const sensorTypes = ['VIBRATION', 'TEMPERATURE', 'AMPERAGE', 'FREQUENCY', 'VOLTAGE'];

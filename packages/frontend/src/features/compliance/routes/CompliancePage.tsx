@@ -96,9 +96,11 @@ export const CompliancePage = () => {
           <span className="text-xs font-bold text-slate-400 mt-1 block">Net Negative Carbon Operations</span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm min-w-0">
           <span className="text-xs font-mono text-slate-400 font-bold block">EPA ENVIRONMENTAL STATUS</span>
-          <span className="text-2xl font-extrabold text-cyan-500 mt-2 block">{complianceData.epaAuditStatus}</span>
+          <span className="text-lg font-black text-cyan-600 dark:text-cyan-400 mt-2 block truncate" title={complianceData.epaAuditStatus}>
+            {complianceData.epaAuditStatus}
+          </span>
           <span className="text-xs font-bold text-slate-400 mt-1 block">Zero Toxic Spills or Breaches</span>
         </div>
 

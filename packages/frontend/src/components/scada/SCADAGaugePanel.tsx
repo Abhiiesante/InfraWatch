@@ -25,12 +25,13 @@ export function SCADAGaugePanel({
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-          <Gauge className="w-4 h-4 text-indigo-500 dark:text-cyan-400" /> {label}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-mono font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 truncate">
+          <Gauge className="w-4 h-4 text-indigo-600 dark:text-cyan-400 flex-shrink-0" />
+          <span className="truncate">{label}</span>
         </span>
         <span
-          className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${
+          className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ${
             isDanger
               ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-500/40 animate-pulse'
               : isWarning
@@ -42,14 +43,14 @@ export function SCADAGaugePanel({
         </span>
       </div>
 
-      <div className="flex items-end justify-between pt-1">
-        <div>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 pt-1">
+        <div className="flex items-baseline">
           <span className="text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
             {value}
           </span>
-          <span className="text-sm font-bold text-slate-500 dark:text-slate-400 ml-1.5 font-mono">{unit}</span>
+          <span className="text-xs font-extrabold text-slate-500 dark:text-slate-400 ml-1.5 font-mono">{unit}</span>
         </div>
-        <span className="text-xs font-mono text-slate-400">
+        <span className="text-[11px] font-mono font-semibold text-slate-400">
           Range: {min}–{max} {unit}
         </span>
       </div>

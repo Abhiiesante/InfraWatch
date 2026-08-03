@@ -447,7 +447,7 @@ export const CamerasListPage = () => {
 
       {/* IN-PAGE REAL-TIME SURVEILLANCE VIDEO MONITOR MODAL */}
       {activeStreamCamera && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950 text-white">

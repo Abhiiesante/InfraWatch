@@ -38,20 +38,20 @@ export const AnalyticsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-7 h-7 text-indigo-400" />
-            <h1 className="text-2xl font-bold text-white">Executive BI Analytics & Operations</h1>
+            <BarChart3 className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white">Executive BI Analytics & Operations</h1>
           </div>
-          <p className="text-sm text-slate-300 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
             Real-time database metrics for Mean Time to Resolution (MTTR), Mean Time Between Failures (MTBF), and SLA Compliance.
           </p>
         </div>
 
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 transition-all text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition-all text-sm shadow-sm"
         >
           <Download className="w-4 h-4" /> Export CSV Report
         </button>
@@ -59,49 +59,49 @@ export const AnalyticsPage: React.FC = () => {
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">MTTR (Resolution Time)</span>
-            <Clock className="w-5 h-5 text-indigo-400" />
+            <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">MTTR (Resolution Time)</span>
+            <Clock className="w-5 h-5 text-indigo-500" />
           </div>
-          <div className="text-3xl font-extrabold text-white">{metrics?.mttrHours ?? 0} Hours</div>
-          <p className="text-xs text-indigo-300 font-semibold">Mean resolution duration in DB</p>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{metrics?.mttrHours ?? 0} Hours</div>
+          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">Mean resolution duration in DB</p>
         </div>
 
-        <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">MTBF (Failure Interval)</span>
-            <Award className="w-5 h-5 text-emerald-400" />
+            <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">MTBF (Failure Interval)</span>
+            <Award className="w-5 h-5 text-emerald-500" />
           </div>
-          <div className="text-3xl font-extrabold text-emerald-400">{metrics?.mtbfDays ?? 0} Days</div>
-          <p className="text-xs text-slate-300 font-semibold">Mean duration between incidents</p>
+          <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{metrics?.mtbfDays ?? 0} Days</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Mean duration between incidents</p>
         </div>
 
-        <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">SLA Compliance</span>
-            <ShieldCheck className="w-5 h-5 text-purple-400" />
+            <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">SLA Compliance</span>
+            <ShieldCheck className="w-5 h-5 text-purple-500" />
           </div>
-          <div className="text-3xl font-extrabold text-white">{metrics?.slaCompliance ?? 0}%</div>
-          <p className="text-xs text-purple-300 font-semibold">Database SLA compliance rate</p>
+          <div className="text-3xl font-extrabold text-purple-600 dark:text-purple-400">{metrics?.slaCompliance ?? 0}%</div>
+          <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold">Database SLA compliance rate</p>
         </div>
 
-        <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+        <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Monitored Assets</span>
-            <Layers className="w-5 h-5 text-amber-400" />
+            <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Monitored Assets</span>
+            <Layers className="w-5 h-5 text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold text-white">{metrics?.totalAssets ?? 0} Nodes</div>
-          <p className="text-xs text-slate-300 font-semibold">Active infrastructure count</p>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white">{metrics?.totalAssets ?? 0} Nodes</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Active infrastructure count</p>
         </div>
       </div>
 
       {/* Chart: Asset Health Breakdown */}
-      <div className="p-6 bg-slate-900 rounded-2xl border border-slate-800 space-y-4">
+      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white">Average Asset Health Score by Category</h3>
-            <p className="text-xs text-slate-300">Live database category health index breakdown</p>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Average Asset Health Score by Category</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Live database category health index breakdown</p>
           </div>
         </div>
 
@@ -109,8 +109,8 @@ export const AnalyticsPage: React.FC = () => {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={healthData}>
-                <XAxis dataKey="type" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} domain={[0, 100]} />
+                <XAxis dataKey="type" stroke="#64748b" fontSize={12} />
+                <YAxis stroke="#64748b" fontSize={12} domain={[0, 100]} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#f8fafc' }}
                 />
