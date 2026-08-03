@@ -406,7 +406,7 @@ router.get('/network-info', (_req: Request, res: Response) => {
       }
     }
   }
-  return res.json({ lanIp, port: 5173, broadcastUrl: `http://${lanIp}:5173/cam-broadcast` });
+  return res.json({ lanIp, port: 5173, broadcastUrl: `https://${lanIp}:5173/cam-broadcast` });
 });
 
 // ============================================================================

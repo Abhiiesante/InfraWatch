@@ -39,7 +39,7 @@ export function CctvVideoPlayer({
   const [isMjpeg, setIsMjpeg] = useState(false);
   const [streamProxyAttempted, setStreamProxyAttempted] = useState(false);
   const [webrtcConnected, setWebrtcConnected] = useState(false);
-  const [lanBroadcastUrl, setLanBroadcastUrl] = useState('http://10.205.30.17:5173/cam-broadcast');
+  const [lanBroadcastUrl, setLanBroadcastUrl] = useState('https://10.205.30.17:5173/cam-broadcast');
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
