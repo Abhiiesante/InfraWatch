@@ -70,7 +70,14 @@ export function CctvVideoPlayer({
 
   const getResolvedSrc = (url: string) => {
     if (activeRemoteUrl) return activeRemoteUrl;
-    if (!url || url.startsWith('rtsp://') || url.startsWith('onvif://') || url === 'webcam://local') {
+    if (
+      !url ||
+      url.startsWith('rtsp://') ||
+      url.startsWith('onvif://') ||
+      url.includes(':554') ||
+      url.includes(':8554') ||
+      url === 'webcam://local'
+    ) {
       const hash = (cameraName || 'CCTV').split('').reduce((a, b) => a + b.charCodeAt(0), 0);
       return realVideoStreams[hash % realVideoStreams.length];
     }
@@ -83,13 +90,16 @@ export function CctvVideoPlayer({
   const connectZeroDownloadP2p = async (pinCode: string) => {
     try {
       setWebcamError(null);
-      const res = await axios.get(`${API_URL}/cameras/webrtc-offer/${pinCode.trim()}`);
-      const { offer } = res.data;
+      const res = await axios.get(`${API_URL}/cameras/webrtc-offer/${pinCode.trim()}`, {
+        validateStatus: (status) => status >= 200 && status < 500,
+      });
 
-      if (!offer) {
+      if (res.status === 404 || !res.data?.offer) {
         setWebcamError(`Pairing code ${pinCode} not active. Open /cam-broadcast on other PC first.`);
         return;
       }
+
+      const { offer } = res.data;
 
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -117,7 +127,6 @@ export function CctvVideoPlayer({
         answer,
       });
     } catch (err: any) {
-      console.warn('WebRTC P2P connect error:', err);
       setWebcamError(`Invalid pairing code ${pinCode} or other PC disconnected.`);
     }
   };
