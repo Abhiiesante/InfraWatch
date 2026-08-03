@@ -370,11 +370,10 @@ export function CctvVideoPlayer({
                       type="text"
                       maxLength={4}
                       value={p2pPin}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setP2pPin(val);
-                        if (val.trim().length === 4) {
-                          connectZeroDownloadP2p(val.trim());
+                      onChange={(e) => setP2pPin(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && p2pPin.trim()) {
+                          handleConnectRemoteCam();
                         }
                       }}
                       placeholder="e.g. 8421"
