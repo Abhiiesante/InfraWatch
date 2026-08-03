@@ -209,8 +209,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       {/* ─── Main ─── */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
 
-        {/* Top Header — z-30 to allow page modals (z-50/z-100) to cover header */}
-        <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 relative z-30">
+        {/* Top Header — z-20 to allow page modals to cover header */}
+        <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 relative z-20">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
             <span className="text-indigo-600 dark:text-cyan-400 font-bold">InfraWatch Grid</span>
@@ -304,8 +304,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
           </div>
         </header>
 
-        {/* Page Content — isolated stacking context with z-0, never overlaps header */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 w-full custom-scrollbar transition-colors duration-300 relative z-0 isolate">
+        {/* Page Content */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 w-full custom-scrollbar transition-colors duration-300 relative z-0">
           {children}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Hls from 'hls.js';
 import { Maximize2, Radio, Flame, Camera, Globe, Monitor, Check, Zap } from 'lucide-react';
 import axios from 'axios';
@@ -291,142 +292,144 @@ export function CctvVideoPlayer({
         </div>
       )}
 
-      {/* Remote PC Camera Modal Box (Fixed Overlay Portal) */}
-      {showRemoteModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] p-4 sm:p-6 flex items-center justify-center animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-cyan-400" /> Connect Remote PC Camera Feed
-              </h4>
-              <button
-                onClick={() => setShowRemoteModal(false)}
-                className="text-xs font-mono text-slate-400 hover:text-white px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
+      {/* Remote PC Camera Modal Box (Fixed Overlay Portal attached to document.body) */}
+      {showRemoteModal &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] p-4 sm:p-6 flex items-center justify-center animate-in fade-in">
+            <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-100 relative">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-cyan-400" /> Connect Remote PC Camera Feed
+                </h4>
+                <button
+                  onClick={() => setShowRemoteModal(false)}
+                  className="text-xs font-mono text-slate-400 hover:text-white px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
 
-            <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-              <button
-                onClick={() => setConnectMode('PIN')}
-                className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  connectMode === 'PIN' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5" /> 1. Zero-Download Code (Recommended)
-              </button>
-              <button
-                onClick={() => setConnectMode('IP')}
-                className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  connectMode === 'IP' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5" /> 2. Local IP / MJPEG Stream
-              </button>
-            </div>
+              <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                <button
+                  onClick={() => setConnectMode('PIN')}
+                  className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    connectMode === 'PIN' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" /> 1. Zero-Download Code (Recommended)
+                </button>
+                <button
+                  onClick={() => setConnectMode('IP')}
+                  className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    connectMode === 'IP' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5" /> 2. Local IP / MJPEG Stream
+                </button>
+              </div>
 
-            {connectMode === 'PIN' ? (
-              <div className="space-y-4 font-mono text-xs text-slate-300">
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1.5">
-                  <p className="font-bold text-cyan-400 flex items-center gap-1">
-                    ⚡ 100% Zero-Download Setup Instructions:
-                  </p>
-                  <p>1. Open Chrome/Edge browser on the other PC & go to:</p>
-                  <div className="flex items-center gap-2">
-                    <p className="flex-1 font-extrabold text-cyan-300 bg-slate-900 px-3 py-2 rounded-xl border border-cyan-700/80 select-all text-xs font-mono tracking-wide truncate">
-                      {lanBroadcastUrl}
+              {connectMode === 'PIN' ? (
+                <div className="space-y-4 font-mono text-xs text-slate-300">
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1.5">
+                    <p className="font-bold text-cyan-400 flex items-center gap-1">
+                      ⚡ 100% Zero-Download Setup Instructions:
                     </p>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(lanBroadcastUrl);
-                        setCopiedLink(true);
-                        setTimeout(() => setCopiedLink(false), 2000);
+                    <p>1. Open Chrome/Edge browser on the other PC & go to:</p>
+                    <div className="flex items-center gap-2">
+                      <p className="flex-1 font-extrabold text-cyan-300 bg-slate-900 px-3 py-2 rounded-xl border border-cyan-700/80 select-all text-xs font-mono tracking-wide truncate">
+                        {lanBroadcastUrl}
+                      </p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(lanBroadcastUrl);
+                          setCopiedLink(true);
+                          setTimeout(() => setCopiedLink(false), 2000);
+                        }}
+                        className="px-3 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 rounded-xl text-[10px] font-bold transition-all flex-shrink-0"
+                      >
+                        {copiedLink ? 'COPIED!' : 'COPY'}
+                      </button>
+                    </div>
+                    <p>2. Click <span className="text-cyan-400 font-bold">Start Broadcast</span> & type the 4-digit PIN below:</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                      Enter 4-Digit Code from Other PC:
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={p2pPin}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setP2pPin(val);
+                        if (val.trim().length === 4) {
+                          connectZeroDownloadP2p(val.trim());
+                        }
                       }}
-                      className="px-3 py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 rounded-xl text-[10px] font-bold transition-all flex-shrink-0"
-                    >
-                      {copiedLink ? 'COPIED!' : 'COPY'}
-                    </button>
+                      placeholder="e.g. 8421"
+                      className="w-full bg-slate-950 border border-cyan-700/60 rounded-xl px-4 py-2.5 text-center text-2xl font-black tracking-widest text-cyan-300 focus:border-cyan-400 outline-none shadow-inner"
+                    />
                   </div>
-                  <p>2. Click <span className="text-cyan-400 font-bold">Start Broadcast</span> & type the 4-digit PIN below:</p>
-                </div>
 
-                <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                    Enter 4-Digit Code from Other PC:
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={4}
-                    value={p2pPin}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setP2pPin(val);
-                      if (val.trim().length === 4) {
-                        connectZeroDownloadP2p(val.trim());
-                      }
-                    }}
-                    placeholder="e.g. 8421"
-                    className="w-full bg-slate-950 border border-cyan-700/60 rounded-xl px-4 py-2.5 text-center text-2xl font-black tracking-widest text-cyan-300 focus:border-cyan-400 outline-none shadow-inner"
-                  />
+                  <button
+                    onClick={handleConnectRemoteCam}
+                    className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" /> Stream Other PC Camera (Zero-Download)
+                  </button>
                 </div>
-
-                <button
-                  onClick={handleConnectRemoteCam}
-                  className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" /> Stream Other PC Camera (Zero-Download)
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3 font-mono text-xs text-slate-300">
-                <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                    Remote PC IP Address on Wi-Fi:
-                  </label>
-                  <input
-                    type="text"
-                    value={remoteIp}
-                    onChange={(e) => setRemoteIp(e.target.value)}
-                    placeholder="e.g. 10.205.30.20"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-cyan-500 outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
+              ) : (
+                <div className="space-y-3 font-mono text-xs text-slate-300">
                   <div>
-                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Port:</label>
+                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                      Remote PC IP Address on Wi-Fi:
+                    </label>
                     <input
                       type="text"
-                      value={remotePort}
-                      onChange={(e) => setRemotePort(e.target.value)}
-                      placeholder="8080 or 4747"
+                      value={remoteIp}
+                      onChange={(e) => setRemoteIp(e.target.value)}
+                      placeholder="e.g. 10.205.30.20"
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-cyan-500 outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Stream Path:</label>
-                    <input
-                      type="text"
-                      value={remotePath}
-                      onChange={(e) => setRemotePath(e.target.value)}
-                      placeholder="/video"
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-cyan-500 outline-none"
-                    />
-                  </div>
-                </div>
 
-                <button
-                  onClick={handleConnectRemoteCam}
-                  className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <Check className="w-4 h-4" /> Stream Remote IP Camera
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Port:</label>
+                      <input
+                        type="text"
+                        value={remotePort}
+                        onChange={(e) => setRemotePort(e.target.value)}
+                        placeholder="8080 or 4747"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-cyan-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Stream Path:</label>
+                      <input
+                        type="text"
+                        value={remotePath}
+                        onChange={(e) => setRemotePath(e.target.value)}
+                        placeholder="/video"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-cyan-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleConnectRemoteCam}
+                    className="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" /> Stream Remote IP Camera
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Bottom Interactive Camera Controls Bar */}
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between z-10">

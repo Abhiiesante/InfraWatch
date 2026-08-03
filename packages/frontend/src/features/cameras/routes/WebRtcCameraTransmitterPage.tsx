@@ -26,7 +26,15 @@ export const WebRtcCameraTransmitterPage = () => {
         setStatus('STREAMING');
         setErrorMessage('');
 
-        // 1. Capture local camera natively in browser on page load
+        // 1. Check if browser blocked mediaDevices due to HTTP insecure origin
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setStatus('ERROR');
+          setErrorMessage(
+            'HTTP Security Restriction: Chrome/Edge blocks camera access over plain HTTP IP addresses (http://' + hostIp + '). Please use Chrome flag bypass below or access via localhost.'
+          );
+          return;
+        }
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 1280, height: 720 },
           audio: false,
@@ -155,9 +163,20 @@ export const WebRtcCameraTransmitterPage = () => {
         )}
 
         {status === 'ERROR' && (
-          <div className="flex items-center gap-2 text-xs text-red-400 bg-red-950/80 p-3.5 rounded-2xl border border-red-800 text-left">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <span>{errorMessage}</span>
+          <div className="space-y-3 text-left">
+            <div className="flex items-start gap-2 text-xs text-red-300 bg-red-950/90 p-4 rounded-2xl border border-red-700 font-sans">
+              <AlertCircle className="w-5 h-5 shrink-0 text-red-400 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+
+            <div className="p-4 bg-slate-950 rounded-2xl border border-cyan-800/80 space-y-2 text-[11px] text-slate-300">
+              <p className="font-bold text-cyan-400">💡 1-Click Fix to Allow Camera on Local Wi-Fi HTTP:</p>
+              <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                <li>Copy this URL into a new tab: <code className="bg-slate-900 px-2 py-0.5 rounded text-cyan-300 select-all font-mono">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></li>
+                <li>Add <code className="bg-slate-900 px-2 py-0.5 rounded text-cyan-300 select-all font-mono">http://{hostIp}:5173</code> into the text box.</li>
+                <li>Change dropdown to <strong className="text-emerald-400">Enabled</strong> & click <strong className="text-cyan-400">Relaunch</strong>.</li>
+              </ol>
+            </div>
           </div>
         )}
       </div>
