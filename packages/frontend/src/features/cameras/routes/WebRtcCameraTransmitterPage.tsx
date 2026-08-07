@@ -3,7 +3,7 @@ import { Camera, Radio, Check, Copy, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 
 const hostIp = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const API_URL = (import.meta as any).env.VITE_API_URL || `http://${hostIp}:3000/api`;
+const API_URL = (import.meta as any).env.VITE_API_URL || '/api';
 
 export const WebRtcCameraTransmitterPage = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -66,13 +66,31 @@ export const WebRtcCameraTransmitterPage = () => {
           }
         };
 
-        // Create & Send Offer immediately
+        // Wait for ICE gathering to complete before sending the offer
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
+        await new Promise<void>((resolve) => {
+          if (pc.iceGatheringState === 'complete') {
+            resolve();
+          } else {
+            const checkState = () => {
+              if (pc.iceGatheringState === 'complete') {
+                pc.removeEventListener('icegatheringstatechange', checkState);
+                resolve();
+              }
+            };
+            pc.addEventListener('icegatheringstatechange', checkState);
+            setTimeout(() => {
+              pc.removeEventListener('icegatheringstatechange', checkState);
+              resolve();
+            }, 2500);
+          }
+        });
+
         await axios.post(`${API_URL}/cameras/webrtc-offer`, {
           pin: activePin,
-          offer,
+          offer: pc.localDescription,
         });
 
         // Poll for Answer from Main PC

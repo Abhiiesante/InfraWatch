@@ -1,5 +1,7 @@
 import prisma from '@/lib/prisma.js';
 import { trainedNlpClassifier, TrainingService } from './training.service.js';
+import { LLMService } from './llm.service.js';
+import logger from '@/utils/logger.js';
 
 export interface TriageResult {
   suggestedSeverity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -21,6 +23,42 @@ export class AIService {
   static async triageIncident(title: string, description = '', tenantId?: number): Promise<TriageResult> {
     const text = `${title} ${description}`.trim();
 
+    // Try LLM Triage first (Phase 2)
+    try {
+      logger.info(`[AIService] Attempting LLM triage for incident...`);
+      const prompt = `Analyze this infrastructure incident and return a valid JSON object matching the following structure exactly (no markdown formatting, just JSON):
+{
+  "suggestedSeverity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+  "suggestedCategory": "Safety & Security Hazards" | "Electrical Systems & Substation Grid" | "HVAC & Mechanical Systems" | "Structural & Physical Integrity" | "General Infrastructure Maintenance",
+  "estimatedResolutionHours": number,
+  "slaBreachRiskPct": number,
+  "actionPlan": ["string", "string", "string"],
+  "rationale": "Brief explanation of the reasoning"
+}
+
+Incident Title: ${title}
+Incident Description: ${description}`;
+
+      const llmResponse = await LLMService.generateCompletion(prompt, { temperature: 0.1 });
+      
+      // Clean potential markdown blocks
+      const cleanJson = llmResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      
+      return {
+        suggestedSeverity: parsed.suggestedSeverity || 'MEDIUM',
+        suggestedCategory: parsed.suggestedCategory || 'General Infrastructure Maintenance',
+        confidence: 95.0, // Hardcoded high confidence for LLM in Phase 2
+        rationale: `LLM Copilot Analysis: ${parsed.rationale || 'Processed via LLM'}`,
+        estimatedResolutionHours: parsed.estimatedResolutionHours || 4.0,
+        slaBreachRiskPct: parsed.slaBreachRiskPct || 15.0,
+        actionPlan: parsed.actionPlan || ['1. Review incident', '2. Dispatch inspector'],
+      };
+    } catch (llmError) {
+      logger.warn(`[AIService] LLM Triage failed, falling back to Naïve Bayes. Error: ${llmError}`);
+    }
+
+    // Fallback: Legacy Naïve Bayes Engine (V0)
     // Ensure model is trained
     if (!trainedNlpClassifier.isTrained) {
       await TrainingService.trainNlpModel(tenantId || 1);

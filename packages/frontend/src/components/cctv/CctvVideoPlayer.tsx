@@ -4,8 +4,7 @@ import Hls from 'hls.js';
 import { Maximize2, Radio, Flame, Camera, Globe, Monitor, Check, Zap } from 'lucide-react';
 import axios from 'axios';
 
-const hostIp = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const API_URL = (import.meta as any).env.VITE_API_URL || `http://${hostIp}:3000/api`;
+const API_URL = (import.meta as any).env.VITE_API_URL || '/api';
 
 interface CctvVideoPlayerProps {
   streamUrl?: string;
@@ -122,9 +121,27 @@ export function CctvVideoPlayer({
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
+      await new Promise<void>((resolve) => {
+        if (pc.iceGatheringState === 'complete') {
+          resolve();
+        } else {
+          const checkState = () => {
+            if (pc.iceGatheringState === 'complete') {
+              pc.removeEventListener('icegatheringstatechange', checkState);
+              resolve();
+            }
+          };
+          pc.addEventListener('icegatheringstatechange', checkState);
+          setTimeout(() => {
+            pc.removeEventListener('icegatheringstatechange', checkState);
+            resolve();
+          }, 2500);
+        }
+      });
+
       await axios.post(`${API_URL}/cameras/webrtc-answer`, {
         pin: pinCode.trim(),
-        answer,
+        answer: pc.localDescription,
       });
     } catch (err: any) {
       setWebcamError(`Invalid pairing code ${pinCode} or other PC disconnected.`);

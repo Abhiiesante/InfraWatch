@@ -18,5 +18,11 @@ export default defineConfig({
     hmr: {
       protocol: 'wss',
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
 });

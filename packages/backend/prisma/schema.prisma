@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================================
@@ -37,6 +38,15 @@ model Organization {
   telemetryReadings TelemetryReading[]
   sensorRules       SensorRule[]
   workOrders        WorkOrder[]
+  scadaActuators    ScadaActuator[]
+  drones            Drone[]
+  droneMissions     DroneMission[]
+  bimModels         BimModel[]
+  bimHotspots       BimHotspot[]
+  aiModels          AIModel[]
+  aiPredictions     AIPrediction[]
+  aiEvents          AIEvent[]
+  modelFeedbacks    ModelFeedback[]
 
   @@map("organizations")
 }
@@ -70,6 +80,8 @@ model User {
   notifications Notification[]
   reviewedAnomalies AnomalyDetection[] @relation("AnomalyReviewer")
   assignedWorkOrders WorkOrder[] @relation("WorkOrderAssignedTo")
+  aiReviews          AIReview[] @relation("UserAIReviews")
+  modelFeedbacks     ModelFeedback[] @relation("UserModelFeedbacks")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -131,6 +143,10 @@ model Asset {
   telemetryReadings TelemetryReading[]
   sensorRules       SensorRule[]
   workOrders        WorkOrder[]
+  scadaActuators    ScadaActuator[]
+  bimModels         BimModel[]
+  aiPredictions     AIPrediction[] @relation("AssetAIPredictions")
+  aiEvents          AIEvent[] @relation("AssetAIEvents")
 
   @@index([tenantId])
   @@index([assetTypeId])
@@ -160,6 +176,7 @@ model Camera {
   asset       Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
   inspectionImages InspectionImage[]
   anomalies   AnomalyDetection[]
+  aiPredictions AIPrediction[]
 
   @@index([tenantId])
   @@index([assetId])
@@ -190,6 +207,7 @@ model Inspection {
   inspector   User @relation(fields: [inspectorId], references: [id], onDelete: Restrict)
   inspectionImages InspectionImage[]
   prediction  AssetPrediction? @relation(fields: [predictionId], references: [id], onDelete: SetNull)
+  droneMissions DroneMission[]
 
   @@index([tenantId])
   @@index([assetId])
@@ -251,6 +269,7 @@ model Incident {
   categoryId          Int?
   title               String   @db.VarChar(255)
   description         String?  @db.Text
+  source              String   @default("MANUAL") @db.VarChar(50)
   severity            String   @default("MEDIUM") @db.VarChar(50)
   status              String   @default("OPEN") @db.VarChar(50)
   attachmentUrls      String[]
@@ -273,6 +292,7 @@ model Incident {
   comments     IncidentComment[]
   anomaly      AnomalyDetection?
   workOrders   WorkOrder[]
+  aiEvent      AIEvent? @relation("IncidentAIEvent")
 
   @@index([tenantId])
   @@index([assetId])
@@ -537,5 +557,261 @@ model WorkOrder {
   @@index([status])
   @@index([assignedToId])
   @@map("work_orders")
+}
+
+// ============================================================================
+// SCADA ACTUATOR
+// ============================================================================
+
+model ScadaActuator {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  assetId         Int
+  name            String   @db.VarChar(255)
+  type            String   @db.VarChar(100) // e.g., CIRCUIT_BREAKER, HYDRAULIC_SURGE_VALVE
+  status          String   @default("ENGAGED") @db.VarChar(50) // ENGAGED, DISENGAGED
+  lastCommandAt   DateTime? @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@map("scada_actuators")
+}
+
+// ============================================================================
+// DRONE & DRONE MISSION
+// ============================================================================
+
+model Drone {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  name            String   @db.VarChar(255)
+  model           String   @db.VarChar(255)
+  status          String   @default("CHARGING_DOCK") @db.VarChar(50)
+  batteryPercent  Int      @default(100)
+  currentLat      Decimal? @db.Decimal(10, 8)
+  currentLng      Decimal? @db.Decimal(11, 8)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  missions     DroneMission[]
+
+  @@index([tenantId])
+  @@map("drones")
+}
+
+model DroneMission {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  droneId           Int
+  inspectionId      Int?
+  status            String   @default("PENDING") @db.VarChar(50) // PENDING, EXECUTING, COMPLETED
+  startTime         DateTime? @db.Timestamptz(6)
+  endTime           DateTime? @db.Timestamptz(6)
+  waypointsCompleted Int      @default(0)
+  totalWaypoints    Int      @default(20)
+  currentAltitude   Decimal? @db.Decimal(8, 2)
+  currentSpeed      Decimal? @db.Decimal(8, 2)
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  drone        Drone @relation(fields: [droneId], references: [id], onDelete: Cascade)
+  inspection   Inspection? @relation(fields: [inspectionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([droneId])
+  @@index([inspectionId])
+  @@map("drone_missions")
+}
+
+// ============================================================================
+// BIM MODEL & HOTSPOTS
+// ============================================================================
+
+model BimModel {
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int
+  assetId             Int
+  fileName            String   @db.VarChar(500)
+  bimFormat           String   @db.VarChar(100) // e.g. IFC4_DYNAMIC_MESH, IFC4_FUSION_TOKAMAK_ADVANCED_BIM
+  bimType             String   @db.VarChar(100) // CIVIL_INFRASTRUCTURE, TOKAMAK_FUSION_REACTOR
+  elementCount        Int      @default(0)
+  structuralStressMPa Decimal? @db.Decimal(10, 2)
+  thermalGradientC    Decimal? @db.Decimal(10, 2)
+  healthRating        String   @default("OPTIMAL") @db.VarChar(50)
+  uploadDate          DateTime @default(now()) @db.Timestamptz(6)
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+  
+  // Specific physics fields for Fusion Reactors
+  magneticFieldTesla  Decimal? @db.Decimal(10, 2)
+  plasmaTempMillionC  Decimal? @db.Decimal(10, 2)
+  cryostatVacuumPa    String?  @db.VarChar(50)
+  activeCoils         Int?
+  totalCoils          Int?
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  hotspots     BimHotspot[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@map("bim_models")
+}
+
+model BimHotspot {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  bimModelId      Int
+  elementId       String   @db.VarChar(255)
+  stressLevel     String   @db.VarChar(50) // NOMINAL, ELEVATED, HIGH, CRITICAL
+  valueMPa        Decimal  @db.Decimal(10, 2)
+  location        String?  @db.VarChar(255)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bimModel     BimModel @relation(fields: [bimModelId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([bimModelId])
+  @@map("bim_hotspots")
+}
+
+// ============================================================================
+// AI PLATFORM INTEGRATION (Phase 1)
+// ============================================================================
+
+model AIModel {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  name            String   @db.VarChar(255)
+  description     String?  @db.Text
+  modelType       String   @db.VarChar(100) // CV, NLP, PREDICTIVE, ANOMALY
+  status          String   @default("TRAINING") @db.VarChar(50)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  organization    Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versions        AIModelVersion[]
+
+  @@index([tenantId])
+  @@map("ai_models")
+}
+
+model AIModelVersion {
+  id              Int      @id @default(autoincrement())
+  modelId         Int
+  version         String   @db.VarChar(50)
+  status          String   @default("CANDIDATE") @db.VarChar(50) // CANDIDATE, CHAMPION, DEPRECATED
+  metrics         Json?    @db.JsonB
+  parameters      Json?    @db.JsonB
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  model           AIModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  predictions     AIPrediction[]
+  events          AIEvent[]
+
+  @@index([modelId])
+  @@map("ai_model_versions")
+}
+
+model AIPrediction {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  assetId         Int?
+  cameraId        Int?
+  modelVersionId  Int
+  predictionType  String   @db.VarChar(100) // ANOMALY, CLASSIFICATION, DETECTION
+  label           String   @db.VarChar(255)
+  confidence      Decimal  @db.Decimal(5, 2)
+  metadata        Json?    @db.JsonB
+  sourceUri       String?  @db.Text
+  occurredAt      DateTime @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  organization    Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset           Asset?       @relation("AssetAIPredictions", fields: [assetId], references: [id], onDelete: SetNull)
+  camera          Camera?      @relation(fields: [cameraId], references: [id], onDelete: SetNull)
+  modelVersion    AIModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Cascade)
+  feedbacks       ModelFeedback[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@index([modelVersionId])
+  @@map("ai_predictions")
+}
+
+model AIEvent {
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int
+  assetId             Int?
+  modelVersionId      Int?
+  eventType           String   @db.VarChar(100)
+  severity            String   @default("MEDIUM") @db.VarChar(50)
+  aggregateConfidence Decimal  @db.Decimal(5, 2)
+  status              String   @default("NEW") @db.VarChar(50) // NEW, REVIEWED, DISMISSED, INCIDENT_CREATED
+  firstDetectedAt     DateTime @db.Timestamptz(6)
+  lastDetectedAt      DateTime @db.Timestamptz(6)
+  predictionCount     Int      @default(1)
+  incidentId          Int?     @unique
+
+  organization    Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset           Asset?       @relation("AssetAIEvents", fields: [assetId], references: [id], onDelete: SetNull)
+  modelVersion    AIModelVersion? @relation(fields: [modelVersionId], references: [id], onDelete: SetNull)
+  incident        Incident?    @relation("IncidentAIEvent", fields: [incidentId], references: [id], onDelete: SetNull)
+  reviews         AIReview[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@index([status])
+  @@map("ai_events")
+}
+
+model AIReview {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  reviewerId      Int
+  decision        String   @db.VarChar(50) // CONFIRMED, DISMISSED, CORRECTED, ESCALATED
+  correctedLabel  String?  @db.VarChar(255)
+  notes           String?  @db.Text
+  reviewedAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  event           AIEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reviewer        User     @relation("UserAIReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([reviewerId])
+  @@map("ai_reviews")
+}
+
+model ModelFeedback {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  predictionId    Int?
+  reviewerId      Int
+  rating          Int?     @db.SmallInt // 1 to 5
+  correctedLabel  String?  @db.VarChar(255)
+  feedbackText    String?  @db.Text
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  organization    Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prediction      AIPrediction? @relation(fields: [predictionId], references: [id], onDelete: SetNull)
+  reviewer        User     @relation("UserModelFeedbacks", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([predictionId])
+  @@map("model_feedbacks")
 }
 

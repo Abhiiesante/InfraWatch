@@ -4,18 +4,7 @@ import prisma from '../lib/prisma.js';
 
 const router = Router();
 
-// In-memory live state for SCADA actuator statuses (simulates PLC/RTU connection)
-const scadaState: Record<string, any> = {};
-
-function getOrInitActuatorStatus(tenantId: number, id: string, defaultStatus: string) {
-  const key = `${tenantId}:${id}`;
-  if (!scadaState[key]) {
-    scadaState[key] = { status: defaultStatus, lastCommandAt: new Date().toISOString() };
-  }
-  return scadaState[key];
-}
-
-// GET /api/v4/scada/grid-status — Real-time SCADA grid powered by DB telemetry
+// GET /api/v4/scada/grid-status — Real-time SCADA grid powered by DB telemetry and real actuators
 router.get(
   '/scada/grid-status',
   authMiddleware,
@@ -23,33 +12,30 @@ router.get(
     try {
       const tenantId = (req as any).tenantId || 0;
 
-      const assets = await prisma.asset.findMany({
-        where: { tenantId, deletedAt: null, status: 'ACTIVE' },
-        take: 4,
+      const scadaActuators = await prisma.scadaActuator.findMany({
+        where: { tenantId },
         orderBy: { createdAt: 'desc' },
         include: {
-          telemetryReadings: {
-            orderBy: { timestamp: 'desc' },
-            take: 10,
-          },
+          asset: {
+            include: {
+              telemetryReadings: {
+                orderBy: { timestamp: 'desc' },
+                take: 10,
+              },
+            }
+          }
         },
       });
 
-      const types = ['CIRCUIT_BREAKER', 'HYDRAULIC_SURGE_VALVE', 'EMERGENCY_GENERATOR', 'HVAC_EXHAUST_TURBINE'];
-
-      const actuators = assets.map((asset: any, index: number) => {
-        const type = types[index % types.length];
-        const state = getOrInitActuatorStatus(tenantId, `ACT-${asset.id}`, 'ENGAGED');
-        
-        // Map real telemetry readings to actuator fields
-        const getReading = (t: string) => asset.telemetryReadings.find((r: any) => r.sensorType === t)?.value;
+      const actuators = scadaActuators.map((actuator: any) => {
+        const getReading = (t: string) => actuator.asset?.telemetryReadings?.find((r: any) => r.sensorType === t)?.value;
 
         return {
-          id: `ACT-${asset.id}`,
-          name: `${type.replace(/_/g, ' ')} - ${asset.name}`,
-          facility: asset.name,
-          type,
-          status: state.status,
+          id: actuator.id.toString(),
+          name: actuator.name,
+          facility: actuator.asset?.name || 'Unknown',
+          type: actuator.type,
+          status: actuator.status,
           loadAmps: getReading('AMPERAGE') || 3420,
           voltageKV: getReading('VOLTAGE') || 400.2,
           temperatureC: getReading('TEMPERATURE') || 42.5,
@@ -57,17 +43,17 @@ router.get(
           fuelPercent: getReading('FUEL') || 98.5,
           rpm: getReading('RPM') || 1450,
           airFlowCFM: getReading('WIND_SPEED') ? getReading('WIND_SPEED') * 1000 : 85000,
-          outputKW: state.status !== 'STANDBY_READY' ? (getReading('VOLTAGE') || 400) * 2 : 0,
+          outputKW: actuator.status !== 'STANDBY_READY' ? (getReading('VOLTAGE') || 400) * 2 : 0,
           interlockVerified: true,
-          lastCommandAt: state.lastCommandAt,
+          lastCommandAt: actuator.lastCommandAt,
           timestamp: new Date().toISOString(),
         };
       });
 
-      // Compute live grid health from actual DB healthScores instead of random noise
       const trippedCount = actuators.filter((a: any) => a.status === 'ISOLATED_TRIPPED').length;
-      const avgHealth = assets.length > 0 
-        ? assets.reduce((sum: number, a: any) => sum + (a.healthScore || 100), 0) / assets.length
+      const validAssets = scadaActuators.map(a => a.asset).filter(Boolean);
+      const avgHealth = validAssets.length > 0 
+        ? validAssets.reduce((sum: number, a: any) => sum + (a.healthScore || 100), 0) / validAssets.length
         : 100;
         
       const gridHealthScore = +(avgHealth - trippedCount * 12.5).toFixed(1);
@@ -96,9 +82,18 @@ router.post(
       const tenantId = (req as any).tenantId || 0;
       const { actuatorId, action } = req.body as { actuatorId: string; action: string };
 
-      const key = `${tenantId}:${actuatorId}`;
-      if (!scadaState[key]) {
-        res.status(404).json({ success: false, message: `Actuator ${actuatorId} not found. Fetch grid-status first.` });
+      const actuatorIdNum = parseInt(actuatorId, 10);
+      if (isNaN(actuatorIdNum)) {
+        res.status(400).json({ success: false, message: `Invalid actuator ID format.` });
+        return;
+      }
+
+      const existing = await prisma.scadaActuator.findFirst({
+        where: { id: actuatorIdNum, tenantId }
+      });
+
+      if (!existing) {
+        res.status(404).json({ success: false, message: `Actuator ${actuatorId} not found.` });
         return;
       }
 
@@ -106,19 +101,21 @@ router.post(
         action === 'TRIP' ? 'ISOLATED_TRIPPED' :
         action === 'ENGAGE' ? 'ENGAGED' :
         action === 'ACTIVATE' ? 'ACTIVE_HIGH' :
-        action === 'STANDBY' ? 'STANDBY_READY' : scadaState[key].status;
+        action === 'STANDBY' ? 'STANDBY_READY' : existing.status;
 
-      scadaState[key].status = nextStatus;
-      scadaState[key].lastCommandAt = new Date().toISOString();
+      const updated = await prisma.scadaActuator.update({
+        where: { id: actuatorIdNum },
+        data: { status: nextStatus, lastCommandAt: new Date() }
+      });
 
       res.json({
         success: true,
         message: `SCADA command '${action}' executed on actuator ${actuatorId}`,
         data: {
-          actuatorId,
+          actuatorId: updated.id.toString(),
           action,
-          newStatus: nextStatus,
-          executedAt: scadaState[key].lastCommandAt,
+          newStatus: updated.status,
+          executedAt: updated.lastCommandAt,
           verificationHash: `HASH-SCADA-${Date.now().toString(36).toUpperCase()}`,
         },
       });

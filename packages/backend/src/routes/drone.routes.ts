@@ -4,7 +4,7 @@ import prisma from '../lib/prisma.js';
 
 const router = Router();
 
-// GET /api/v4/drones/fleet — Real-time fleet telemetry tied to real Inspection schedules
+// GET /api/v4/drones/fleet — Real-time fleet telemetry tied to real DB
 router.get(
   '/drones/fleet',
   authMiddleware,
@@ -12,61 +12,55 @@ router.get(
     try {
       const tenantId = (req as any).tenantId || 0;
 
-      // Map real DB Inspections to "Drone Missions"
-      const inspections = await prisma.inspection.findMany({
+      const drones = await prisma.drone.findMany({
         where: { tenantId },
-        take: 3,
-        orderBy: { scheduledDate: 'desc' },
         include: {
-          asset: true,
-          inspector: true,
-        },
+          missions: {
+            where: { status: 'EXECUTING' },
+            take: 1,
+            include: {
+              inspection: {
+                include: { asset: true }
+              }
+            }
+          }
+        }
       });
 
-      const droneModels = ['Matrice 300 RTK Industrial', 'Chasing M2 Pro Industrial ROV', 'Autel EVO II Dual 640T'];
-      const droneNames = ['AeroGuard Thermal-X4', 'HydroScan Sub-Marine ROV', 'SkyScout LiDAR Inspector'];
-
-      const liveFleet = inspections.map((insp: any, i: number) => {
-        const droneId = `DRONE-UAV-0${i + 1}`;
-        const isFlying = insp.status === 'IN_PROGRESS';
+      const liveFleet = drones.map((drone: any) => {
+        const activeMission = drone.missions[0];
+        const isFlying = drone.status === 'IN_FLIGHT_MISSION' && !!activeMission;
         
-        // Deterministic progression based on time and ID, NO Math.random()
-        const progress = isFlying ? ((Date.now() + insp.id) % 3600000) / 3600000 : 0; // 0 to 1 loop every hour
-        const batteryPercent = isFlying ? Math.max(5, 100 - Math.floor(progress * 100)) : 100;
-        
-        const baseLat = insp.asset?.latitude ? Number(insp.asset.latitude) : 35.6366;
-        const baseLng = insp.asset?.longitude ? Number(insp.asset.longitude) : 139.7631;
-
         return {
-          id: droneId,
-          name: droneNames[i % droneNames.length],
-          model: droneModels[i % droneModels.length],
-          status: isFlying ? 'IN_FLIGHT_MISSION' : 'CHARGING_DOCK',
-          assignedFacility: insp.asset?.name || 'Unknown Facility',
-          batteryPercent,
-          altitudeMeters: isFlying ? +(100 + Math.sin(Date.now() / 20000 + insp.id) * 10).toFixed(1) : 0,
-          speedKmh: isFlying ? +(25 + Math.cos(Date.now() / 15000 + insp.id) * 5).toFixed(1) : 0,
+          id: drone.id.toString(),
+          name: drone.name,
+          model: drone.model,
+          status: drone.status,
+          assignedFacility: activeMission?.inspection?.asset?.name || 'Unassigned',
+          batteryPercent: drone.batteryPercent,
+          altitudeMeters: isFlying ? Number(activeMission?.currentAltitude || 0) : 0,
+          speedKmh: isFlying ? Number(activeMission?.currentSpeed || 0) : 0,
           telemetrySignal: isFlying ? '98% (5G Private Grid)' : '100% (Wi-Fi 6 Dock)',
-          waypointsCompleted: Math.floor(progress * 20),
-          totalWaypoints: 20,
+          waypointsCompleted: activeMission?.waypointsCompleted || 0,
+          totalWaypoints: activeMission?.totalWaypoints || 20,
           activeCameraFeed: 'OPTICAL_4K_SONAR',
           currentPosition: { 
-            lat: isFlying ? +(baseLat + Math.sin(progress * Math.PI * 2) * 0.005).toFixed(6) : baseLat,
-            lng: isFlying ? +(baseLng + Math.cos(progress * Math.PI * 2) * 0.005).toFixed(6) : baseLng,
+            lat: Number(drone.currentLat || 0),
+            lng: Number(drone.currentLng || 0),
           },
-          inspectionId: insp.id
+          inspectionId: activeMission?.inspectionId
         };
       });
 
-      const activeLogs = inspections
-        .filter((i: any) => i.status === 'IN_PROGRESS')
-        .map((i: any, idx: number) => ({
-          id: `MISSION-LOG-${i.id}`,
-          droneId: `DRONE-UAV-0${idx + 1}`,
-          missionName: `Automated Inspection: ${i.asset?.name}`,
-          startTime: i.scheduledDate,
+      const activeLogs = drones
+        .flatMap(d => d.missions)
+        .map((m: any) => ({
+          id: `MISSION-LOG-${m.id}`,
+          droneId: m.droneId.toString(),
+          missionName: `Automated Inspection: ${m.inspection?.asset?.name || 'Manual'}`,
+          startTime: m.startTime || new Date(),
           anomalyAlertsFound: 0,
-          status: 'EXECUTING',
+          status: m.status,
         }));
 
       res.json({
@@ -92,29 +86,65 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const tenantId = (req as any).tenantId || 0;
-      const { droneId, missionType } = req.body as { droneId: string; missionType: string };
+      const { droneId } = req.body as { droneId: string };
 
-      // droneId is DRONE-UAV-0X, which we mapped from inspection array index.
-      // Better to find the first SCHEDULED inspection and start it.
-      const scheduled = await prisma.inspection.findFirst({
-        where: { tenantId, status: 'SCHEDULED' },
-        orderBy: { scheduledDate: 'asc' },
-      });
-
-      if (!scheduled) {
-        res.status(404).json({ success: false, message: 'No scheduled inspections available for dispatch.' });
+      const droneIdNum = parseInt(droneId, 10);
+      if (isNaN(droneIdNum)) {
+        res.status(400).json({ success: false, message: 'Invalid drone ID' });
         return;
       }
 
+      const drone = await prisma.drone.findFirst({
+        where: { id: droneIdNum, tenantId }
+      });
+
+      if (!drone) {
+        res.status(404).json({ success: false, message: `Drone ${droneId} not found or unavailable.` });
+        return;
+      }
+
+      const scheduled = await prisma.inspection.findFirst({
+        where: { tenantId, status: 'SCHEDULED' },
+        orderBy: { scheduledDate: 'asc' },
+        include: { asset: true }
+      });
+
+      if (!scheduled) {
+        res.status(400).json({ success: false, message: 'No scheduled inspections available for dispatch.' });
+        return;
+      }
+
+      // Start the mission
+      const mission = await prisma.droneMission.create({
+        data: {
+          tenantId,
+          droneId: drone.id,
+          inspectionId: scheduled.id,
+          status: 'EXECUTING',
+          startTime: new Date(),
+          currentAltitude: 50.5,
+          currentSpeed: 15.2
+        }
+      });
+
+      await prisma.drone.update({
+        where: { id: drone.id },
+        data: { status: 'IN_FLIGHT_MISSION' }
+      });
+
       await prisma.inspection.update({
         where: { id: scheduled.id },
-        data: { status: 'IN_PROGRESS' },
+        data: { status: 'IN_PROGRESS' }
       });
 
       res.json({
         success: true,
-        message: `Mission ${missionType} dispatched for asset ${scheduled.assetId}.`,
-        droneId,
+        message: `Drone ${drone.name} dispatched for ${scheduled.asset?.name}`,
+        data: {
+          droneId: drone.id.toString(),
+          missionId: mission.id,
+          targetAsset: scheduled.asset?.name
+        }
       });
     } catch (error) {
       next(error);

@@ -33,6 +33,7 @@ import bimRoutes from './routes/bim.routes.js';
 import droneRoutes from './routes/drone.routes.js';
 import complianceRoutes from './routes/compliance.routes.js';
 import mlRoutes from './routes/ml.routes.js';
+import copilotRoutes from './routes/copilot.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -96,6 +97,7 @@ export const createApp = (): Express => {
   app.use('/api/v4', bimRoutes);
   app.use('/api/v4', droneRoutes);
   app.use('/api/v4', complianceRoutes);
+  app.use('/api/copilot', copilotRoutes);
 
   // 404 handler
   app.use((_req: Request, res: Response) => {

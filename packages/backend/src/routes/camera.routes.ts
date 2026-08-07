@@ -432,29 +432,30 @@ router.get('/webrtc-offer/:pin', (req: Request, res: Response) => {
   const { pin } = req.params;
   const room = webrtcRooms.get(pin);
   if (!room || !room.offer) {
-    return res.status(404).json({ error: 'Room or offer not found' });
+    return res.status(200).json({ success: false, error: 'Room or offer not found' });
   }
-  return res.json(room);
+  return res.json({ success: true, ...room });
 });
 
 // POST /api/cameras/webrtc-answer - Post answer from Main PC to Remote PC
 router.post('/webrtc-answer', (req: Request, res: Response) => {
   const { pin, answer } = req.body;
   const room = webrtcRooms.get(pin);
-  if (!room) return res.status(404).json({ error: 'Room not found' });
+  if (!room) return res.status(200).json({ success: false, error: 'Room not found' });
+  if (!room) return res.json({ success: false, error: 'Room not found' });
   room.answer = answer;
   webrtcRooms.set(pin, room);
   return res.json({ success: true });
 });
 
-// GET /api/cameras/webrtc-answer/:pin - Fetch answer on Remote PC
+// GET /api/cameras/webrtc-answer/:pin - Remote PC polls for answer
 router.get('/webrtc-answer/:pin', (req: Request, res: Response) => {
   const { pin } = req.params;
   const room = webrtcRooms.get(pin);
   if (!room || !room.answer) {
-    return res.status(404).json({ error: 'Answer not ready' });
+    return res.json({ success: false, error: 'Answer not ready' });
   }
-  return res.json({ answer: room.answer });
+  return res.json({ success: true, answer: room.answer });
 });
 
 // GET /api/cameras
