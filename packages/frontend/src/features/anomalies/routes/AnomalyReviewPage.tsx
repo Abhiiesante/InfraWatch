@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAnomalies } from '../api/useAnomalies';
 import { Sparkles, Eye, Clock, Video, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { BoundingBoxOverlay } from '../components/BoundingBoxOverlay';
 
 export const AnomalyReviewPage = () => {
   const [page] = useState(1);
@@ -75,22 +76,12 @@ export const AnomalyReviewPage = () => {
 
             return (
               <div key={anomaly.id} className="glass-panel rounded-2xl overflow-hidden group flex flex-col">
-                <div className="relative aspect-video bg-[rgba(255,255,255,0.55)] overflow-hidden">
-                  <img
-                    src={anomaly.imageUrl || 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80'}
-                    alt="AI Detection Frame"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80';
-                    }}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                <div className="relative aspect-video rounded-t-2xl overflow-hidden bg-black/5 border-b border-slate-200">
+                  <BoundingBoxOverlay 
+                    imageUrl={anomaly.imageUrl} 
+                    detections={detections} 
+                    cameraName={anomaly.camera?.name || 'Camera Feed'}
                   />
-                  <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-slate-800 flex items-center gap-1.5 border border-white/40">
-                    <Video className="w-3.5 h-3.5 text-slate-800" />
-                    {anomaly.camera?.name || 'Camera Feed'}
-                  </div>
-                  <div className="absolute top-3 right-3 bg-slate-800/90 text-white backdrop-blur-md px-3 py-1 rounded-full text-xs font-extrabold ">
-                    {confDisplay}% Confidence
-                  </div>
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">

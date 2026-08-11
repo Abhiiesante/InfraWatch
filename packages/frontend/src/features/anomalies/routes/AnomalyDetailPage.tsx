@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAnomalyDetails, useConfirmAnomaly, useDismissAnomaly } from '../api/useAnomalies';
 import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Loader2, Camera, ShieldCheck, Video, Play, Pause } from 'lucide-react';
 import { format } from 'date-fns';
+import { BoundingBoxOverlay } from '../components/BoundingBoxOverlay';
 
 export const AnomalyDetailPage = () => {
   const { id } = useParams();
@@ -151,68 +152,67 @@ export const AnomalyDetailPage = () => {
             </div>
           </div>
 
-          <div className="relative rounded-xl overflow-hidden border border-purple-500/30 shadow-2xl bg-black aspect-video flex items-center justify-center">
-            <img
-              src={anomaly.imageUrl || '/images/bandra_sealink_inspection.png'}
-              alt="Anomaly detection frame"
-              onError={(e) => {
-                e.currentTarget.src = '/images/bandra_sealink_inspection.png';
-              }}
-              className="w-full h-full object-cover"
-            />
-
-            {/* Live RTSP Real-Time HUD Overlay */}
-            {streamMode === 'LIVE' && (
-              <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 bg-gradient-to-b from-black/50 via-transparent to-black/60">
-                {/* Top Live Bar */}
-                <div className="flex items-center justify-between text-xs font-mono font-bold text-emerald-400">
-                  <div className="flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full border border-emerald-500/40 backdrop-blur-md">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
-                    <span className="text-slate-800">REC ⏺ 30.0 FPS</span>
+          <div className="relative rounded-xl overflow-hidden shadow-2xl bg-black aspect-video flex items-center justify-center">
+            {streamMode === 'SNAPSHOT' ? (
+              <BoundingBoxOverlay 
+                imageUrl={anomaly.imageUrl} 
+                detections={detections}
+                cameraName={anomaly.camera?.name || 'Camera Feed'}
+              />
+            ) : (
+              <div className="relative w-full h-full">
+                <img
+                  src={anomaly.imageUrl || '/images/bandra_sealink_inspection.png'}
+                  alt="Anomaly detection frame"
+                  onError={(e) => {
+                    e.currentTarget.src = '/images/bandra_sealink_inspection.png';
+                  }}
+                  className="w-full h-full object-cover opacity-70"
+                />
+                
+                {/* Live RTSP Real-Time HUD Overlay */}
+                <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 bg-gradient-to-b from-black/50 via-transparent to-black/60">
+                  {/* Top Live Bar */}
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-emerald-400">
+                    <div className="flex items-center gap-2 bg-black/60 px-3 py-1 rounded-full border border-emerald-500/40 backdrop-blur-md">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                      <span className="text-slate-800 text-white">REC ⏺ 30.0 FPS</span>
+                    </div>
+                    <div className="bg-black/60 px-3 py-1 rounded-full text-slate-200 border border-white/20 backdrop-blur-md">
+                      {format(liveTimestamp, 'yyyy-MM-dd HH:mm:ss')}
+                    </div>
                   </div>
-                  <div className="bg-black/60 px-3 py-1 rounded-full text-slate-200 border border-white/20 backdrop-blur-md">
-                    {format(liveTimestamp, 'yyyy-MM-dd HH:mm:ss')}
+
+                  {/* Animated Moving Laser Scan Grid Line */}
+                  {isPlaying && (
+                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] animate-scan-laser pointer-events-none top-1/3" />
+                  )}
+
+                  {/* Real-time Tracking Bounding Box */}
+                  <div className="absolute inset-x-14 inset-y-10 border-2 border-cyan-400 bg-cyan-400/10 rounded-lg animate-pulse pointer-events-none flex items-start justify-start p-2">
+                    <span className="bg-cyan-500 text-white font-extrabold text-xs px-2.5 py-1 rounded shadow-lg flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                      LIVE TRACKING: {primaryDetection.label.replace(/_/g, ' ')} ({confDisplay}%)
+                    </span>
+                  </div>
+
+                  {/* Bottom Live Controls Bar */}
+                  <div className="flex items-center justify-between text-xs font-bold text-white pointer-events-auto">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className="p-2 bg-slate-900/80 hover:bg-slate-800 text-white rounded-lg border border-slate-700 transition-all flex items-center gap-1.5"
+                      >
+                        {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                        {isPlaying ? 'Pause Feed' : 'Resume Feed'}
+                      </button>
+                      <span className="text-[11px] text-slate-300">RTSP: {anomaly.camera?.rtspUrl || 'rtsp://cam.infrawatch.in/stream'}</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-1 rounded bg-indigo-950 text-indigo-300 border border-indigo-700">
+                      4K ULTRA HD
+                    </span>
                   </div>
                 </div>
-
-                {/* Animated Moving Laser Scan Grid Line */}
-                {isPlaying && (
-                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] animate-scan-laser pointer-events-none top-1/3" />
-                )}
-
-                {/* Real-time Tracking Bounding Box */}
-                <div className="absolute inset-x-14 inset-y-10 border-2 border-rose-500 bg-rose-500/10 rounded-lg animate-pulse pointer-events-none flex items-start justify-start p-2">
-                  <span className="bg-rose-600 text-slate-800 font-extrabold text-xs px-2.5 py-1 rounded shadow-lg flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[rgba(255,255,255,0.55)] animate-ping" />
-                    LIVE TRACKING: {primaryDetection.label} ({confDisplay}%)
-                  </span>
-                </div>
-
-                {/* Bottom Live Controls Bar */}
-                <div className="flex items-center justify-between text-xs font-bold text-slate-800 pointer-events-auto">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsPlaying(!isPlaying)}
-                      className="p-2 bg-slate-900/80 hover:bg-slate-800 text-slate-800 rounded-lg border border-slate-700 transition-all flex items-center gap-1.5"
-                    >
-                      {isPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
-                      {isPlaying ? 'Pause Feed' : 'Resume Feed'}
-                    </button>
-                    <span className="text-[11px] text-slate-300">RTSP: {anomaly.camera?.rtspUrl || 'rtsp://cam.infrawatch.in/stream'}</span>
-                  </div>
-                  <span className="text-[10px] px-2 py-1 rounded bg-indigo-950 text-indigo-300 border border-indigo-700">
-                    4K ULTRA HD
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Static Event Snapshot Overlay */}
-            {streamMode === 'SNAPSHOT' && (
-              <div className="absolute inset-x-12 inset-y-12 border-4 border-rose-500 bg-rose-500/10 rounded-lg animate-pulse pointer-events-none flex items-start justify-start p-2">
-                <span className="bg-rose-600 text-slate-800 font-extrabold text-xs px-2 py-1 rounded ">
-                  EVENT SNAPSHOT: {primaryDetection.label} ({confDisplay}%)
-                </span>
               </div>
             )}
           </div>
