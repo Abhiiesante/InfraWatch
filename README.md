@@ -1,11 +1,7 @@
-<<<<<<< HEAD
-# tbd
-=======
 # InfraWatch - Asset Monitoring Platform
 
 Production-grade multi-tenant SaaS platform for infrastructure asset monitoring, inspection scheduling, and incident management built with Node.js, React, PostgreSQL, and Redis.
 
-## Status: ✅ Production Ready
 
 Complete implementation with 27 REST endpoints, JWT authentication, multi-tenant database isolation, background workers, Docker deployment, and comprehensive testing.
 

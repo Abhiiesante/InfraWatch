@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma.js';
 
+
 export interface LiveSatelliteData {
   assetId: number;
   latitude: number;
@@ -12,6 +13,10 @@ export interface LiveSatelliteData {
   solarIrradianceWm2: number;
   weatherCondition: string;
   timestamp: string;
+}
+
+export interface LiveSeismicData {
+  magnitude: number;
 }
 
 export class SatelliteService {
@@ -77,6 +82,28 @@ export class SatelliteService {
         weatherCondition: 'Optimal Atmospheric Conditions',
         timestamp: new Date().toISOString(),
       };
+    }
+  }
+
+  async getLiveSeismicData(): Promise<LiveSeismicData> {
+    try {
+      const url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson';
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        return { magnitude: 0.0 };
+      }
+
+      const json = await response.json();
+      const features = json.features || [];
+      if (features.length > 0) {
+        return { magnitude: features[0].properties.mag || 0.0 };
+      }
+      
+      return { magnitude: 0.0 };
+    } catch (error) {
+      console.warn('[SatelliteService] Failed to fetch seismic data', error);
+      return { magnitude: 0.0 };
     }
   }
 }

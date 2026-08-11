@@ -80,6 +80,49 @@ export class DataIntelligenceService {
     }
   }
 
+  static async syncCVToDataPlatform(data: any) {
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${Date.now()}-${data.camera_id || 'unknown'}-${Math.random().toString(36).substring(7)}.json`;
+      
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+      
+      if (!host || !token) {
+        logger.warn('[DataIntelligence] Databricks credentials not configured, skipping CV sync.');
+        return { success: false };
+      }
+
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/cv_events/${date}`;
+      const fullPath = `${volumePath}/${filename}`;
+      
+      const payload = JSON.stringify({
+        ...data,
+        _ingestion_event_time: new Date().toISOString()
+      }) + '\n';
+
+      const response = await fetch(`${host}/api/2.0/fs/files${fullPath}?overwrite=true`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: payload
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Databricks API Error: ${response.status} ${err}`);
+      }
+      
+      logger.debug(`[DataIntelligence] CV Event landed in Databricks UC Volume: ${fullPath}`);
+      return { success: true };
+    } catch (error) {
+      logger.error(`[DataIntelligence] Failed to sync CV to data platform: ${error}`);
+      return { success: false };
+    }
+  }
+
   /**
    * Registers a prediction made by a model (served from Databricks or MLflow).
    */

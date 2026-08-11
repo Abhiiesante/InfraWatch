@@ -37,6 +37,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Assets', href: '/assets', icon: Building2 },
+    { name: 'Warehouse', href: '/warehouse', icon: Box },
     { 
       name: 'Operations', 
       icon: ShieldCheck, 
@@ -99,6 +100,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         ))}
 
         {/* Global wash to neutralize harsh background colors and ensure text legibility */}
+        {/* Global wash to neutralize harsh background colors and ensure text legibility */}
         <div
           className="absolute inset-0"
           style={{ background: 'rgba(238, 242, 243, 0.45)' }}
@@ -111,9 +113,9 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          className="pointer-events-auto flex items-center px-4 py-2 rounded-full gap-2 transition-all duration-300"
+          className="pointer-events-auto flex items-center px-6 py-3 rounded-full gap-3 transition-all duration-300"
           style={{
-            background: 'rgba(245, 247, 250, 0.65)',
+            background: 'rgba(245, 247, 250, 0.75)',
             backdropFilter: 'blur(40px) saturate(120%)',
             border: '1px solid rgba(255,255,255,0.8)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(255,255,255,0.5)',
@@ -121,8 +123,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
           }}
           onMouseLeave={() => setActiveDropdown(null)}
         >
-          <Link to="/dashboard" className="w-10 h-10 rounded-full flex items-center justify-center mr-4" style={{ background: '#7FB8B0', color: 'white' }}>
-            <Building2 className="w-5 h-5" />
+          <Link to="/dashboard" className="w-12 h-12 rounded-full flex items-center justify-center mr-4 shadow-sm" style={{ background: '#7FB8B0', color: 'white' }}>
+            <Building2 className="w-6 h-6" />
           </Link>
 
           {navItems.map((item) => {
@@ -134,8 +136,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors"
-                      style={isActive ? { background: 'rgba(255,255,255,0.8)', color: '#3A4046' } : { color: '#6B7280' }}
+                      className="px-5 py-2.5 rounded-full text-base font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                      style={isActive ? { background: 'rgba(255,255,255,0.9)', color: '#3A4046' } : { color: '#6B7280' }}
                     >
                       {item.name}
                     </motion.div>
@@ -143,10 +145,10 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
                 ) : (
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors"
-                    style={isActive ? { background: 'rgba(255,255,255,0.8)', color: '#3A4046' } : { color: '#6B7280' }}
+                    className="px-5 py-2.5 rounded-full text-base font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                    style={isActive ? { background: 'rgba(255,255,255,0.9)', color: '#3A4046' } : { color: '#6B7280' }}
                   >
-                    {item.name} <ChevronDown className="w-3 h-3" />
+                    {item.name} <ChevronDown className="w-4 h-4" />
                   </motion.div>
                 )}
 

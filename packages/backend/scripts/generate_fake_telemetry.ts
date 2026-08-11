@@ -2,8 +2,13 @@ import { telemetryService } from '@/services/telemetry.service.js';
 import { DataIntelligenceService } from '@/services/data-intelligence.service.js';
 import prisma from '@/lib/prisma.js';
 
+// DEPRECATED: Please do not use AI-generated/seeded data for telemetry.
+// The data platform now uses authentic real-world infrastructure data.
+// Developers should use `python packages/data-platform/scripts/fetch_public_telemetry.py` instead.
+
 async function run() {
-  console.log('Generating fake telemetry data...');
+  console.log('WARNING: This script is deprecated. Please use the Python fetch_public_telemetry.py script instead.');
+  console.log('Generating legacy seeded telemetry data...');
   
   // Wait for Prisma to connect
   await prisma.$connect();

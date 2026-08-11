@@ -47,6 +47,11 @@ model Organization {
   aiPredictions     AIPrediction[]
   aiEvents          AIEvent[]
   modelFeedbacks    ModelFeedback[]
+  
+  // Warehouse & Logistics Models (Phase 4)
+  facilityZones     FacilityZone[]
+  storageRacks      StorageRack[]
+  logisticsFleets   LogisticsFleet[]
 
   @@map("organizations")
 }
@@ -147,6 +152,7 @@ model Asset {
   bimModels         BimModel[]
   aiPredictions     AIPrediction[] @relation("AssetAIPredictions")
   aiEvents          AIEvent[] @relation("AssetAIEvents")
+  facilityZones     FacilityZone[]
 
   @@index([tenantId])
   @@index([assetTypeId])
@@ -815,3 +821,60 @@ model ModelFeedback {
   @@map("model_feedbacks")
 }
 
+// ============================================================================
+// WAREHOUSE & LOGISTICS OPERATIONS (Option B Vertical Expansion)
+// ============================================================================
+
+model FacilityZone {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int
+  assetId     Int      // The overall Warehouse building
+  name        String   @db.VarChar(255) // e.g. "Loading Dock A", "High-bay Storage"
+  zoneType    String   @db.VarChar(100) // e.g. "PEDESTRIAN", "FORKLIFT_ONLY", "MIXED"
+  polygonGeom Json?    @db.JsonB // Spatial bounds for geo-fencing
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  asset        Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  storageRacks StorageRack[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@map("facility_zones")
+}
+
+model StorageRack {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  facilityZoneId  Int
+  name            String   @db.VarChar(255) // e.g. "Rack A1"
+  capacityWeight  Float?
+  structuralHealth Float   @default(100.0) // 0-100 score
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  organization  Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  facilityZone  FacilityZone @relation(fields: [facilityZoneId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([facilityZoneId])
+  @@map("storage_racks")
+}
+
+model LogisticsFleet {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  name         String   @db.VarChar(255) // e.g. "Kiva-AMR-001"
+  vehicleType  String   @db.VarChar(100) // e.g. "AMR", "FORKLIFT", "PALLET_JACK"
+  status       String   @default("ACTIVE") @db.VarChar(50)
+  lastKnownLat Float?
+  lastKnownLng Float?
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("logistics_fleets")
+}

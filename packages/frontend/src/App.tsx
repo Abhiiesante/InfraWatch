@@ -29,6 +29,7 @@ import { SCADAControlPage } from '@/features/scada/routes/SCADAControlPage';
 import { BIMViewerPage } from '@/features/bim/routes/BIMViewerPage';
 import { DroneFleetPage } from '@/features/drones/routes/DroneFleetPage';
 import { CompliancePage } from '@/features/compliance/routes/CompliancePage';
+import { WarehouseDashboardPage } from '@/features/logistics/routes/WarehouseDashboardPage';
 
 import { WebRtcCameraTransmitterPage } from '@/features/cameras/routes/WebRtcCameraTransmitterPage';
 
@@ -65,6 +66,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AssetsListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/warehouse"
+            element={
+              <ProtectedRoute>
+                <WarehouseDashboardPage />
               </ProtectedRoute>
             }
           />

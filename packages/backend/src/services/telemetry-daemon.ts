@@ -44,20 +44,18 @@ export class TelemetryDaemon {
     for (const asset of assets) {
       try {
         const satData = await satelliteService.getLiveSatelliteData(asset.tenantId, asset.id);
+        const seismicData = await satelliteService.getLiveSeismicData();
+        
         const metrics = [
           { type: 'TEMPERATURE', val: satData.temperatureC, u: '°C' },
           { type: 'WIND_SPEED', val: satData.windSpeedKmH, u: 'km/h' },
           { type: 'HUMIDITY', val: satData.relativeHumidity, u: '%' },
           { type: 'PRESSURE', val: satData.surfacePressureHpa, u: 'hPa' },
           { type: 'SOLAR_IRRADIANCE', val: satData.solarIrradianceWm2, u: 'W/m2' },
-          { type: 'VOLTAGE', val: 400 + Math.sin(Date.now() / 5000 + asset.id) * 2, u: 'kV' },
-          { type: 'AMPERAGE', val: 3400 + Math.cos(Date.now() / 6000 + asset.id) * 50, u: 'A' },
-          { type: 'RPM', val: 1450 + Math.sin(Date.now() / 3000 + asset.id) * 10, u: 'rpm' }
+          { type: 'VIBRATION', val: seismicData.magnitude, u: 'Richter' }
         ];
 
-        // Instead of picking randomly, pick one metric per tick in a round-robin fashion per asset
-        // or just insert all of them. Inserting all might overwhelm the DB if we tick every 4s.
-        // Let's insert a deterministic subset based on the tickIndex.
+        // Pick one metric per tick in a round-robin fashion per asset
         const metricIndex = (this.tickIndex + asset.id) % metrics.length;
         const picked = metrics[metricIndex];
         
