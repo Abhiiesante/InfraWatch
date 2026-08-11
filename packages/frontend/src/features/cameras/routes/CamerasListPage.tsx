@@ -282,19 +282,19 @@ export const CamerasListPage = () => {
     const assetName = camera.asset?.name?.toLowerCase() || '';
 
     if (name.includes('tokyo') || assetName.includes('tokyo') || name.includes('shibuya') || assetName.includes('shibuya')) {
-      // Amazon Robotics Warehouse
+      // Amazon Robotics Warehouse (Working embed)
       return 'https://www.youtube.com/embed/8gy5tYVR-28?autoplay=1&mute=1&playsinline=1&loop=1&playlist=8gy5tYVR-28';
     }
     if (name.includes('venice') || assetName.includes('venice')) {
-      // Fulfillment Center Operations
-      return 'https://www.youtube.com/embed/dAXcMlJSbB8?autoplay=1&mute=1&playsinline=1&loop=1&playlist=dAXcMlJSbB8';
+      // Data Center / Server Room Ambience (10 Hours)
+      return 'https://www.youtube.com/embed/xzYqE7Z6XbM?autoplay=1&mute=1&playsinline=1&loop=1&playlist=xzYqE7Z6XbM';
     }
     if (name.includes('nyc') || assetName.includes('york') || name.includes('bosphorus') || assetName.includes('bosphorus')) {
-      // Factory Assembly Line / Machines
-      return 'https://www.youtube.com/embed/fW_5Rk863-8?autoplay=1&mute=1&playsinline=1&loop=1&playlist=fW_5Rk863-8';
+      // Google Data Center 360 Tour
+      return 'https://www.youtube.com/embed/zDAYZU4A3w0?autoplay=1&mute=1&playsinline=1&loop=1&playlist=zDAYZU4A3w0';
     }
-    // Default to Warehouse / Factory Floor Live operations
-    return 'https://www.youtube.com/embed/2eY_Cg5UxtA?autoplay=1&mute=1&playsinline=1&loop=1&playlist=2eY_Cg5UxtA';
+    // Default to Amazon Robotics Warehouse
+    return 'https://www.youtube.com/embed/8gy5tYVR-28?autoplay=1&mute=1&playsinline=1&loop=1&playlist=8gy5tYVR-28';
   };
 
   const getCameraPoster = (camera: any) => {
@@ -426,8 +426,15 @@ export const CamerasListPage = () => {
                     className="w-full h-full object-cover group-hover/feed:scale-105 transition-transform duration-500 border-0"
                   />
 
-                  {/* RTSP Real-Time Live Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70 p-3.5 flex flex-col justify-between pointer-events-none">
+                  {/* RTSP Real-Time Live Overlay - Roboflow Tracker in Grid */}
+                  {aiOverlay && (
+                    <div className="absolute inset-0 pointer-events-none z-10">
+                      <LiveRoboflowTracker isPlaying={true} />
+                    </div>
+                  )}
+
+                  {/* RTSP UI Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70 p-3.5 flex flex-col justify-between pointer-events-none z-20">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 bg-black/60 px-2.5 py-1 rounded-full border border-emerald-500/40 backdrop-blur-md">
                         <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
