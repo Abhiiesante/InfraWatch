@@ -6,6 +6,75 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { format } from 'date-fns';
 import Hls from 'hls.js';
 
+const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
+  const [boxes, setBoxes] = useState([
+    { id: 1, label: 'PERSON', conf: 98.4, x: 20, y: 30, w: 10, h: 25, dx: 0.1, dy: 0, color: '#06B6D4' },
+    { id: 2, label: 'FORKLIFT', conf: 94.2, x: 60, y: 50, w: 15, h: 20, dx: -0.15, dy: 0.05, color: '#EF4444' },
+    { id: 3, label: 'PALLET', conf: 89.1, x: 40, y: 70, w: 12, h: 10, dx: 0, dy: 0, color: '#F59E0B' },
+  ]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      setBoxes(prev => prev.map(box => {
+        let newX = box.x + box.dx;
+        let newY = box.y + box.dy;
+        let newDx = box.dx;
+        let newDy = box.dy;
+
+        // Bounce off bounds
+        if (newX < 5 || newX + box.w > 95) newDx = -box.dx;
+        if (newY < 5 || newY + box.h > 95) newDy = -box.dy;
+
+        // Random jitter to simulate tracking instability
+        newX += (Math.random() - 0.5) * 0.1;
+        newY += (Math.random() - 0.5) * 0.1;
+        
+        // Random confidence fluctuation
+        const newConf = Math.min(99.9, Math.max(85.0, box.conf + (Math.random() - 0.5) * 1.5));
+
+        return { ...box, x: newX, y: newY, dx: newDx, dy: newDy, conf: newConf };
+      }));
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  if (!isPlaying) return null;
+
+  return (
+    <div className="absolute inset-0 z-20 pointer-events-none">
+      {boxes.map(box => (
+        <div
+          key={box.id}
+          className="absolute border-[2px] transition-all duration-75"
+          style={{
+            left: `${box.x}%`,
+            top: `${box.y}%`,
+            width: `${box.w}%`,
+            height: `${box.h}%`,
+            borderColor: box.color,
+            boxShadow: `0 0 10px ${box.color}40`,
+          }}
+        >
+          {/* Label Tab */}
+          <div 
+            className="absolute -top-5 left-[-2px] text-white text-[9px] font-extrabold px-1.5 py-0.5 whitespace-nowrap tracking-wide"
+            style={{ backgroundColor: box.color }}
+          >
+            {box.label} {box.conf.toFixed(1)}%
+          </div>
+          
+          {/* Corner crosshairs */}
+          <div className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2" style={{ borderColor: box.color }} />
+          <div className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2" style={{ borderColor: box.color }} />
+          <div className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2" style={{ borderColor: box.color }} />
+          <div className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2" style={{ borderColor: box.color }} />
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // Dedicated HLS / Youtube / MP4 Video Player with Autoplay Mute Enforcement & Zero Blackout Fallbacks
 const HlsVideoPlayer = ({ src, className, style, poster }: { src: string; className?: string; style?: React.CSSProperties; poster?: string }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -213,19 +282,19 @@ export const CamerasListPage = () => {
     const assetName = camera.asset?.name?.toLowerCase() || '';
 
     if (name.includes('tokyo') || assetName.includes('tokyo') || name.includes('shibuya') || assetName.includes('shibuya')) {
-      // Shibuya Crossing Live Cam
-      return 'https://www.youtube.com/embed/HpdO5Kq3o7Y?autoplay=1&mute=1&playsinline=1&loop=1&playlist=HpdO5Kq3o7Y';
+      // Amazon Robotics Warehouse
+      return 'https://www.youtube.com/embed/8gy5tYVR-28?autoplay=1&mute=1&playsinline=1&loop=1&playlist=8gy5tYVR-28';
     }
     if (name.includes('venice') || assetName.includes('venice')) {
-      // Venice Canal Live Cam
-      return 'https://www.youtube.com/embed/ph1vpnYIxJk?autoplay=1&mute=1&playsinline=1&loop=1&playlist=ph1vpnYIxJk';
+      // Fulfillment Center Operations
+      return 'https://www.youtube.com/embed/dAXcMlJSbB8?autoplay=1&mute=1&playsinline=1&loop=1&playlist=dAXcMlJSbB8';
     }
     if (name.includes('nyc') || assetName.includes('york') || name.includes('bosphorus') || assetName.includes('bosphorus')) {
-      // Times Square Live Cam
-      return 'https://www.youtube.com/embed/mRe-514tGLs?autoplay=1&mute=1&playsinline=1&loop=1&playlist=mRe-514tGLs';
+      // Factory Assembly Line / Machines
+      return 'https://www.youtube.com/embed/fW_5Rk863-8?autoplay=1&mute=1&playsinline=1&loop=1&playlist=fW_5Rk863-8';
     }
-    // Default to Jackson Hole Town Square Live Traffic Cam
-    return 'https://www.youtube.com/embed/1EiC9bvVGnk?autoplay=1&mute=1&playsinline=1&loop=1&playlist=1EiC9bvVGnk';
+    // Default to Warehouse / Factory Floor Live operations
+    return 'https://www.youtube.com/embed/2eY_Cg5UxtA?autoplay=1&mute=1&playsinline=1&loop=1&playlist=2eY_Cg5UxtA';
   };
 
   const getCameraPoster = (camera: any) => {
@@ -443,7 +512,7 @@ export const CamerasListPage = () => {
       {/* IN-PAGE REAL-TIME SURVEILLANCE VIDEO MONITOR MODAL */}
       {activeStreamCamera && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
-          <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.60)] w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.60)] w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col h-auto">
             {/* Modal Header */}
             <div className="p-5 border-b border-[rgba(255,255,255,0.60)] flex items-center justify-between bg-transparent text-slate-800">
               <div className="flex items-center gap-3">
@@ -477,7 +546,7 @@ export const CamerasListPage = () => {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              className={`relative flex-1 bg-black flex items-center justify-center overflow-hidden min-h-[440px] select-none ${
+              className={`relative bg-black flex items-center justify-center overflow-hidden aspect-video select-none ${
                 isDragging ? 'cursor-grabbing' : 'cursor-grab'
               }`}
             >
@@ -519,19 +588,16 @@ export const CamerasListPage = () => {
               )}
 
               {/* LIVE REAL-TIME AI BOUNDING OVERLAY */}
-              {aiOverlay && isPlaying && (
-                <div
-                  style={{
-                    transform: `scale(${zoom}) translate(${panX * 5}px, ${panY * 5}px)`,
-                  }}
-                  className="absolute inset-x-28 inset-y-24 border-2 border-rose-500 bg-rose-500/10 rounded-xl animate-pulse pointer-events-none flex items-start justify-start p-3 transition-transform duration-200 ease-out z-20"
-                >
-                  <span className="bg-rose-600 text-slate-800 font-extrabold text-xs px-3 py-1 rounded-md shadow-lg flex items-center gap-2">
-                    <Radio className="w-3.5 h-3.5 animate-spin" />
-                    YOLOv8 REAL-TIME STREAM INFERENCE (98.4% CONF)
-                  </span>
-                </div>
-              )}
+              <div 
+                className="absolute w-full h-full pointer-events-none z-20"
+                style={{
+                  width: '160%',
+                  height: '140%',
+                  transform: `scale(${zoom}) translate(${panX}%, ${panY}%)`,
+                }}
+              >
+                {aiOverlay && <LiveRoboflowTracker isPlaying={isPlaying} />}
+              </div>
 
               {/* Top HUD Display */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-xs font-mono font-bold pointer-events-none z-30">
