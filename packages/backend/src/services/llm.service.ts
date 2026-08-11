@@ -21,6 +21,7 @@ interface LLMProvider {
  * Mock Provider for zero-cost, offline development.
  */
 class MockProvider implements LLMProvider {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async generateCompletion(prompt: string, _options?: GenerateOptions): Promise<string> {
     logger.debug('[LLM:Mock] Generating mock completion...');
     
@@ -41,6 +42,7 @@ class MockProvider implements LLMProvider {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async streamCompletion(_prompt: string, onChunk: (chunk: string) => void, _options?: GenerateOptions): Promise<void> {
     logger.debug('[LLM:Mock] Streaming mock completion...');
     const words = [
@@ -135,9 +137,13 @@ class GeminiProvider implements LLMProvider {
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
 
-    while (true) {
+    let doneReading = false;
+    while (!doneReading) {
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        doneReading = true;
+        break;
+      }
       
       buffer += decoder.decode(value, { stream: true });
       

@@ -37,13 +37,13 @@ export const DigitalTwinMapPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[rgba(255,255,255,0.55)] p-6 rounded-2xl border border-[rgba(255,255,255,0.80)] ">
         <div>
           <div className="flex items-center gap-2">
-            <Navigation className="w-7 h-7 text-indigo-600" />
-            <h1 className="text-2xl font-bold text-slate-900">GIS Digital Twin & Real Map Visualizer</h1>
+            <Navigation className="w-7 h-7 text-[#7FB8B0]" />
+            <h1 className="text-2xl font-bold text-[#3A4046]">GIS Digital Twin & Real Map Visualizer</h1>
           </div>
-          <p className="text-sm text-slate-600 mt-1">
+          <p className="text-sm text-slate-800/80 mt-1">
             Real-world OpenStreetMap interactive tiles displaying real facility nodes and live satellite telemetry.
           </p>
         </div>
@@ -51,18 +51,18 @@ export const DigitalTwinMapPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => refetch()}
-            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-all flex items-center gap-1.5 text-xs font-semibold"
+            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-[rgba(255,255,255,0.80)] transition-all flex items-center gap-1.5 text-xs font-semibold"
           >
             <RefreshCw className="w-4 h-4" /> Refresh GIS Feed
           </button>
 
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-[rgba(255,255,255,0.80)]">
             {(['STANDARD', 'DARK', 'SATELLITE'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setMapTile(mode)}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  mapTile === mode ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  mapTile === mode ? 'bg-[rgba(127,184,176,0.85)] text-slate-800 ' : 'text-slate-800/80 hover:text-[#3A4046]'
                 }`}
               >
                 {mode}
@@ -73,7 +73,7 @@ export const DigitalTwinMapPage: React.FC = () => {
       </div>
 
       {/* Interactive Map Visualizer Container */}
-      <div className="relative h-[650px] bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex">
+      <div className="relative h-[650px] bg-slate-100 rounded-2xl border border-[rgba(255,255,255,0.80)] overflow-hidden  flex">
         {/* Real Leaflet Map */}
         <div className="flex-1 h-full w-full z-0">
           <MapContainer
@@ -100,9 +100,9 @@ export const DigitalTwinMapPage: React.FC = () => {
                 >
                   <Popup>
                     <div className="p-2 space-y-1">
-                      <p className="font-bold text-slate-900 text-sm">{asset.name}</p>
-                      <p className="text-xs text-slate-600">{asset.address}</p>
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800">
+                      <p className="font-bold text-[#3A4046] text-sm">{asset.name}</p>
+                      <p className="text-xs text-slate-800/80">{asset.address}</p>
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-800/10 text-emerald-800">
                         Health: {asset.healthScore ?? 100}%
                       </span>
                     </div>
@@ -115,73 +115,73 @@ export const DigitalTwinMapPage: React.FC = () => {
 
         {/* Selected Asset Details Drawer */}
         {selectedAsset && (
-          <div className="w-80 bg-white border-l border-slate-200 p-6 flex flex-col justify-between z-20 space-y-4 shadow-lg">
+          <div className="w-80 bg-[rgba(255,255,255,0.55)] border-l border-[rgba(255,255,255,0.80)] p-6 flex flex-col justify-between z-20 space-y-4 shadow-lg">
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Facility GIS Details</span>
-                <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-900 font-bold">
+                <span className="text-xs font-bold text-slate-800/70 uppercase tracking-wider">Facility GIS Details</span>
+                <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-[#3A4046] font-bold">
                   ✕
                 </button>
               </div>
 
               <div className="mt-4 space-y-4">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">{selectedAsset.name}</h3>
-                  <p className="text-xs text-slate-600 mt-0.5">{selectedAsset.address}</p>
+                  <h3 className="text-lg font-extrabold text-[#3A4046]">{selectedAsset.name}</h3>
+                  <p className="text-xs text-slate-800/80 mt-0.5">{selectedAsset.address}</p>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-600">Health Index</span>
+                <div className="p-3 bg-transparent rounded-xl border border-[rgba(255,255,255,0.80)] flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-800/80">Health Index</span>
                   <span className="text-sm font-black text-emerald-600">{selectedAsset.healthScore ?? 100}%</span>
                 </div>
 
                 <div className="space-y-2 text-xs text-slate-700">
                   <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">GPS Latitude</span>
-                    <span className="font-bold text-slate-900">{selectedAsset.latitude}</span>
+                    <span className="text-slate-800/70 font-medium">GPS Latitude</span>
+                    <span className="font-bold text-[#3A4046]">{selectedAsset.latitude}</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">GPS Longitude</span>
-                    <span className="font-bold text-slate-900">{selectedAsset.longitude}</span>
+                    <span className="text-slate-800/70 font-medium">GPS Longitude</span>
+                    <span className="font-bold text-[#3A4046]">{selectedAsset.longitude}</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-slate-100">
-                    <span className="text-slate-500 font-medium">Asset Type</span>
-                    <span className="font-bold text-indigo-600">{selectedAsset.assetType?.name || 'Facility'}</span>
+                    <span className="text-slate-800/70 font-medium">Asset Type</span>
+                    <span className="font-bold text-[#7FB8B0]">{selectedAsset.assetType?.name || 'Facility'}</span>
                   </div>
                 </div>
 
                 {/* Real Live Satellite Data Section */}
                 <div className="pt-2 border-t border-slate-100 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <CloudSun className="w-4 h-4 text-indigo-600 animate-pulse" /> Real Satellite Telemetry
+                    <span className="text-xs font-bold text-[#7FB8B0] uppercase tracking-wider flex items-center gap-1.5">
+                      <CloudSun className="w-4 h-4 text-[#7FB8B0] animate-pulse" /> Real Satellite Telemetry
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/10 text-emerald-800 font-bold">
                       LIVE
                     </span>
                   </div>
 
                   {satelliteData ? (
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 text-xs">
+                    <div className="bg-transparent p-3 rounded-xl border border-[rgba(255,255,255,0.80)] space-y-2 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-slate-600 flex items-center gap-1"><Thermometer className="w-3.5 h-3.5 text-rose-600" /> Temperature:</span>
-                        <span className="font-bold text-slate-900">{satelliteData.temperatureC} °C</span>
+                        <span className="text-slate-800/80 flex items-center gap-1"><Thermometer className="w-3.5 h-3.5 text-rose-600" /> Temperature:</span>
+                        <span className="font-bold text-[#3A4046]">{satelliteData.temperatureC} °C</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-600 flex items-center gap-1"><Wind className="w-3.5 h-3.5 text-cyan-600" /> Wind Speed:</span>
-                        <span className="font-bold text-slate-900">{satelliteData.windSpeedKmH} km/h</span>
+                        <span className="text-slate-800/80 flex items-center gap-1"><Wind className="w-3.5 h-3.5 text-cyan-600" /> Wind Speed:</span>
+                        <span className="font-bold text-[#3A4046]">{satelliteData.windSpeedKmH} km/h</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-600 flex items-center gap-1"><Sun className="w-3.5 h-3.5 text-amber-600" /> Solar Irradiance:</span>
-                        <span className="font-bold text-slate-900">{satelliteData.solarIrradianceWm2} W/m²</span>
+                        <span className="text-slate-800/80 flex items-center gap-1"><Sun className="w-3.5 h-3.5 text-amber-600" /> Solar Irradiance:</span>
+                        <span className="font-bold text-[#3A4046]">{satelliteData.solarIrradianceWm2} W/m²</span>
                       </div>
-                      <div className="flex justify-between pt-1 border-t border-slate-200 text-[11px]">
-                        <span className="text-slate-600">Sky Condition:</span>
-                        <span className="font-extrabold text-indigo-700">{satelliteData.weatherCondition}</span>
+                      <div className="flex justify-between pt-1 border-t border-[rgba(255,255,255,0.80)] text-[11px]">
+                        <span className="text-slate-800/80">Sky Condition:</span>
+                        <span className="font-extrabold text-[#7FB8B0]">{satelliteData.weatherCondition}</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3 text-center text-slate-500 text-xs font-medium">Loading live satellite metrics...</div>
+                    <div className="p-3 text-center text-slate-800/70 text-xs font-medium">Loading live satellite metrics...</div>
                   )}
                 </div>
               </div>
@@ -189,7 +189,7 @@ export const DigitalTwinMapPage: React.FC = () => {
 
             <button
               onClick={() => (window.location.href = `/assets/${selectedAsset.id}`)}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all text-center"
+              className="w-full py-2.5 bg-[rgba(127,184,176,0.85)] hover:bg-indigo-700 text-slate-800 font-bold text-xs rounded-xl  transition-all text-center"
             >
               Open Full Facility View →
             </button>

@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AnimatePresence } from 'framer-motion';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
+import { LandingPage } from '@/features/landing/routes/LandingPage';
 import { LoginPage } from '@/features/auth/routes/LoginPage';
 import { RegisterPage } from '@/features/auth/routes/RegisterPage';
 import { DashboardPage } from '@/features/dashboard/routes/DashboardPage';
@@ -43,10 +45,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/cam-broadcast" element={<WebRtcCameraTransmitterPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+        <AnimatePresence mode="wait">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/cam-broadcast" element={<WebRtcCameraTransmitterPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
           
           <Route
             path="/dashboard"
@@ -233,8 +237,8 @@ function App() {
             }
           />
           
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+          </Routes>
+        </AnimatePresence>
       </BrowserRouter>
     </QueryClientProvider>
   );

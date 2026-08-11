@@ -1,58 +1,59 @@
 @import "tailwindcss";
 
-@variant dark (&:where(.dark, .dark *));
+/* ═══════════════════════════════════════════════════════════════
+   InfraWatch — Soft Glass Design System
+   Calm, muted, translucent frosted panels over real photography
+   ═══════════════════════════════════════════════════════════════ */
 
-@layer base {
-  :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 243 75% 59%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 243 75% 59%;
-  }
+/* ─── Design Tokens ─── */
+:root {
+  /* Palette */
+  --color-bg-start: #EEF2F3;
+  --color-bg-end: #E4ECF0;
+  --color-primary: #7FB8B0;
+  --color-primary-hover: #6DA9A0;
+  --color-text: #3A4046;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-  }
+  /* Status — muted, never neon */
+  --color-critical: #E08585;
+  --color-high: #E8B978;
+  --color-medium: #7FA8C9;
+  --color-good: #8FC0A0;
+
+  /* Glass surface - Professional Frosted Glass */
+  --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.35) 100%);
+  --glass-bg-heavy: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.50) 100%);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: 24px;
+  --glass-radius: 20px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --glass-shadow-lifted: 0 12px 40px rgba(0, 0, 0, 0.10);
 }
 
-body {
-  background-color: #f8fafc;
-  color: #0f172a;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-html.dark body {
-  background-color: #020617;
-  color: #f8fafc;
+/* ─── Base ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 html, body, #root {
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-/* Custom Sleek Scrollbar */
+body {
+  background: linear-gradient(170deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+  color: var(--color-text);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Scrollbar — muted teal ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -61,48 +62,291 @@ html, body, #root {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(127, 184, 176, 0.35);
   border-radius: 9999px;
 }
-html.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
 ::-webkit-scrollbar-thumb:hover {
-  background: #4f46e5;
+  background: rgba(127, 184, 176, 0.55);
 }
 
-/* Glass UI Component Variants */
-.glass {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-}
-html.dark .glass {
-  background-color: #0f172a;
-  border-color: #1e293b;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+/* ═══════════════════════════════════════════════════════════════
+   Glass Utility Classes
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Primary glass panel — content cards, sections */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Heavier glass — sidebar, modals */
+.glass-panel-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Glass card with hover lift */
 .glass-card {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.4s ease;
 }
-html.dark .glass-card {
-  background-color: #0f172a;
-  border-color: #1e293b;
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  background: var(--glass-bg-heavy);
 }
 
-.glass-input {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #0f172a;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+/* Glass sidebar — float over background */
+.glass-sidebar {
+  background: rgba(255, 255, 255, 0.60);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--glass-border);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
 }
-html.dark .glass-input {
-  background-color: #0f172a;
-  border-color: #334155;
-  color: #f8fafc;
+
+/* Glass input */
+.glass-input {
+  background: rgba(255, 255, 255, 0.50);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.60);
+  border-radius: 12px;
+  color: var(--color-text);
+  font-weight: 500;
+  padding: 10px 16px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.glass-input::placeholder {
+  color: var(--color-text-muted);
+}
+.glass-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(127, 184, 176, 0.15);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+/* ─── Buttons ─── */
+.glass-btn-primary {
+  background: rgba(127, 184, 176, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: white;
+  border: 1px solid rgba(127, 184, 176, 0.60);
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+.glass-btn-primary:hover {
+  background: rgba(127, 184, 176, 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(127, 184, 176, 0.25);
+}
+.glass-btn-primary:active {
+  transform: scale(0.97);
+}
+
+.glass-btn-secondary {
+  background: transparent;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--color-text);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+.glass-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.40);
+  transform: translateY(-1px);
+}
+.glass-btn-secondary:active {
+  transform: scale(0.97);
+}
+
+/* ─── Status Chips — glass pills with tinted glow ─── */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.50);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.status-chip--uniform {
+  background: rgba(30, 41, 59, 0.1);
+  color: #1e293b;
+  border-color: rgba(30, 41, 59, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Animations & Keyframes
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Ambient light sheen sweeping across glass */
+@keyframes glass-sheen {
+  0%   { transform: translateX(-100%) rotate(15deg); }
+  100% { transform: translateX(200%) rotate(15deg); }
+}
+.glass-sheen::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 100%
+  );
+  animation: glass-sheen 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Page entry — fade + slight scale */
+@keyframes fade-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-page-enter {
+  animation: fade-scale-in 0.35s ease-out both;
+}
+
+/* Stagger up — list/card items */
+@keyframes stagger-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-stagger-up {
+  animation: stagger-up 0.4s ease-out both;
+}
+
+/* Ken Burns — slow drift on hero images */
+@keyframes ken-burns {
+  0%   { transform: scale(1.05) translate(0%, 0%); }
+  25%  { transform: scale(1.08) translate(-1%, -0.5%); }
+  50%  { transform: scale(1.06) translate(0.5%, -1%); }
+  75%  { transform: scale(1.09) translate(-0.5%, 0.5%); }
+  100% { transform: scale(1.05) translate(0%, 0%); }
+}
+.animate-ken-burns {
+  animation: ken-burns 60s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Pulse glow — live status indicators */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 4px currentColor; }
+  50%      { opacity: 0.6; box-shadow: 0 0 12px currentColor; }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* Shimmer — loading skeletons matching glass sheen */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.30) 0%,
+    rgba(255, 255, 255, 0.50) 50%,
+    rgba(255, 255, 255, 0.30) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Cross-fade for background images */
+@keyframes cross-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-cross-fade {
+  animation: cross-fade-in 2s ease-in-out both;
+}
+
+/* Modal rise */
+@keyframes modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-modal-rise {
+  animation: modal-rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Tailwind v4 Overrides & Compatibility
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Override Tailwind's animate-in for our page transitions */
+.animate-in {
+  animation: fade-scale-in 0.35s ease-out both !important;
+}
+
+/* Ensure glass works with Tailwind utility classes */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }

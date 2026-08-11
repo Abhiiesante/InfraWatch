@@ -58,14 +58,14 @@ export const CompliancePage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-3xl font-black tracking-tight text-[#3A4046]">
               ESG Sustainability & Compliance Hub
             </h1>
-            <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5">
+            <span className="bg-slate-800/10 text-slate-800 border border-slate-800/20 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5" /> ISO 55001 AUDITED
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 mt-1.5 text-base font-medium">
+          <p className="text-slate-800/70 mt-1.5 text-base font-medium">
             Environmental Sustainability metrics, ISO Asset Compliance, and Regulatory Certifications.
           </p>
         </div>
@@ -73,7 +73,7 @@ export const CompliancePage = () => {
         <button
           disabled={downloading}
           onClick={handleExportPdf}
-          className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center gap-2"
+          className="bg-gradient-to-r from-emerald-600 to-teal-600 text-slate-800 px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center gap-2"
         >
           <Download className="w-4 h-4" />
           {downloading ? 'Exporting Audit PDF...' : 'Export ISO Audit Report (PDF)'}
@@ -82,49 +82,49 @@ export const CompliancePage = () => {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-[rgba(255,255,255,0.55)] p-6 rounded-3xl border border-[rgba(255,255,255,0.80)] ">
           <span className="text-xs font-mono text-slate-400 font-bold block">ISO 55000 ASSET AUDIT</span>
-          <span className="text-3xl font-extrabold text-slate-900 dark:text-white mt-2 block">{complianceData.overallComplianceScore}%</span>
-          <span className="text-xs font-bold text-emerald-500 mt-1 block">{complianceData.iso55000Rating}</span>
+          <span className="text-3xl font-extrabold text-[#3A4046] mt-2 block">{complianceData.overallComplianceScore}%</span>
+          <span className="text-xs font-bold text-slate-800 mt-1 block">{complianceData.iso55000Rating}</span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-[rgba(255,255,255,0.55)] p-6 rounded-3xl border border-[rgba(255,255,255,0.80)] ">
           <span className="text-xs font-mono text-slate-400 font-bold block flex items-center gap-1">
-            <Leaf className="w-3.5 h-3.5 text-emerald-500" /> CARBON OFFSET (METRIC TONS)
+            <Leaf className="w-3.5 h-3.5 text-slate-800" /> CARBON OFFSET (METRIC TONS)
           </span>
-          <span className="text-3xl font-extrabold text-emerald-500 mt-2 block">{complianceData.carbonOffsetTons} t</span>
+          <span className="text-3xl font-extrabold text-slate-800 mt-2 block">{complianceData.carbonOffsetTons} t</span>
           <span className="text-xs font-bold text-slate-400 mt-1 block">Net Negative Carbon Operations</span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm min-w-0">
+        <div className="bg-[rgba(255,255,255,0.55)] p-6 rounded-3xl border border-[rgba(255,255,255,0.80)]  min-w-0">
           <span className="text-xs font-mono text-slate-400 font-bold block">EPA ENVIRONMENTAL STATUS</span>
-          <span className="text-lg font-black text-cyan-600 dark:text-cyan-400 mt-2 block truncate" title={complianceData.epaAuditStatus}>
+          <span className="text-lg font-black text-cyan-600 mt-2 block truncate" title={complianceData.epaAuditStatus}>
             {complianceData.epaAuditStatus}
           </span>
           <span className="text-xs font-bold text-slate-400 mt-1 block">Zero Toxic Spills or Breaches</span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-[rgba(255,255,255,0.55)] p-6 rounded-3xl border border-[rgba(255,255,255,0.80)] ">
           <span className="text-xs font-mono text-slate-400 font-bold block">GREEN RENEWABLE POWER</span>
-          <span className="text-3xl font-extrabold text-indigo-500 mt-2 block">{complianceData.greenEnergyPercent}%</span>
+          <span className="text-3xl font-extrabold text-slate-800 mt-2 block">{complianceData.greenEnergyPercent}%</span>
           <span className="text-xs font-bold text-slate-400 mt-1 block">Solar & Hydro Grid Connected</span>
         </div>
       </div>
 
       {/* Regulatory Certifications List */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <h3 className="font-extrabold text-xl text-slate-900 dark:text-white flex items-center gap-2">
-          <Award className="w-5 h-5 text-amber-500" /> Active Regulatory Safety & Environmental Certifications
+      <div className="bg-[rgba(255,255,255,0.55)] p-6 rounded-3xl border border-[rgba(255,255,255,0.80)]  space-y-4">
+        <h3 className="font-extrabold text-xl text-[#3A4046] flex items-center gap-2">
+          <Award className="w-5 h-5 text-slate-800" /> Active Regulatory Safety & Environmental Certifications
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {complianceData.certifications.map((cert: any, idx: number) => (
-            <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div key={idx} className="p-4 rounded-2xl bg-transparent border border-slate-100 flex items-center justify-between">
               <div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">{cert.name}</h4>
+                <h4 className="font-bold text-sm text-[#3A4046]">{cert.name}</h4>
                 <span className="text-xs text-slate-400 font-mono">Valid Until: {cert.validUntil}</span>
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-slate-800/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" /> VALID
               </span>
             </div>

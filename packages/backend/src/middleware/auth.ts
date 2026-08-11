@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, JwtPayload } from '@/lib/jwt.js';
 import { UnauthorizedError, ForbiddenError } from '@/lib/errors.js';
 import prisma from '@/lib/prisma.js';
+import { requestContext } from '@/lib/context.js';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -27,7 +28,7 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
     const payload = verifyAccessToken(token);
     req.auth = payload;
 
-    let tenantId = Number(payload.tenantId);
+    const tenantId = Number(payload.tenantId);
     const userId = Number(payload.userId);
 
     // Validate that the tenantId exists in database
@@ -37,17 +38,17 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
     });
 
     if (!org) {
-      const activeOrg = await prisma.organization.findFirst({ select: { id: true } });
-      if (activeOrg) {
-        tenantId = activeOrg.id;
-      }
+      return next(new ForbiddenError('Invalid tenant or tenant does not exist'));
     }
 
     req.tenantId = tenantId;
     req.userId = userId;
     Object.defineProperty(req, 'userId', { value: userId, writable: true, configurable: true, enumerable: true });
     Object.defineProperty(req, 'tenantId', { value: tenantId, writable: true, configurable: true, enumerable: true });
-    next();
+
+    requestContext.run({ tenantId, userId }, () => {
+      next();
+    });
   } catch (error) {
     next(error);
   }

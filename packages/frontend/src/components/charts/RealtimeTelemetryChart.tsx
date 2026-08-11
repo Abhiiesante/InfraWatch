@@ -62,41 +62,46 @@ export function RealtimeTelemetryChart({
   }, [readings, sensorType, initialValue, min, max, intervalMs]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="glass-panel p-5 space-y-4">
+      <div className="flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4" style={{ color }} />
-          <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{title}</h4>
+          <h4 className="font-extrabold text-sm" style={{ color: '#3A4046' }}>{title}</h4>
         </div>
         <div className="flex items-center gap-3 font-mono">
           <span className="text-xs font-black" style={{ color }}>
             {currentVal} {unit}
           </span>
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 font-bold"
+            style={{ color: '#5E9A70', background: 'rgba(143,192,160,0.12)', border: '1px solid rgba(143,192,160,0.25)' }}
+          >
             <RefreshCw className="w-2.5 h-2.5 animate-spin" /> LIVE
           </span>
         </div>
       </div>
 
-      <div className="h-44 w-full">
+      <div className="h-44 w-full relative z-10">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id={`grad-${title.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.4} />
+                <stop offset="5%" stopColor={color} stopOpacity={0.3} />
                 <stop offset="95%" stopColor={color} stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
-            <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} />
-            <YAxis stroke="#64748b" fontSize={10} domain={[min, max]} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#C8D0D8" opacity={0.3} />
+            <XAxis dataKey="time" stroke="#9CA3AF" fontSize={10} tickLine={false} />
+            <YAxis stroke="#9CA3AF" fontSize={10} domain={[min, max]} tickLine={false} />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#0f172a',
-                borderColor: '#1e293b',
+                backgroundColor: 'rgba(255,255,255,0.85)',
+                backdropFilter: 'blur(12px)',
+                borderColor: 'rgba(255,255,255,0.80)',
                 borderRadius: '12px',
                 fontSize: '11px',
-                color: '#fff',
+                color: '#3A4046',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               }}
             />
             <Area
@@ -106,7 +111,8 @@ export function RealtimeTelemetryChart({
               strokeWidth={2}
               fillOpacity={1}
               fill={`url(#grad-${title.replace(/\s+/g, '')})`}
-              isAnimationActive={false}
+              isAnimationActive={true}
+              animationDuration={600}
             />
           </AreaChart>
         </ResponsiveContainer>

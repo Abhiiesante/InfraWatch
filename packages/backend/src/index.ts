@@ -8,7 +8,7 @@ const app = createApp();
 
 const server = app.listen(env.PORT, () => {
   logger.info(`🚀 Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
-  telemetryDaemon.start();
+  // telemetryDaemon.start(); // Disabled per user request (moving to real-time managed sources)
 });
 
 // Graceful shutdown

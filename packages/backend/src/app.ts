@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
-import { tenantContext } from './middleware/tenant-context.js';
 import rateLimit from 'express-rate-limit';
 import { TrainingService } from './services/training.service.js';
 
@@ -63,7 +62,6 @@ export const createApp = (): Express => {
   app.use(requestLogger);
 
   // Global middleware
-  app.use(tenantContext);
 
   // Health check
   app.get('/health', (_req: Request, res: Response) => {

@@ -23,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "framer-motion": "^13.0.0",
     "hls.js": "^1.6.16",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.25.0",

@@ -130,8 +130,8 @@ export const WebRtcCameraTransmitterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col items-center justify-center font-mono">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6 text-center">
+    <div className="min-h-screen bg-transparent text-slate-800 p-6 flex flex-col items-center justify-center font-mono">
+      <div className="max-w-md w-full bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.60)] rounded-3xl p-8 shadow-2xl space-y-6 text-center">
         <div className="flex items-center justify-center gap-2">
           <div className="p-3 bg-cyan-950/80 rounded-2xl border border-cyan-800 text-cyan-400">
             <Camera className="w-8 h-8 animate-pulse" />
@@ -139,14 +139,14 @@ export const WebRtcCameraTransmitterPage = () => {
         </div>
 
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Browser Camera Broadcaster</h1>
+          <h1 className="text-2xl font-extrabold text-slate-800">Browser Camera Broadcaster</h1>
           <p className="text-xs text-cyan-400 mt-1 font-bold">
             ⚡ Camera Live & Ready (Zero Clicks Needed!)
           </p>
         </div>
 
         {/* Video Preview */}
-        <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-inner">
+        <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-[rgba(255,255,255,0.60)] shadow-inner">
           <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
         </div>
 
@@ -159,7 +159,7 @@ export const WebRtcCameraTransmitterPage = () => {
             <span className="text-4xl font-black text-cyan-300 tracking-widest">{pin}</span>
             <button
               onClick={copyPin}
-              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all shadow-md"
+              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all "
               title="Copy Code"
             >
               {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
@@ -187,11 +187,11 @@ export const WebRtcCameraTransmitterPage = () => {
               <span>{errorMessage}</span>
             </div>
 
-            <div className="p-4 bg-slate-950 rounded-2xl border border-cyan-800/80 space-y-2 text-[11px] text-slate-300">
+            <div className="p-4 bg-transparent rounded-2xl border border-cyan-800/80 space-y-2 text-[11px] text-slate-300">
               <p className="font-bold text-cyan-400">💡 1-Click Fix to Allow Camera on Local Wi-Fi HTTP:</p>
               <ol className="list-decimal list-inside space-y-1 text-slate-300">
-                <li>Copy this URL into a new tab: <code className="bg-slate-900 px-2 py-0.5 rounded text-cyan-300 select-all font-mono">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></li>
-                <li>Add <code className="bg-slate-900 px-2 py-0.5 rounded text-cyan-300 select-all font-mono">http://{hostIp}:5173</code> into the text box.</li>
+                <li>Copy this URL into a new tab: <code className="bg-[rgba(255,255,255,0.55)] px-2 py-0.5 rounded text-cyan-300 select-all font-mono">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code></li>
+                <li>Add <code className="bg-[rgba(255,255,255,0.55)] px-2 py-0.5 rounded text-cyan-300 select-all font-mono">http://{hostIp}:5173</code> into the text box.</li>
                 <li>Change dropdown to <strong className="text-emerald-400">Enabled</strong> & click <strong className="text-cyan-400">Relaunch</strong>.</li>
               </ol>
             </div>

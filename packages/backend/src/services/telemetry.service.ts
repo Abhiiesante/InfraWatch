@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma.js';
 import { notificationService } from './notification.service.js';
+import { DataIntelligenceService } from './data-intelligence.service.js';
 
 export class TelemetryService {
   async ingestReading(
@@ -52,6 +53,20 @@ export class TelemetryService {
         unit: data.unit,
         isAnomaly,
       },
+    });
+
+    // Fire-and-forget sync to the analytical data platform
+    DataIntelligenceService.syncTelemetryToDataPlatform({
+      tenantId,
+      assetId: data.assetId,
+      sensorType: data.sensorType,
+      value: data.value,
+      unit: data.unit,
+      isAnomaly,
+      timestamp: reading.timestamp
+    }).catch(err => {
+      // Log but don't fail the operational request
+      console.error('Failed to sync telemetry to data platform', err);
     });
 
     return reading;

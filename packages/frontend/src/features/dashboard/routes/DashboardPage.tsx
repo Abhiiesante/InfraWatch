@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { organizationApi, assetApi, incidentApi, apiClient } from '@/lib/api';
-import { Sparkles, Activity, ArrowRight, ShieldCheck, Building2, AlertTriangle, Users, CloudSun, Wind, Droplets, Gauge, Cpu } from 'lucide-react';
+import { ShieldCheck, Building2, AlertTriangle, CloudSun, Wind, Droplets, Gauge, Cpu, Video, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { RealtimeTelemetryChart } from '@/components/charts/RealtimeTelemetryChart';
+import { useCountUp } from '@/lib/useCountUp';
+import { INFRA_IMAGES } from '@/lib/infraImages';
+import { motion } from 'framer-motion';
+
+function CountUpMetric({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const animated = useCountUp(value, 800, true);
+  return <>{animated}{suffix}</>;
+}
+
+function getSeverityChipClass(severity: string) {
+  return 'status-chip status-chip--uniform';
+}
 
 export function DashboardPage() {
   const { user, organization } = useAuthStore();
@@ -52,285 +64,216 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6 w-full animate-in fade-in pb-12">
-      {/* Header Banner */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/20 rounded-full border border-indigo-200 dark:border-indigo-500/40 uppercase tracking-wider">
-                Executive Command Center
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Database Connected
-              </span>
-            </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Welcome back, <span className="text-indigo-600 dark:text-indigo-400">{user?.name}</span> 👋
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-              Organization: <strong className="text-slate-900 dark:text-white">{stats?.organizationName || organization?.name || 'InfraWatch National Grid India'}</strong> • Role: <strong className="text-indigo-600 dark:text-indigo-400">{user?.role}</strong>
-            </p>
+    <div className="w-full pb-12 pt-4">
+      {/* ─── BENTO BOX GRID ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[minmax(180px,_auto)]">
+        
+        {/* Header Block (Spans 2 cols, 1 row) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="col-span-1 md:col-span-2 lg:col-span-2 row-span-1 glass-panel p-6 flex flex-col justify-center relative overflow-hidden"
+        >
+          <div className="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-slate-800">
+            <Building2 className="w-48 h-48" />
           </div>
-
-          <div className="flex items-center gap-3">
-            {healthScore !== null && (
-              <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shadow-sm">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">System Health Score</p>
-                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{healthScore}%</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Registered Assets</span>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <Building2 className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white">{stats?.totalAssets ?? assets.length}</p>
-          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-1">Active in Database</p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Incidents</span>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/20 border border-rose-100 dark:border-rose-500/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-rose-600 dark:text-rose-400">{stats?.totalIncidents ?? incidents.length}</p>
-          <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold mt-1">Logged issues</p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Users</span>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/20 border border-purple-100 dark:border-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-purple-600 dark:text-purple-400">{stats?.totalUsers ?? 1}</p>
-          <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mt-1">Tenant members</p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Organization Plan</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-100 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Sparkles className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{organization?.plan || 'Enterprise'}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Active subscription</p>
-        </div>
-      </div>
-
-      {/* Real-Time Live Open-Meteo Satellite Environment Widget */}
-      {satelliteData?.satelliteData && (
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-3">
-              <CloudSun className="w-6 h-6 text-cyan-400" />
-              <div>
-                <h3 className="font-extrabold text-base text-white">Live Open-Meteo Satellite Environmental Feed</h3>
-                <p className="text-xs text-slate-400">
-                  {satelliteData.facility} (Lat: {satelliteData.coordinates.lat}, Lng: {satelliteData.coordinates.lng})
-                </p>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 w-fit">
-              SATELLITE SYNC OK
+          <div className="flex items-center gap-3 mb-2">
+            <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider bg-slate-800/10 border border-slate-800/20 text-slate-800">
+              Command Center
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-800">
+              <span className="w-2 h-2 rounded-full animate-pulse-glow bg-slate-800"></span> Connected
             </span>
           </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">
+            Welcome, <span>{user?.name}</span>
+          </h1>
+          <p className="text-sm mt-1 text-slate-800/70 font-medium">
+            {stats?.organizationName || organization?.name || 'Enterprise View'}
+          </p>
+        </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-            <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
-              <Gauge className="w-8 h-8 text-amber-400 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Temperature</p>
-                <p className="text-lg font-black text-white">{satelliteData.satelliteData.temperatureC}°C</p>
-              </div>
-            </div>
-            <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
-              <Wind className="w-8 h-8 text-cyan-400 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Wind Speed</p>
-                <p className="text-lg font-black text-white">{satelliteData.satelliteData.windSpeedKmH} km/h</p>
-              </div>
-            </div>
-            <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
-              <Droplets className="w-8 h-8 text-blue-400 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Humidity</p>
-                <p className="text-lg font-black text-white">{satelliteData.satelliteData.relativeHumidity}%</p>
-              </div>
-            </div>
-            <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
-              <Cpu className="w-8 h-8 text-purple-400 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-slate-400 font-medium">Pressure</p>
-                <p className="text-lg font-black text-white">{satelliteData.satelliteData.surfacePressureHpa} hPa</p>
-              </div>
-            </div>
+        {/* Health Score (Spans 1 col, 1 row) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="col-span-1 glass-panel p-6 flex flex-col items-center justify-center text-center"
+        >
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm mb-3 bg-slate-800/10 border border-slate-800/20 text-slate-800">
+            <ShieldCheck className="w-6 h-6" />
           </div>
-        </div>
-      )}
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-800/70">System Health</p>
+          <p className="text-4xl font-black mt-1 text-slate-800">
+            {healthScore !== null ? <CountUpMetric value={healthScore} suffix="%" /> : '--%'}
+          </p>
+        </motion.div>
 
-      {/* Live Recharts IoT Telemetry Stream Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <RealtimeTelemetryChart
-          title="Grid Master Vibration Stream"
-          unit="mm/s"
-          color="#06b6d4"
-          initialValue={2.14}
-          min={1.0}
-          max={5.0}
-        />
-        <RealtimeTelemetryChart
-          title="Main Transformer Thermal Stream"
-          unit="°C"
-          color="#f97316"
-          initialValue={42.5}
-          min={20.0}
-          max={80.0}
-        />
-      </div>
-
-      {/* Feature Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-3 py-1 text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-500/20 rounded-full border border-purple-200 dark:border-purple-500/40 uppercase tracking-wider">
-                AI COMPUTER VISION & PROPHET ENGINE
+        {/* AI Vision Video Card (Spans 1 col, 2 rows) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 glass-panel relative overflow-hidden group cursor-pointer"
+          onClick={() => window.location.href = '/anomalies'}
+        >
+          {/* Working CCTV Panning Video Animation */}
+          <style>{`
+            @keyframes pan-cctv {
+              0% { background-position: 0% 50%; transform: scale(1.1); }
+              50% { background-position: 100% 50%; transform: scale(1.1); }
+              100% { background-position: 0% 50%; transform: scale(1.1); }
+            }
+          `}</style>
+          <div 
+            className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
+            style={{ 
+              backgroundImage: `url(${INFRA_IMAGES.bridge[0]})`, 
+              backgroundSize: '150% auto', 
+              animation: 'pan-cctv 20s ease-in-out infinite',
+              filter: 'grayscale(100%) contrast(1.2) brightness(0.9)'
+            }}
+          />
+          {/* Scanner Line Overlay */}
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-40 mix-blend-overlay pointer-events-none" />
+          
+          <div className="absolute inset-0 p-6 flex flex-col justify-between pointer-events-none z-10">
+            <div className="flex justify-between items-start">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm bg-white/80 border border-white text-slate-800 backdrop-blur-md">
+                <Video className="w-5 h-5" />
+              </div>
+              <span className="px-2 py-1 text-[9px] font-bold uppercase rounded bg-slate-800 text-white flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                LIVE CCTV
               </span>
-              <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">AI Hazard Detection & Predictive Health</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              Real-time computer vision anomaly flags, surface corrosion detection, and 14-day failure risk forecasting.
-            </p>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-1 text-white drop-shadow-md">Live Feed</p>
+              <h3 className="text-xl font-extrabold leading-tight text-white drop-shadow-md">Computer Vision<br/>Anomaly Detection</h3>
+            </div>
           </div>
-          <div className="flex gap-3 pt-2 flex-wrap">
-            <Link to="/anomalies" className="px-4 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition-all shadow-sm flex items-center gap-2">
-              Review CV Queue <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link to="/predictions" className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-2">
-              Predictive Engine <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+        {/* KPI: Assets (Spans 1 col, 1 row) */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
+          className="col-span-1 glass-card p-6 flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <Building2 className="w-5 h-5 text-slate-800" />
+            <span className="text-[10px] font-bold uppercase text-slate-800/70">Assets</span>
+          </div>
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-3 py-1 text-xs font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/20 rounded-full border border-cyan-200 dark:border-cyan-500/40 uppercase tracking-wider">
-                REAL-TIME IoT TELEMETRY & GIS MAP
-              </span>
-              <Activity className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+            <p className="text-4xl font-black text-slate-800"><CountUpMetric value={stats?.totalAssets ?? assets.length} /></p>
+            <p className="text-xs font-semibold mt-1 text-slate-800/70">Active in system</p>
+          </div>
+        </motion.div>
+
+        {/* KPI: Incidents (Spans 1 col, 1 row) */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}
+          className="col-span-1 glass-card p-6 flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <AlertTriangle className="w-5 h-5 text-slate-800" />
+            <span className="text-[10px] font-bold uppercase text-slate-800/70">Incidents</span>
+          </div>
+          <div>
+            <p className="text-4xl font-black text-slate-800"><CountUpMetric value={stats?.totalIncidents ?? incidents.length} /></p>
+            <p className="text-xs font-semibold mt-1 text-slate-800/70">Logged issues</p>
+          </div>
+        </motion.div>
+
+        {/* KPI: Uptime (Spans 1 col, 1 row) - Fills the gap in the grid */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.55 }}
+          className="col-span-1 glass-card p-6 flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between">
+            <Activity className="w-5 h-5 text-slate-800" />
+            <span className="text-[10px] font-bold uppercase text-slate-800/70">Uptime</span>
+          </div>
+          <div>
+            <p className="text-4xl font-black text-slate-800"><CountUpMetric value={99} /><span className="text-2xl">.9%</span></p>
+            <p className="text-xs font-semibold mt-1 text-slate-800/70">System Availability</p>
+          </div>
+        </motion.div>
+
+        {/* Chart: Vibration Stream (Spans 2 cols, 1 row) */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
+          className="col-span-1 md:col-span-2 lg:col-span-2 row-span-1"
+        >
+          <RealtimeTelemetryChart title="Grid Master Vibration Stream" unit="mm/s" color="#1E293B" initialValue={2.14} min={1.0} max={5.0} />
+        </motion.div>
+
+        {/* Chart: Thermal Stream (Spans 2 cols, 1 row) */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
+          className="col-span-1 md:col-span-2 lg:col-span-2 row-span-1"
+        >
+          <RealtimeTelemetryChart title="Main Transformer Thermal Stream" unit="°C" color="#1E293B" initialValue={42.5} min={20.0} max={80.0} />
+        </motion.div>
+
+        {/* Satellite Data (Spans 2 cols, 1 row) */}
+        {satelliteData?.satelliteData && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
+            className="col-span-1 md:col-span-3 lg:col-span-2 row-span-1 glass-panel p-6 flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between mb-4 relative z-10 border-b border-black/5 pb-3">
+              <div className="flex items-center gap-2 text-slate-800">
+                <CloudSun className="w-5 h-5" />
+                <h3 className="font-extrabold text-sm">Live Environmental Satellite</h3>
+              </div>
+              <span className="text-[9px] font-bold uppercase text-slate-800/70">{satelliteData.facility}</span>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">GIS Digital Twin & Work Orders</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              Live time-series IoT sensor streams, spatial asset mapping with camera FOV cones, and SLA digital work orders.
-            </p>
-          </div>
-          <div className="flex gap-3 pt-2 flex-wrap">
-            <Link to="/telemetry" className="px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white transition-all shadow-sm flex items-center gap-2">
-              IoT Telemetry Stream <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link to="/map" className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-2">
-              GIS Digital Twin Map <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Assets & Incidents Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 space-y-4 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Infrastructure Nodes
-            </h3>
-            <Link to="/assets" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-bold">
-              View All Assets →
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">Loading assets...</div>
-          ) : assets.length > 0 ? (
-            <div className="space-y-3">
-              {assets.map((asset) => (
-                <Link
-                  key={asset.id}
-                  to={`/assets/${asset.id}`}
-                  className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all group"
-                >
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm">{asset.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{asset.assetType?.name || 'Infrastructure'}</p>
-                  </div>
-                  <span className="px-3 py-1 text-xs font-extrabold rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
-                    {asset.status}
-                  </span>
-                </Link>
+            <div className="grid grid-cols-4 gap-2 relative z-10 flex-1">
+              {[
+                { icon: Gauge, v: `${satelliteData.satelliteData.temperatureC}°` },
+                { icon: Wind, v: `${satelliteData.satelliteData.windSpeedKmH}` },
+                { icon: Droplets, v: `${satelliteData.satelliteData.relativeHumidity}%` },
+                { icon: Cpu, v: `${satelliteData.satelliteData.surfacePressureHpa}` },
+              ].map((m, i) => (
+                <div key={i} className="flex flex-col items-center justify-center bg-black/5 rounded-xl p-2 border border-black/5 text-slate-800">
+                  <m.icon className="w-4 h-4 mb-1" />
+                  <span className="font-bold text-sm">{m.v}</span>
+                </div>
               ))}
             </div>
-          ) : (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-semibold">No assets found in database</div>
-          )}
-        </div>
+          </motion.div>
+        )}
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 space-y-4 border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> Operational Incidents
+        {/* Recent Incidents List (Spans 2 cols, 2 rows) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}
+          className="col-span-1 md:col-span-3 lg:col-span-2 row-span-2 glass-panel p-6 flex flex-col"
+        >
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-black/5">
+            <h3 className="font-bold text-sm flex items-center gap-2 text-slate-800">
+              <span className="w-2 h-2 rounded-full animate-pulse-glow bg-slate-800" /> 
+              Recent Incidents
             </h3>
-            <Link to="/incidents" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-bold">
-              View All Incidents →
-            </Link>
+            <Link to="/incidents" className="text-xs font-bold hover:underline text-slate-800">View All</Link>
           </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-medium">Loading incidents...</div>
-          ) : incidents.length > 0 ? (
-            <div className="space-y-3">
-              {incidents.map((incident) => (
+          
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+            {loading ? (
+              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton-shimmer h-14 rounded-xl" />)}</div>
+            ) : incidents.length > 0 ? (
+              incidents.map((incident) => (
                 <Link
-                  key={incident.id}
-                  to={`/incidents/${incident.id}`}
-                  className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all group"
+                  key={incident.id} to={`/incidents/${incident.id}`}
+                  className="flex items-center justify-between p-3 rounded-xl transition-all hover:bg-black/5 border border-transparent hover:border-black/5 bg-transparent"
                 >
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm">{incident.title}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{incident.status}</p>
+                  <div className="truncate pr-4">
+                    <p className="font-bold text-sm truncate text-slate-800">{incident.title}</p>
+                    <p className="text-[10px] text-slate-800/70 font-medium">{incident.status}</p>
                   </div>
-                  <span className={`px-3 py-1 text-xs font-extrabold rounded-full border ${
-                    incident.severity === 'HIGH' || incident.severity === 'CRITICAL'
-                      ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
-                      : 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-500/30'
-                  }`}>
-                    {incident.severity}
-                  </span>
+                  <span className={getSeverityChipClass(incident.severity)} style={{ transform: 'scale(0.85)' }}>{incident.severity}</span>
                 </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs font-semibold">No incidents recorded in database</div>
-          )}
-        </div>
+              ))
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs font-medium text-slate-800/50">No incidents</div>
+            )}
+          </div>
+        </motion.div>
+
       </div>
     </div>
   );

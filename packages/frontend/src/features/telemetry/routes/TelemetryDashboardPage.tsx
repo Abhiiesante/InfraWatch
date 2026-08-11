@@ -44,7 +44,7 @@ export const TelemetryDashboardPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-panel dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
             <Activity className="w-7 h-7 text-indigo-600 dark:text-indigo-400 animate-pulse" />
@@ -78,7 +78,7 @@ export const TelemetryDashboardPage: React.FC = () => {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden group shadow-sm">
+        <div className="glass-panel dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden group shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Stream Engine</span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30">
@@ -89,7 +89,7 @@ export const TelemetryDashboardPage: React.FC = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Last tick {readings[0] ? new Date(readings[0].timestamp).toLocaleTimeString() : 'just now'}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden group shadow-sm">
+        <div className="glass-panel dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden group shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Active Sensor Metric</span>
             <Cpu className="w-5 h-5 text-indigo-500 animate-pulse" />
@@ -100,7 +100,7 @@ export const TelemetryDashboardPage: React.FC = () => {
           <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1 font-bold">Type: {readings[0]?.sensorType || 'TEMPERATURE'}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden group shadow-sm">
+        <div className="glass-panel dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative overflow-hidden group shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Rule Evaluators</span>
             <Sliders className="w-5 h-5 text-purple-500" />
@@ -111,7 +111,7 @@ export const TelemetryDashboardPage: React.FC = () => {
       </div>
 
       {/* Main Streaming Chart */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="p-6 glass-panel dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 mb-4">Real-Time Sensor Telemetry Stream</h3>
         {isLoading ? (
           <div className="h-64 flex items-center justify-center text-slate-400">Connecting to stream...</div>
@@ -132,7 +132,7 @@ export const TelemetryDashboardPage: React.FC = () => {
       </div>
 
       {/* Threshold Rules Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+      <div className="glass-panel dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">Active Sensor Threshold Rules</h3>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Automated triggers generate alerts on breach</span>

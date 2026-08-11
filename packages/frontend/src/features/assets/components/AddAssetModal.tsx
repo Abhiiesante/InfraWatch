@@ -229,12 +229,12 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <Dialog.Content className="fixed left-[50%] top-[50%] z-[100] grid w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out">
+        <Dialog.Content className="fixed left-[50%] top-[50%] z-[100] grid w-full max-w-2xl translate-x-[-50%] translate-y-[-50%] gap-4 p-8 bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)] rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out">
           <div className="flex flex-col space-y-1.5">
-            <Dialog.Title className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <Dialog.Title className="text-2xl font-extrabold tracking-tight text-[#3A4046] flex items-center gap-2">
               Add New Physical Asset
             </Dialog.Title>
-            <Dialog.Description className="text-sm text-slate-500 dark:text-slate-400">
+            <Dialog.Description className="text-sm text-slate-800/70">
               Register a physical infrastructure asset and auto-detect CCTV cameras across all subnets.
             </Dialog.Description>
           </div>
@@ -242,19 +242,19 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
           <form onSubmit={handleSubmit} className="space-y-6 py-2">
             {/* Section 1: Basic Asset Info */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">
                 1. Asset Facility Parameters
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="asset-name" className="text-xs font-bold text-slate-700 dark:text-slate-300">Asset Name *</label>
-                  <input required id="asset-name" name="name" className="flex h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 text-sm font-medium" placeholder="e.g. Tower Alpha-01" />
+                  <label htmlFor="asset-name" className="text-xs font-bold text-slate-700">Asset Name *</label>
+                  <input required id="asset-name" name="name" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm font-medium" placeholder="e.g. Tower Alpha-01" />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="assetTypeId" className="text-xs font-bold text-slate-700 dark:text-slate-300">Asset Type *</label>
-                  <select required id="assetTypeId" name="assetTypeId" className="flex h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 text-sm font-medium">
+                  <label htmlFor="assetTypeId" className="text-xs font-bold text-slate-700">Asset Type *</label>
+                  <select required id="assetTypeId" name="assetTypeId" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm font-medium">
                     <option value="">Select a type...</option>
                     {assetTypes?.map((type: any) => (
                       <option key={type.id} value={type.id}>{type.name}</option>
@@ -264,40 +264,40 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="address" className="text-xs font-bold text-slate-700 dark:text-slate-300">Location / Address</label>
-                <input id="address" name="address" className="flex h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 text-sm font-medium" placeholder="e.g. 123 Industrial Parkway, Zone 4" />
+                <label htmlFor="address" className="text-xs font-bold text-slate-700">Location / Address</label>
+                <input id="address" name="address" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm font-medium" placeholder="e.g. 123 Industrial Parkway, Zone 4" />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="description" className="text-xs font-bold text-slate-700 dark:text-slate-300">Description (Optional)</label>
-                <textarea id="description" name="description" rows={2} className="flex w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-sm font-medium resize-y" placeholder="Facility specs, capacity, or operational notes..." />
+                <label htmlFor="description" className="text-xs font-bold text-slate-700">Description (Optional)</label>
+                <textarea id="description" name="description" rows={2} className="flex w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent p-3 text-sm font-medium resize-y" placeholder="Facility specs, capacity, or operational notes..." />
               </div>
             </div>
 
             {/* Section 2: Local CCTV / IP Camera Connection Settings */}
             <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#7FB8B0] flex items-center gap-1.5">
                   <Video className="w-4 h-4" />
                   2. Multi-Subnet CCTV & IP Camera Auto-Detector
                 </h3>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" checked={enableCctv} onChange={e => setEnableCctv(e.target.checked)} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  <span className="ml-2 text-xs font-bold text-slate-700 dark:text-slate-300">Configure CCTV Feed</span>
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[rgba(255,255,255,0.55)] after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[rgba(127,184,176,0.85)]"></div>
+                  <span className="ml-2 text-xs font-bold text-slate-700">Configure CCTV Feed</span>
                 </label>
               </div>
 
               {enableCctv && (
-                <div className="bg-slate-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 animate-in fade-in">
+                <div className="bg-transparent p-5 rounded-2xl border border-[rgba(255,255,255,0.80)] space-y-4 animate-in fade-in">
                   
                   {/* MULTI-SUBNET IP RANGE AUTO-DETECTOR BANNER */}
-                  <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 p-4 rounded-2xl border border-indigo-500/30 flex flex-col space-y-3.5 shadow-md">
+                  <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 p-4 rounded-2xl border border-indigo-500/30 flex flex-col space-y-3.5 ">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
                         <div>
-                          <span className="text-xs font-extrabold text-white block">Multi-Subnet ONVIF IP Scanner</span>
+                          <span className="text-xs font-extrabold text-slate-800 block">Multi-Subnet ONVIF IP Scanner</span>
                           <span className="text-[10px] text-slate-400 font-mono">Scans all private CIDR blocks (192.168.x.x, 10.x.x.x, 172.16.x.x)</span>
                         </div>
                       </div>
@@ -319,7 +319,7 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
                           type="button"
                           onClick={handleAutoScanNetwork}
                           disabled={isScanning}
-                          className="px-4 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-md flex items-center gap-1.5 transition-all whitespace-nowrap"
+                          className="px-4 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-800  flex items-center gap-1.5 transition-all whitespace-nowrap"
                         >
                           {isScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                           {isScanning ? `Scanning...` : 'Scan ALL IP Ranges'}
@@ -334,7 +334,7 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
                           value={customIpInput}
                           onChange={e => setCustomIpInput(e.target.value)}
                           placeholder="Type custom CCTV IP or hostname (e.g. 192.168.4.150 or cctv-west.local)"
-                          className="h-8 w-full bg-black/60 border border-white/20 rounded-lg px-3 text-xs font-mono text-white placeholder:text-slate-500"
+                          className="h-8 w-full bg-black/60 border border-white/20 rounded-lg px-3 text-xs font-mono text-slate-800 placeholder:text-slate-800/70"
                         />
                       </div>
                     )}
@@ -368,7 +368,7 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
                                 onClick={() => handleSelectDiscovered(cam)}
                                 className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                                   isSelected
-                                    ? 'bg-indigo-600/40 border-cyan-400 text-white shadow-lg ring-1 ring-cyan-400'
+                                    ? 'bg-[rgba(127,184,176,0.85)]/40 border-cyan-400 text-slate-800 shadow-lg ring-1 ring-cyan-400'
                                     : 'bg-black/40 border-white/10 text-slate-300 hover:border-indigo-400'
                                 }`}
                               >
@@ -392,10 +392,10 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
                   </div>
 
                   {/* Local Laptop Webcam Switch */}
-                  <div className="flex items-center justify-between bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
+                  <div className="flex items-center justify-between bg-slate-800/10 p-3 rounded-xl border border-emerald-500/30">
                     <div className="flex items-center gap-2">
-                      <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">Auto-Connect Local Laptop Webcam</span>
+                      <Camera className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-bold text-[#3A4046]">Auto-Connect Local Laptop Webcam</span>
                     </div>
                     <input type="checkbox" checked={useLocalWebcam} onChange={e => setUseLocalWebcam(e.target.checked)} className="w-4 h-4 accent-emerald-600 rounded cursor-pointer" />
                   </div>
@@ -420,7 +420,7 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
                             else if (val === 'SECUREYE') { setCctvPort('554'); setCctvPath('/live/ch0'); setCctvProtocol('rtsp://'); }
                             else if (val === 'HIFOCUS') { setCctvPort('554'); setCctvPath('/cam/realmonitor?channel=1&subtype=0'); setCctvProtocol('rtsp://'); }
                           }}
-                          className="flex h-9 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-xs font-mono text-cyan-300 font-bold"
+                          className="flex h-9 w-full rounded-lg border border-slate-700 bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono text-cyan-300 font-bold"
                         >
                           <option value="CP_PLUS">CP Plus IP Camera (India #1 - /cam/realmonitor)</option>
                           <option value="PRAMA">Prama India STQC Certified (/Streaming/Channels/101)</option>
@@ -436,46 +436,46 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">CCTV Protocol</label>
-                          <select value={cctvProtocol} onChange={e => setCctvProtocol(e.target.value)} name="cctvProtocol" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-mono">
+                          <label className="text-[11px] font-bold text-slate-800/80">CCTV Protocol</label>
+                          <select value={cctvProtocol} onChange={e => setCctvProtocol(e.target.value)} name="cctvProtocol" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono">
                             <option value="rtsp://">RTSP (Standard CCTV)</option>
                             <option value="http://">HTTP / HLS (.m3u8)</option>
                             <option value="https://">HTTPS Secure Stream</option>
                           </select>
                         </div>
                         <div className="space-y-1 sm:col-span-2">
-                          <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Camera IP / Hostname *</label>
-                          <input value={cctvIp} onChange={e => setCctvIp(e.target.value)} name="cctvIp" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-mono" placeholder="10.205.30.20 or cctv.local" />
+                          <label className="text-[11px] font-bold text-slate-800/80">Camera IP / Hostname *</label>
+                          <input value={cctvIp} onChange={e => setCctvIp(e.target.value)} name="cctvIp" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono" placeholder="10.205.30.20 or cctv.local" />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">RTSP Port</label>
-                          <input value={cctvPort} onChange={e => setCctvPort(e.target.value)} name="cctvPort" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-mono" placeholder="554 (Default RTSP)" />
+                          <label className="text-[11px] font-bold text-slate-800/80">RTSP Port</label>
+                          <input value={cctvPort} onChange={e => setCctvPort(e.target.value)} name="cctvPort" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono" placeholder="554 (Default RTSP)" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Substream / Stream Path</label>
-                          <input value={cctvPath} onChange={e => setCctvPath(e.target.value)} name="cctvPath" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-mono" placeholder="/live/ch0 or /h264Preview_01" />
+                          <label className="text-[11px] font-bold text-slate-800/80">Substream / Stream Path</label>
+                          <input value={cctvPath} onChange={e => setCctvPath(e.target.value)} name="cctvPath" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono" placeholder="/live/ch0 or /h264Preview_01" />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">CCTV Username</label>
-                          <input name="cctvUser" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-mono" placeholder="admin" />
+                          <label className="text-[11px] font-bold text-slate-800/80">CCTV Username</label>
+                          <input name="cctvUser" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono" placeholder="admin" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">CCTV Password</label>
-                          <input type="password" name="cctvPass" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-mono" placeholder="••••••••" />
+                          <label className="text-[11px] font-bold text-slate-800/80">CCTV Password</label>
+                          <input type="password" name="cctvPass" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-mono" placeholder="••••••••" />
                         </div>
                       </div>
                     </>
                   )}
 
                   <div className="space-y-1 pt-1">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Hardware Optics Type</label>
-                    <select value={cameraType} onChange={e => setCameraType(e.target.value)} name="cameraType" className="flex h-10 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs font-medium">
+                    <label className="text-[11px] font-bold text-slate-800/80">Hardware Optics Type</label>
+                    <select value={cameraType} onChange={e => setCameraType(e.target.value)} name="cameraType" className="flex h-10 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] px-3 text-xs font-medium">
                       <option value="360° DOME PTZ">360° Dome PTZ Panorama</option>
                       <option value="PTZ 4K Structural">PTZ 4K Structural</option>
                       <option value="Optical Strain HD">Optical Strain HD</option>
@@ -487,21 +487,21 @@ export const AddAssetModal = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             {/* Action Bar */}
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 pt-4 border-t border-slate-100">
               <Dialog.Close asChild>
-                <button type="button" className="mt-2 sm:mt-0 px-6 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+                <button type="button" className="mt-2 sm:mt-0 px-6 py-2.5 rounded-xl text-xs font-bold text-slate-800/80 hover:bg-slate-100 transition-colors">
                   Cancel
                 </button>
               </Dialog.Close>
-              <button disabled={isPending} type="submit" className="px-8 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2">
+              <button disabled={isPending} type="submit" className="px-8 py-2.5 rounded-xl text-xs font-bold bg-[rgba(127,184,176,0.85)] hover:bg-indigo-700 text-slate-800 shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2">
                 {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 {isPending ? 'Connecting...' : 'Create Asset & Auto-Connect CCTV'}
               </button>
             </div>
           </form>
 
-          <Dialog.Close className="absolute right-6 top-6 rounded-full p-1 opacity-70 transition-all hover:opacity-100 hover:bg-slate-100 dark:hover:bg-slate-800">
-            <X className="h-5 w-5 text-slate-500" />
+          <Dialog.Close className="absolute right-6 top-6 rounded-full p-1 opacity-70 transition-all hover:opacity-100 hover:bg-slate-100">
+            <X className="h-5 w-5 text-slate-800/70" />
             <span className="sr-only">Close</span>
           </Dialog.Close>
         </Dialog.Content>

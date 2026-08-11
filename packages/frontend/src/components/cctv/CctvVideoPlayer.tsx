@@ -17,7 +17,7 @@ interface CctvVideoPlayerProps {
 export function CctvVideoPlayer({
   streamUrl = '',
   cameraName = 'Live CCTV Feed',
-  className = 'w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-slate-950 relative',
+  className = 'w-full rounded-2xl overflow-hidden shadow-lg border border-[rgba(255,255,255,0.80)] bg-slate-950 relative',
   height = 380,
 }: CctvVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -322,8 +322,8 @@ export function CctvVideoPlayer({
       {showRemoteModal &&
         createPortal(
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] p-4 sm:p-6 flex items-center justify-center animate-in fade-in">
-            <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-100 relative">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.60)] w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-slate-100 relative">
+              <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.60)] pb-3">
                 <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-cyan-400" /> Connect Remote PC Camera Feed
                 </h4>
@@ -335,7 +335,7 @@ export function CctvVideoPlayer({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+              <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-[rgba(255,255,255,0.60)] text-xs">
                 <button
                   onClick={() => setConnectMode('PIN')}
                   className={`flex-1 py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
@@ -356,13 +356,13 @@ export function CctvVideoPlayer({
 
               {connectMode === 'PIN' ? (
                 <div className="space-y-4 font-mono text-xs text-slate-300">
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 space-y-1.5">
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-[rgba(255,255,255,0.60)] text-[11px] text-slate-300 space-y-1.5">
                     <p className="font-bold text-cyan-400 flex items-center gap-1">
                       ⚡ 100% Zero-Download Setup Instructions:
                     </p>
                     <p>1. Open Chrome/Edge browser on the other PC & go to:</p>
                     <div className="flex items-center gap-2">
-                      <p className="flex-1 font-extrabold text-cyan-300 bg-slate-900 px-3 py-2 rounded-xl border border-cyan-700/80 select-all text-xs font-mono tracking-wide truncate">
+                      <p className="flex-1 font-extrabold text-cyan-300 bg-[rgba(255,255,255,0.55)] px-3 py-2 rounded-xl border border-cyan-700/80 select-all text-xs font-mono tracking-wide truncate">
                         {lanBroadcastUrl}
                       </p>
                       <button

@@ -750,14 +750,14 @@ export const BIMViewerPage = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-3xl font-black tracking-tight text-[#3A4046]">
               3D BIM CAD Digital Twin Visualizer
             </h1>
-            <span className="bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-500/40 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5">
+            <span className="bg-cyan-100 text-cyan-700 border border-cyan-300 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5">
               <Box className="w-3.5 h-3.5" /> IFC4 WebGL Mesh
             </span>
           </div>
-          <p className="text-slate-500 dark:text-slate-400 mt-1.5 text-base font-medium">
+          <p className="text-slate-800/70 mt-1.5 text-base font-medium">
             Interactive 3D structural wireframe with live stress heatmaps. Drag to orbit, scroll to zoom.
           </p>
         </div>
@@ -765,7 +765,7 @@ export const BIMViewerPage = () => {
         <select
           value={selectedModelIdx}
           onChange={e => setSelectedModelIdx(Number(e.target.value))}
-          className="h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-900 dark:text-white shadow-sm"
+          className="h-12 px-4 rounded-xl border border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)] text-sm font-bold text-[#3A4046] "
         >
           {modelNames.map((m, i) => (
             <option key={i} value={i}>{m.name}</option>
@@ -774,9 +774,9 @@ export const BIMViewerPage = () => {
       </div>
 
       {/* 3D Canvas Viewport */}
-      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl relative flex flex-col">
+      <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)] rounded-2xl overflow-hidden shadow-xl relative flex flex-col">
         {/* HUD Header */}
-        <div className="p-3 bg-slate-900 dark:bg-black/80 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-white">
+        <div className="p-3 bg-[rgba(255,255,255,0.55)] border-b border-[rgba(255,255,255,0.60)] flex items-center justify-between text-xs font-mono text-slate-800">
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             <span className="font-extrabold truncate">{activeModel.name}</span>
@@ -787,19 +787,19 @@ export const BIMViewerPage = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setHeatmapOverlay(!heatmapOverlay)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${heatmapOverlay ? 'bg-orange-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${heatmapOverlay ? 'bg-orange-600 text-slate-800' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
             >
               <Flame className="w-3.5 h-3.5" /> Heatmap
             </button>
             <button
               onClick={() => setExplodedView(!explodedView)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${explodedView ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${explodedView ? 'bg-[rgba(127,184,176,0.85)] text-slate-800' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
             >
               <Layers className="w-3.5 h-3.5" /> Exploded
             </button>
             <button
               onClick={() => setAutoRotate(!autoRotate)}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${autoRotate ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${autoRotate ? 'bg-emerald-600 text-slate-800' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
             >
               <RotateCcw className="w-3.5 h-3.5" /> Auto-Rotate
             </button>
@@ -818,7 +818,7 @@ export const BIMViewerPage = () => {
           />
 
           {/* Zoom Controls */}
-          <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-slate-900/90 dark:bg-black/70 p-2 rounded-xl border border-slate-700 dark:border-white/10 text-white shadow-lg">
+          <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-slate-700 text-slate-800 shadow-lg">
             <button onClick={() => setZoomLevel(z => Math.min(3.0, z + 0.2))} className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors">
               <ZoomIn className="w-4 h-4" />
             </button>
@@ -830,12 +830,12 @@ export const BIMViewerPage = () => {
 
           {/* Live Dynamic Stress Legend */}
           {heatmapOverlay && (
-            <div className="absolute top-4 left-4 bg-slate-900/90 dark:bg-black/80 p-3.5 rounded-2xl border border-slate-700 dark:border-white/10 text-[10px] font-mono text-white space-y-1.5 shadow-2xl min-w-[210px] backdrop-blur-md">
+            <div className="absolute top-4 left-4 bg-slate-900/90 p-3.5 rounded-2xl border border-slate-700 text-[10px] font-mono text-slate-800 space-y-1.5 shadow-2xl min-w-[210px] backdrop-blur-md">
               <p className="font-extrabold text-xs mb-1 flex items-center justify-between border-b border-white/10 pb-1.5 text-cyan-300">
                 <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-cyan-400" /> LIVE STRESS BREAKDOWN</span>
               </p>
               <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> 0–30% Normal</span>
+                <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-800" /> 0–30% Normal</span>
                 <span className="font-bold text-emerald-400">{stressStats.total ? Math.round((stressStats.normal / stressStats.total) * 100) : 0}% ({stressStats.normal})</span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -855,8 +855,8 @@ export const BIMViewerPage = () => {
 
           {/* Fusion Tokamak Nuclear Physics Core Telemetry HUD */}
           {(activeModel.name.includes('ITER') || activeModel.name.includes('Tokamak') || activeModel.name.includes('Fusion') || activeModel.bimType === 'TOKAMAK_FUSION_REACTOR') && (
-            <div className="absolute top-4 right-14 bg-slate-900/90 dark:bg-slate-950/90 p-3.5 rounded-2xl border border-cyan-500/30 text-[10px] font-mono text-cyan-300 space-y-1.5 backdrop-blur-md shadow-2xl">
-              <p className="font-extrabold text-xs text-white flex items-center gap-1.5 pb-1 border-b border-cyan-500/20">
+            <div className="absolute top-4 right-14 bg-slate-900/90 p-3.5 rounded-2xl border border-cyan-500/30 text-[10px] font-mono text-cyan-300 space-y-1.5 backdrop-blur-md shadow-2xl">
+              <p className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5 pb-1 border-b border-cyan-500/20">
                 <Zap className="w-3.5 h-3.5 text-yellow-400 animate-pulse" /> {activeModel.name.toUpperCase().split(' ')[0]} TELEMETRY HUD
               </p>
               <p className="flex justify-between gap-4"><span>MAGNETIC FIELD:</span> <span className="text-yellow-400 font-bold">{activeModel.magneticFieldTesla || 11.8} TESLA</span></p>
@@ -868,23 +868,23 @@ export const BIMViewerPage = () => {
         </div>
 
         {/* Structural Metrics Footer */}
-        <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-mono text-slate-600 dark:text-slate-300">
+        <div className="p-4 bg-[rgba(255,255,255,0.55)] border-t border-[rgba(255,255,255,0.80)] grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-mono text-slate-800/80">
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">AVG STRUCTURAL STRESS</span>
-            <span className="font-extrabold text-indigo-600 dark:text-cyan-400 text-sm">{liveStress} MPa</span>
+            <span className="text-slate-400 block text-[10px]">AVG STRUCTURAL STRESS</span>
+            <span className="font-extrabold text-[#7FB8B0] text-sm">{liveStress} MPa</span>
           </div>
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">HIGHEST STRESS POINT</span>
-            <span className="font-extrabold text-rose-600 dark:text-rose-400 text-sm">{activeModel.hotspot}</span>
+            <span className="text-slate-400 block text-[10px]">HIGHEST STRESS POINT</span>
+            <span className="font-extrabold text-rose-600 text-sm">{activeModel.hotspot}</span>
           </div>
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">BIM HEALTH RATING</span>
-            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">{activeModel.rating}</span>
+            <span className="text-slate-400 block text-[10px]">BIM HEALTH RATING</span>
+            <span className="font-extrabold text-emerald-600 text-sm">{activeModel.rating}</span>
           </div>
           <div>
-            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">RENDER STATUS</span>
-            <span className="font-extrabold text-cyan-600 dark:text-cyan-400 text-sm flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> 60 FPS LIVE
+            <span className="text-slate-400 block text-[10px]">RENDER STATUS</span>
+            <span className="font-extrabold text-cyan-600 text-sm flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-slate-800 animate-pulse" /> 60 FPS LIVE
             </span>
           </div>
         </div>

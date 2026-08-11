@@ -1,5 +1,7 @@
 import prisma from '@/lib/prisma.js';
 import logger from '@/utils/logger.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 /**
  * DataIntelligenceService
@@ -27,6 +29,55 @@ export class DataIntelligenceService {
     logger.info(`[DataIntelligence] Syncing incident ${incidentId} for tenant ${tenantId} to data platform...`);
     // Future implementation (Phase 3: Ingestion)
     return { success: true, syncedAt: new Date() };
+  }
+
+  /**
+   * Simulates Cloud Object Storage landing zone (e.g., S3/ADLS).
+   * Appends raw telemetry payload to a Unity Catalog Volume.
+   */
+  static async syncTelemetryToDataPlatform(data: any) {
+    try {
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${Date.now()}-${data.assetId || 'unknown'}-${Math.random().toString(36).substring(7)}.json`;
+      
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+      
+      if (!host || !token) {
+        logger.warn('[DataIntelligence] Databricks credentials not configured, skipping telemetry sync.');
+        return { success: false };
+      }
+
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/telemetry/${date}`;
+      const fullPath = `${volumePath}/${filename}`;
+      
+      const payload = JSON.stringify({
+        ...data,
+        _ingestion_event_time: new Date().toISOString()
+      }) + '\n';
+
+      // Ensure directory exists (Volumes API creates parent dirs automatically on file upload)
+      // Upload using REST API
+      const response = await fetch(`${host}/api/2.0/fs/files${fullPath}?overwrite=true`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: payload
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Databricks API Error: ${response.status} ${err}`);
+      }
+      
+      logger.debug(`[DataIntelligence] Telemetry landed in Databricks UC Volume: ${fullPath}`);
+      return { success: true };
+    } catch (error) {
+      logger.error(`[DataIntelligence] Failed to sync telemetry to data platform: ${error}`);
+      return { success: false };
+    }
   }
 
   /**

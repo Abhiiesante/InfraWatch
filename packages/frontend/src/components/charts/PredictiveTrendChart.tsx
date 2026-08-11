@@ -26,12 +26,12 @@ export function PredictiveTrendChart({
   ],
 }: PredictiveTrendChartProps) {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm dark:shadow-xl space-y-4">
+    <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)] rounded-3xl p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+        <h3 className="font-extrabold text-base text-[#3A4046] flex items-center gap-2">
           <Activity className="w-5 h-5 text-emerald-500" /> {title}
         </h3>
-        <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
           PROPHET AI FORECAST
         </span>
       </div>

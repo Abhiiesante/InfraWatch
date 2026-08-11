@@ -48,3 +48,15 @@ prisma/dev.db-journal
 # Temporary
 tmp/
 temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Scratch / One-off scripts
+*.cjs
+
+# Local Storage
+storage/lakehouse/
+
