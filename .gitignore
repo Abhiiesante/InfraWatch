@@ -66,3 +66,7 @@ spark-warehouse/
 metastore_db/
 derby.log
 *.parquet
+
+packages/backend/storage/lakehouse/
+packages/backend/storage/
+**/storage/lakehouse/
