@@ -206,31 +206,26 @@ export const CamerasListPage = () => {
 
   // Resolve 1:1 exact real-time 24/7 video stream URL for each Global Facility
   const getCameraHlsStream = (camera: any) => {
-    if (camera.config?.streamUrl && !camera.config.streamUrl.includes('youtube.com')) {
+    if (camera.config?.streamUrl) {
       return camera.config.streamUrl;
     }
     const name = camera.name?.toLowerCase() || '';
     const assetName = camera.asset?.name?.toLowerCase() || '';
 
-    if (name.includes('tokyo') || assetName.includes('tokyo')) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-suspension-bridge-and-the-sea-41566-large.mp4';
-    }
-    if (name.includes('shibuya') || assetName.includes('shibuya')) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-traffic-on-a-highway-bridge-41551-large.mp4';
-    }
-    if (name.includes('taipei') || assetName.includes('taipei')) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-dam-and-reservoir-41573-large.mp4';
-    }
-    if (name.includes('bosphorus') || assetName.includes('bosphorus')) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-suspension-bridge-and-the-sea-41566-large.mp4';
+    if (name.includes('tokyo') || assetName.includes('tokyo') || name.includes('shibuya') || assetName.includes('shibuya')) {
+      // Shibuya Crossing Live Cam
+      return 'https://www.youtube.com/embed/HpdO5Kq3o7Y?autoplay=1&mute=1&playsinline=1&loop=1&playlist=HpdO5Kq3o7Y';
     }
     if (name.includes('venice') || assetName.includes('venice')) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-wind-turbines-in-a-field-41564-large.mp4';
+      // Venice Canal Live Cam
+      return 'https://www.youtube.com/embed/ph1vpnYIxJk?autoplay=1&mute=1&playsinline=1&loop=1&playlist=ph1vpnYIxJk';
     }
-    if (name.includes('nyc') || assetName.includes('york')) {
-      return 'https://assets.mixkit.co/videos/preview/mixkit-industrial-plant-with-smoke-41577-large.mp4';
+    if (name.includes('nyc') || assetName.includes('york') || name.includes('bosphorus') || assetName.includes('bosphorus')) {
+      // Times Square Live Cam
+      return 'https://www.youtube.com/embed/mRe-514tGLs?autoplay=1&mute=1&playsinline=1&loop=1&playlist=mRe-514tGLs';
     }
-    return 'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-a-suspension-bridge-and-the-sea-41566-large.mp4';
+    // Default to Jackson Hole Town Square Live Traffic Cam
+    return 'https://www.youtube.com/embed/1EiC9bvVGnk?autoplay=1&mute=1&playsinline=1&loop=1&playlist=1EiC9bvVGnk';
   };
 
   const getCameraPoster = (camera: any) => {
@@ -266,7 +261,7 @@ export const CamerasListPage = () => {
         </div>
         <Dialog.Root open={showCreate} onOpenChange={setShowCreate}>
           <Dialog.Trigger asChild>
-            <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-slate-800 px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
+            <button className="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
               <Plus className="w-5 h-5" />
               Add Camera
             </button>
@@ -593,13 +588,13 @@ export const CamerasListPage = () => {
                 >
                   <Flame className="w-4 h-4" /> Thermal
                 </button>
-                <button
-                  onClick={() => setAiOverlay(!aiOverlay)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
-                    aiOverlay ? 'bg-purple-600 text-slate-800 shadow-lg shadow-purple-600/40 ring-2 ring-purple-400' : 'bg-slate-800 text-slate-300 hover:text-slate-800'
-                  }`}
-                >
-                  <Shield className="w-4 h-4" /> AI Overlays
+                  <button
+                    onClick={() => setAiOverlay(!aiOverlay)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+                      aiOverlay ? 'bg-slate-800 text-white shadow-lg ring-2 ring-slate-400' : 'bg-slate-200 text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Shield className="w-4 h-4" /> AI Overlays
                 </button>
               </div>
 
