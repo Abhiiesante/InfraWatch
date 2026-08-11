@@ -1,19 +1,26 @@
 /**
- * Computer Vision Feature Extraction & Anomaly Detection Engine
- * Performs 2D matrix Sobel edge gradient computation, RGB/HSL chromaticity variance analysis,
- * and dynamic bounding box [x, y, w, h] anomaly extraction on video/image frames.
+ * Vision Model Stub
+ *
+ * This module provides a SIMULATED stand-in for a real computer vision
+ * inference service. It does NOT perform any actual image analysis —
+ * no pixel data is read, no edge detection is computed, no chromaticity
+ * is measured. All outputs are randomly sampled and clearly marked
+ * as simulated.
+ *
+ * To connect a real inference endpoint, set the VISION_MODEL_ENDPOINT
+ * environment variable (e.g., a Roboflow, Vertex AI, or custom model
+ * serving URL). When set, this module delegates to the real endpoint
+ * and returns genuine inference results.
  */
+
+import logger from '@/utils/logger.js';
 
 export interface DetectedVisualAnomaly {
   label: 'SURFACE_OXIDE_CORROSION' | 'LATTICE_ARCH_BOLT_SHIFT' | 'HIGH_TEMP_THERMAL_HOTSPOT' | 'STRUCTURAL_MICRO_CRACK';
   confidence: number;
   bbox: [number, number, number, number]; // [x, y, width, height]
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-  features: {
-    edgeGradientDensity: number;
-    chromaticityVariance: number;
-    thermalDeltaCelsius?: number;
-  };
+  simulated: boolean;
 }
 
 export interface VisionFrameAnalysisResult {
@@ -23,105 +30,124 @@ export interface VisionFrameAnalysisResult {
   overallConfidence: number;
   detections: DetectedVisualAnomaly[];
   analyzedAt: string;
+  simulated: boolean;
+  simulationReason?: string;
+}
+
+const ANOMALY_LABELS: DetectedVisualAnomaly['label'][] = [
+  'SURFACE_OXIDE_CORROSION',
+  'LATTICE_ARCH_BOLT_SHIFT',
+  'HIGH_TEMP_THERMAL_HOTSPOT',
+  'STRUCTURAL_MICRO_CRACK',
+];
+
+const SEVERITIES: DetectedVisualAnomaly['severity'][] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+
+/**
+ * Calls a real vision model inference endpoint.
+ */
+async function callRealEndpoint(endpoint: string, imageInput: string | Buffer): Promise<VisionFrameAnalysisResult> {
+  const body = typeof imageInput === 'string'
+    ? JSON.stringify({ image_base64: imageInput })
+    : imageInput;
+
+  const contentType = typeof imageInput === 'string'
+    ? 'application/json'
+    : 'application/octet-stream';
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': contentType },
+    body,
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Vision model endpoint error: ${response.status} ${errText}`);
+  }
+
+  const data: any = await response.json();
+
+  // Normalize external response to our interface
+  return {
+    imageWidth: data.imageWidth || data.width || 1280,
+    imageHeight: data.imageHeight || data.height || 720,
+    hasAnomaly: Array.isArray(data.detections) && data.detections.length > 0,
+    overallConfidence: data.overallConfidence || data.confidence || 0,
+    detections: (data.detections || []).map((d: any) => ({
+      label: d.label || d.class_name || 'STRUCTURAL_MICRO_CRACK',
+      confidence: d.confidence || 0,
+      bbox: d.bbox || [0, 0, 0, 0],
+      severity: d.severity || 'MEDIUM',
+      simulated: false,
+    })),
+    analyzedAt: new Date().toISOString(),
+    simulated: false,
+  };
+}
+
+/**
+ * Generates a simulated (fake) analysis result. All values are randomly
+ * sampled with no relationship to the input image content whatsoever.
+ */
+function generateSimulatedResult(): VisionFrameAnalysisResult {
+  const detections: DetectedVisualAnomaly[] = [];
+
+  // ~40% chance of finding an anomaly in any given frame
+  if (Math.random() < 0.4) {
+    const count = Math.random() < 0.7 ? 1 : 2;
+    for (let i = 0; i < count; i++) {
+      detections.push({
+        label: ANOMALY_LABELS[Math.floor(Math.random() * ANOMALY_LABELS.length)],
+        confidence: Math.round((70 + Math.random() * 25) * 10) / 10,
+        bbox: [
+          Math.floor(Math.random() * 800) + 100,
+          Math.floor(Math.random() * 400) + 50,
+          Math.floor(Math.random() * 200) + 100,
+          Math.floor(Math.random() * 150) + 80,
+        ],
+        severity: SEVERITIES[Math.floor(Math.random() * SEVERITIES.length)],
+        simulated: true,
+      });
+    }
+  }
+
+  const hasAnomaly = detections.length > 0;
+
+  return {
+    imageWidth: 1280,
+    imageHeight: 720,
+    hasAnomaly,
+    overallConfidence: hasAnomaly
+      ? Math.max(...detections.map(d => d.confidence))
+      : 0,
+    detections,
+    analyzedAt: new Date().toISOString(),
+    simulated: true,
+    simulationReason: 'VISION_MODEL_ENDPOINT not configured. Set this env var to connect a real inference service.',
+  };
 }
 
 export class VisionModelEngine {
   /**
-   * Process raw image buffer or base64 data string to extract visual features and anomalies
+   * Analyze an image frame. Delegates to a real endpoint if
+   * VISION_MODEL_ENDPOINT is set; otherwise returns a clearly
+   * marked simulated result.
    */
-  static analyzeFrame(imageInput: string | Buffer): VisionFrameAnalysisResult {
-    const width = 1280;
-    const height = 720;
-    const inputStr = typeof imageInput === 'string' ? imageInput : imageInput.toString('utf-8');
+  static async analyzeFrame(imageInput: string | Buffer): Promise<VisionFrameAnalysisResult> {
+    const endpoint = process.env.VISION_MODEL_ENDPOINT;
 
-    // Perform feature extraction hashing based on image payload signature
-    let hash = 0;
-    for (let i = 0; i < inputStr.length; i++) {
-      hash = ((hash << 5) - hash) + inputStr.charCodeAt(i);
-      hash |= 0;
+    if (endpoint) {
+      try {
+        logger.info(`[VisionModel] Calling real inference endpoint: ${endpoint}`);
+        return await callRealEndpoint(endpoint, imageInput);
+      } catch (err) {
+        logger.error(`[VisionModel] Real endpoint failed, returning error: ${err}`);
+        throw err; // Don't silently fall back to fake data
+      }
     }
 
-    const absHash = Math.abs(hash);
-
-    // Compute Sobel Edge Gradient Density & Chromaticity Shifting
-    const edgeDensity = ((absHash % 85) + 15) / 100.0; // 0.15 to 1.0
-    const chromaticityVar = ((absHash % 90) + 10) / 100.0;
-
-    const detections: DetectedVisualAnomaly[] = [];
-
-    // 1. Check for Oxide Corrosion (Color shift in reddish-brown spectrum)
-    if (chromaticityVar > 0.45) {
-      const x = 120 + (absHash % 200);
-      const y = 80 + (absHash % 150);
-      const w = 240 + (absHash % 100);
-      const h = 180 + (absHash % 80);
-      const conf = Number((88.5 + (absHash % 10) * 0.9).toFixed(1));
-
-      detections.push({
-        label: 'SURFACE_OXIDE_CORROSION',
-        confidence: conf,
-        bbox: [x, y, w, h],
-        severity: conf > 90 ? 'HIGH' : 'MEDIUM',
-        features: {
-          edgeGradientDensity: Number(edgeDensity.toFixed(3)),
-          chromaticityVariance: Number(chromaticityVar.toFixed(3)),
-        },
-      });
-    }
-
-    // 2. Check for Structural Micro-Cracks / Bolt Shift (Sobel gradient high variance)
-    if (edgeDensity > 0.55 || inputStr.toLowerCase().includes('sealink') || inputStr.toLowerCase().includes('chenab')) {
-      const x = 450 + (absHash % 180);
-      const y = 220 + (absHash % 120);
-      const w = 210 + (absHash % 90);
-      const h = 130 + (absHash % 60);
-      const conf = Number((91.2 + (absHash % 7) * 1.1).toFixed(1));
-
-      detections.push({
-        label: 'LATTICE_ARCH_BOLT_SHIFT',
-        confidence: conf,
-        bbox: [x, y, w, h],
-        severity: 'CRITICAL',
-        features: {
-          edgeGradientDensity: Number(edgeDensity.toFixed(3)),
-          chromaticityVariance: Number(chromaticityVar.toFixed(3)),
-        },
-      });
-    }
-
-    // 3. Thermal Infrared Hotspot Check
-    if (inputStr.toLowerCase().includes('thermal') || (absHash % 3 === 0)) {
-      const x = 310 + (absHash % 100);
-      const y = 140 + (absHash % 80);
-      const w = 180;
-      const h = 160;
-      const conf = Number((95.0 + (absHash % 4) * 1.1).toFixed(1));
-
-      detections.push({
-        label: 'HIGH_TEMP_THERMAL_HOTSPOT',
-        confidence: conf,
-        bbox: [x, y, w, h],
-        severity: 'CRITICAL',
-        features: {
-          edgeGradientDensity: Number(edgeDensity.toFixed(3)),
-          chromaticityVariance: Number(chromaticityVar.toFixed(3)),
-          thermalDeltaCelsius: 38.4,
-        },
-      });
-    }
-
-    const hasAnomaly = detections.length > 0;
-    const maxConfidence = hasAnomaly
-      ? Math.max(...detections.map(d => d.confidence))
-      : 99.1;
-
-    return {
-      imageWidth: width,
-      imageHeight: height,
-      hasAnomaly,
-      overallConfidence: maxConfidence,
-      detections,
-      analyzedAt: new Date().toISOString(),
-    };
+    logger.debug('[VisionModel] No VISION_MODEL_ENDPOINT configured — returning SIMULATED result');
+    return generateSimulatedResult();
   }
 }

@@ -96,10 +96,10 @@ export class AnomalyService {
    * Analyze Image Frame using Vision Model Engine
    */
   static async analyzeFrameAndSave(tenantId: number, cameraId: number, imageInput: string): Promise<any> {
-    const analysis: VisionFrameAnalysisResult = VisionModelEngine.analyzeFrame(imageInput);
+    const analysis: VisionFrameAnalysisResult = await VisionModelEngine.analyzeFrame(imageInput);
 
     if (!analysis.hasAnomaly) {
-      return { hasAnomaly: false, message: 'Frame verified clear of structural anomalies' };
+      return { hasAnomaly: false, simulated: analysis.simulated, message: 'Frame verified clear of structural anomalies' };
     }
 
     return prisma.anomalyDetection.create({
@@ -110,6 +110,10 @@ export class AnomalyService {
         detections: analysis.detections as any,
         confidence: analysis.overallConfidence,
         status: 'PENDING_REVIEW',
+        metadata: {
+          simulated: analysis.simulated,
+          simulationReason: analysis.simulationReason || null,
+        },
       },
     });
   }

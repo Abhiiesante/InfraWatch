@@ -70,3 +70,6 @@ derby.log
 packages/backend/storage/lakehouse/
 packages/backend/storage/
 **/storage/lakehouse/
+
+# Hadoop Windows binaries (should be fetched externally, not committed)
+packages/hadoop/

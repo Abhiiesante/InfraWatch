@@ -11,12 +11,21 @@ const socket = io('http://localhost:3000');
 
 const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
   const [boxes, setBoxes] = useState<any[]>([]);
+  const [isSimulated, setIsSimulated] = useState(false);
 
   useEffect(() => {
     if (!isPlaying) return;
     
     socket.on('cv-detections', (data) => {
-      setBoxes(data);
+      if (data && typeof data === 'object' && 'boxes' in data) {
+        // New format: { simulated: boolean, boxes: [] }
+        setBoxes(data.boxes || []);
+        setIsSimulated(!!data.simulated);
+      } else if (Array.isArray(data)) {
+        // Legacy format: raw array
+        setBoxes(data);
+        setIsSimulated(false);
+      }
     });
 
     return () => {
@@ -28,6 +37,12 @@ const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
+      {/* Simulated badge */}
+      {isSimulated && (
+        <div className="absolute top-2 right-2 z-30 bg-amber-500/90 text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
+          ⚠ SIMULATED — AI NOT CONNECTED
+        </div>
+      )}
       {boxes.map(box => (
         <div
           key={box.id}
@@ -39,6 +54,7 @@ const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
             height: `${box.h}%`,
             borderColor: box.color,
             boxShadow: `0 0 10px ${box.color}40`,
+            borderStyle: isSimulated ? 'dashed' : 'solid',
           }}
         >
           {/* Label Tab */}
@@ -258,26 +274,25 @@ export const CamerasListPage = () => {
     }
   };
 
-  // Resolve 1:1 exact real-time 24/7 video stream URL for each Global Facility
-  const getCameraHlsStream = (camera: any) => {
+  // Resolve video stream URL for each camera. Returns isDemoStream flag
+  // to honestly indicate when a YouTube fallback is used instead of a real camera feed.
+  const getCameraHlsStream = (camera: any): { url: string; isDemoStream: boolean } => {
     if (camera.config?.streamUrl) {
-      return camera.config.streamUrl;
+      return { url: camera.config.streamUrl, isDemoStream: false };
     }
     const name = camera.name?.toLowerCase() || '';
     const assetName = camera.asset?.name?.toLowerCase() || '';
 
     if (name.includes('venice') || assetName.includes('venice')) {
-      // 30+ min real logistics video
-      return 'https://www.youtube.com/embed/gL-5u1mB12g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=gL-5u1mB12g&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0';
+      return { url: 'https://www.youtube.com/embed/gL-5u1mB12g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=gL-5u1mB12g&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0', isDemoStream: true };
     }
     
     if (name.includes('nyc') || assetName.includes('york')) {
-       // 30+ min real warehouse/amr video
-       return 'https://www.youtube.com/embed/e1X_zIu25Gg?autoplay=1&mute=1&playsinline=1&loop=1&playlist=e1X_zIu25Gg&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0';
+       return { url: 'https://www.youtube.com/embed/e1X_zIu25Gg?autoplay=1&mute=1&playsinline=1&loop=1&playlist=e1X_zIu25Gg&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0', isDemoStream: true };
     }
     
-    // Tokyo / Default - 30+ min factory video
-    return 'https://www.youtube.com/embed/8gy5tYVR-28?autoplay=1&mute=1&playsinline=1&loop=1&playlist=8gy5tYVR-28&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0';
+    // Default fallback — YouTube demo stream
+    return { url: 'https://www.youtube.com/embed/8gy5tYVR-28?autoplay=1&mute=1&playsinline=1&loop=1&playlist=8gy5tYVR-28&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0', isDemoStream: true };
   };
 
   const getCameraPoster = (camera: any) => {
@@ -387,17 +402,16 @@ export const CamerasListPage = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
           {data?.cameras?.map((camera: any) => {
-            const hlsUrl = getCameraHlsStream(camera);
+            const { url: hlsUrl, isDemoStream } = getCameraHlsStream(camera);
             const posterImg = getCameraPoster(camera);
             const is360 = camera.name?.includes('360') || camera.cameraType?.includes('360');
-            const isOffline = camera.name?.toLowerCase().includes('venice') || camera.name?.toLowerCase().includes('nyc');
             
             return (
               <div
                 key={camera.id}
                 className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] overflow-hidden shadow-xl hover:shadow-[0_0_40px_rgba(16,185,129,0.15)] transition-all duration-300 group flex flex-col"
               >
-                {/* 24/7 Real-Time Live Infrastructure Video Stream Player Canvas */}
+                {/* Video Stream Player Canvas */}
                 <div
                   onClick={() => {
                     setActiveStreamCamera(camera);
@@ -405,52 +419,38 @@ export const CamerasListPage = () => {
                   }}
                   className="h-72 bg-black relative overflow-hidden cursor-pointer group/feed"
                 >
-                  {!isOffline ? (
-                    <HlsVideoPlayer
-                      src={hlsUrl}
-                      poster={posterImg}
-                      className="w-full h-full object-cover pointer-events-none group-hover/feed:scale-105 transition-transform duration-500 border-0 opacity-80"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 border-0 opacity-90">
-                       <Video className="w-12 h-12 text-slate-400 mb-2" />
-                       <span className="text-slate-600 font-bold text-sm tracking-widest">STREAM UNAVAILABLE</span>
-                       <span className="text-slate-500 font-mono text-[10px] mt-1">Last frame 18:26:36 UTC</span>
-                    </div>
-                  )}
+                  <HlsVideoPlayer
+                    src={hlsUrl}
+                    poster={posterImg}
+                    className="w-full h-full object-cover pointer-events-none group-hover/feed:scale-105 transition-transform duration-500 border-0 opacity-80"
+                  />
 
                   {/* RTSP Real-Time Live Overlay - Roboflow Tracker in Grid */}
-                  {aiOverlay && !isOffline && (
+                  {aiOverlay && (
                     <div className="absolute inset-0 pointer-events-none z-10">
                       <LiveRoboflowTracker isPlaying={true} />
                     </div>
                   )}
 
-                  {/* Simplified UI Overlay */}
+                  {/* UI Overlay */}
                   <div className="absolute inset-0 p-4 flex flex-col justify-between pointer-events-none z-20">
                     <div className="flex items-center justify-between">
-                      {isOffline ? (
-                        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-black/60 backdrop-blur-md">
-                          <span className="w-2 h-2 rounded-full bg-slate-500" />
-                          <span className="text-[10px] font-bold text-slate-300 tracking-wider">OFFLINE</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-black/60 backdrop-blur-md">
-                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                          <span className="text-[10px] font-bold text-white tracking-wider">LIVE &middot; 2s delay</span>
+                      <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-black/60 backdrop-blur-md">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                        <span className="text-[10px] font-bold text-white tracking-wider">LIVE &middot; 2s delay</span>
+                      </div>
+                      {isDemoStream && (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded bg-amber-500/80 backdrop-blur-md">
+                          <span className="text-[9px] font-bold text-black tracking-wider">DEMO STREAM</span>
                         </div>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] font-bold text-white">
-                      {!isOffline ? (
-                        <span className="px-2 py-1 rounded bg-black/60 backdrop-blur-md font-mono">
-                          {format(new Date(liveClock.getTime() + (camera.id * 1000 * 60 * 3)), 'HH:mm:ss')} UTC
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      {aiOverlay && !isOffline && (
+                      <span className="px-2 py-1 rounded bg-black/60 backdrop-blur-md font-mono">
+                        {format(new Date(liveClock.getTime() + (camera.id * 1000 * 60 * 3)), 'HH:mm:ss')} UTC
+                      </span>
+                      {aiOverlay && (
                         <span className="px-2 py-1 rounded bg-black/60 backdrop-blur-md text-emerald-400 tracking-wide">
                           AI: Active
                         </span>
@@ -574,7 +574,7 @@ export const CamerasListPage = () => {
                 ) : (
                   /* Option 2: Real 24/7 Live Public Infrastructure Video Stream */
                   <HlsVideoPlayer
-                    src={getCameraHlsStream(activeStreamCamera)}
+                    src={getCameraHlsStream(activeStreamCamera).url}
                     poster={getCameraPoster(activeStreamCamera)}
                     style={{
                       width: '160%',

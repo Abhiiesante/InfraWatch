@@ -194,6 +194,10 @@ export class LLMService {
     return this.provider;
   }
 
+  static isSimulated(): boolean {
+    return this.getProvider() instanceof MockProvider;
+  }
+
   static async generateCompletion(prompt: string, options?: GenerateOptions): Promise<string> {
     return this.getProvider().generateCompletion(prompt, options);
   }

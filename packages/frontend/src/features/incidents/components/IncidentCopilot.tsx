@@ -13,6 +13,7 @@ export const IncidentCopilot = ({ incidentId }: IncidentCopilotProps) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [content, setContent] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSimulated, setIsSimulated] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const startAnalysis = async () => {
@@ -22,6 +23,7 @@ export const IncidentCopilot = ({ incidentId }: IncidentCopilotProps) => {
     setIsAnalyzing(true);
     setContent('');
     setError(null);
+    setIsSimulated(false);
     
     abortControllerRef.current = new AbortController();
 
@@ -49,31 +51,40 @@ export const IncidentCopilot = ({ incidentId }: IncidentCopilotProps) => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
 
+      let currentEvent = 'message';
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
         
-        // SSE data chunks come in as: data: {...}\n\n
+        // SSE data chunks come in as: event: <type>\n data: {...}\n\n
         const lines = chunk.split('\n');
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.replace('event: ', '').trim();
+          } else if (line.startsWith('data: ')) {
             const dataStr = line.replace('data: ', '').trim();
             if (dataStr === '[DONE]') {
               break;
             }
             try {
               const data = JSON.parse(dataStr);
-              if (data.text) {
-                setContent(prev => prev + data.text);
-              }
-              if (data.error) {
-                setError(data.error);
+              if (currentEvent === 'metadata') {
+                if (data.simulated) setIsSimulated(true);
+              } else {
+                if (data.text) {
+                  setContent(prev => prev + data.text);
+                }
+                if (data.error) {
+                  setError(data.error);
+                }
               }
             } catch (e) {
               // Ignore partial JSON parse errors
             }
+            currentEvent = 'message'; // reset
           }
         }
       }
@@ -125,17 +136,24 @@ export const IncidentCopilot = ({ incidentId }: IncidentCopilotProps) => {
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)]">
-          <div className="flex items-center gap-2 text-[#7FB8B0]">
-            <Sparkles className="w-5 h-5" />
-            <h2 className="font-semibold text-lg">InfraWatch Copilot</h2>
+        <div className="flex flex-col border-b border-[rgba(255,255,255,0.80)] bg-[rgba(255,255,255,0.55)]">
+          {isSimulated && (
+            <div className="bg-amber-500/90 text-black text-[10px] font-bold px-4 py-1.5 flex justify-center tracking-wide">
+              ⚠ SIMULATED — NO AI CONNECTED (GEMINI_API_KEY missing)
+            </div>
+          )}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2 text-[#7FB8B0]">
+              <Sparkles className="w-5 h-5" />
+              <h2 className="font-semibold text-lg">InfraWatch Copilot</h2>
+            </div>
+            <button 
+              onClick={closeCopilot}
+              className="p-2 text-slate-800/70 hover:text-slate-800 transition-colors rounded-full hover:bg-slate-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button 
-            onClick={closeCopilot}
-            className="p-2 text-slate-800/70 hover:text-slate-800 transition-colors rounded-full hover:bg-slate-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">

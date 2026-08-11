@@ -40,10 +40,10 @@ router.get(
           batteryPercent: drone.batteryPercent,
           altitudeMeters: isFlying ? Number(activeMission?.currentAltitude || 0) : 0,
           speedKmh: isFlying ? Number(activeMission?.currentSpeed || 0) : 0,
-          telemetrySignal: isFlying ? '98% (5G Private Grid)' : '100% (Wi-Fi 6 Dock)',
+          telemetrySignal: null, // Real telemetry signal requires hardware integration
           waypointsCompleted: activeMission?.waypointsCompleted || 0,
-          totalWaypoints: activeMission?.totalWaypoints || 20,
-          activeCameraFeed: 'OPTICAL_4K_SONAR',
+          totalWaypoints: activeMission?.totalWaypoints || null,
+          activeCameraFeed: drone.cameraType || null, // Read from DB, not hardcoded
           currentPosition: { 
             lat: Number(drone.currentLat || 0),
             lng: Number(drone.currentLng || 0),

@@ -50,6 +50,10 @@ router.post('/incident/:id/analyze', authMiddleware, async (req: Request, res: R
     const prompt = `Please analyze the following incident and provide recommendations.\n\n${incidentContext}`;
 
     // 3. Stream the LLM response
+    // First, send metadata about simulation status
+    const isSimulated = LLMService.isSimulated();
+    res.write(`event: metadata\ndata: ${JSON.stringify({ simulated: isSimulated, reason: isSimulated ? 'GEMINI_API_KEY not configured' : undefined })}\n\n`);
+
     const onChunk = (chunk: string) => {
       // Server-Sent Events require data lines to begin with 'data: ' and end with '\n\n'
       // We encode the chunk as JSON to preserve newlines and special characters during transmission
