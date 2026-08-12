@@ -1,7 +1,6 @@
 import prisma from '@/lib/prisma.js';
 import logger from '@/utils/logger.js';
-import fs from 'fs/promises';
-import path from 'path';
+
 
 /**
  * DataIntelligenceService
@@ -246,7 +245,7 @@ export class DataIntelligenceService {
       // Count failed inspections in last 90 days
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
       const failedInspections = await prisma.inspection.count({
-        where: { tenantId, assetId, status: 'FAILED', completedDate: { gte: ninetyDaysAgo } },
+        where: { tenantId, assetId, status: 'FAILED', completedAt: { gte: ninetyDaysAgo } },
       });
 
       // Weighted risk computation

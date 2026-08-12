@@ -96,7 +96,7 @@ async function main() {
   // 6. Seed BIM Models
   for (let i = 0; i < Math.min(2, assets.length); i++) {
     const asset = assets[i];
-    const isFusion = asset.name.toLowerCase().includes('iter') || asset.name.toLowerCase().includes('tokamak');
+    const isFusion = asset.name.toLowerCase().includes('meridian') || asset.name.toLowerCase().includes('fusion');
     
     const bimModel = await prisma.bimModel.create({
       data: {

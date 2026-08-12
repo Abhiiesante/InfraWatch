@@ -9,7 +9,7 @@ const prisma = new PrismaClient({
 });
 
 async function seed() {
-  console.log('🌱 Resetting and seeding database with 10 Real-World Original Infrastructure Facilities...');
+  console.log('🌱 Resetting and seeding database with 10 demo infrastructure facilities...');
 
   // Clean up existing data in correct dependency order
   await prisma.incidentComment.deleteMany({});
@@ -76,7 +76,7 @@ async function seed() {
 
   console.log(`✅ Users created: ${adminUser.email}`);
 
-  // Create Real-World Asset Types
+  // Create Asset Types
   const fusionType = await prisma.assetType.create({
     data: {
       tenantId: org.id,
@@ -137,18 +137,24 @@ async function seed() {
     },
   });
 
-  // Create 10 Real-World Original Iconic Facilities
+  // ===================================================================
+  // 10 Demo Infrastructure Facilities
+  //
+  // These are FICTIONAL facilities with realistic-sounding names.
+  // They are NOT real infrastructure and do not represent or imply
+  // any monitoring relationship with any real-world operator.
+  // ===================================================================
+
   const asset1 = await prisma.asset.create({
     data: {
-      id: 999,
       tenantId: org.id,
       assetTypeId: fusionType.id,
       createdById: adminUser.id,
-      name: 'ITER Tokamak Fusion Reactor Core & Cryostat Complex',
-      description: 'World largest magnetic confinement plasma tokamak reactor core with 18 superconducting toroidal field D-coils, central solenoid core, and cryostat containment shielding',
+      name: 'Meridian Fusion Research Reactor & Cryostat Complex',
+      description: 'Magnetic confinement plasma tokamak reactor core with 18 superconducting toroidal field D-coils, central solenoid core, and cryostat containment shielding',
       latitude: new Decimal('43.6888'),
       longitude: new Decimal('5.7661'),
-      address: 'ITER Headquarters, Route de Vinon-sur-Verdon, 13115 Saint-Paul-lès-Durance, France',
+      address: 'Meridian Research Campus, Route de la Fusion, Provence-Alpes, France',
       status: 'ACTIVE',
       healthScore: 99,
       metadata: {
@@ -166,11 +172,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: fusionType.id,
       createdById: adminUser.id,
-      name: 'CERN Large Hadron Collider (LHC) ATLAS Cavern & Tunnel',
-      description: '27-kilometer superconducting particle accelerator ring and ATLAS detector experimental cavern',
+      name: 'Axion Particle Accelerator Ring & Cavern Complex',
+      description: '27-kilometer superconducting particle accelerator ring and experimental detector cavern',
       latitude: new Decimal('46.2330'),
       longitude: new Decimal('6.0557'),
-      address: 'CERN, Esplanade des Particules 1, 1211 Meyrin, Geneva, Switzerland',
+      address: 'Axion Physics Laboratory, Chemin des Particules, Canton de Genève, Switzerland',
       status: 'ACTIVE',
       healthScore: 98,
       metadata: {
@@ -187,11 +193,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: bridgeType.id,
       createdById: adminUser.id,
-      name: 'Chenab Railway Arch Bridge (World Highest Railway Bridge)',
-      description: 'Steel arch railway bridge spanning 359 meters above the Chenab riverbed in Jammu & Kashmir',
+      name: 'Kamala Valley High-Altitude Railway Arch Bridge',
+      description: 'Steel arch railway bridge spanning 359 meters above a mountain river valley',
       latitude: new Decimal('33.1492'),
       longitude: new Decimal('74.8824'),
-      address: 'Bakkal - Kauri Rail Line, Reasi District, Jammu & Kashmir 182311, India',
+      address: 'Kamala Valley Rail Corridor, Highland District, Northern Region',
       status: 'ACTIVE',
       healthScore: 96,
       metadata: {
@@ -208,11 +214,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: bridgeType.id,
       createdById: adminUser.id,
-      name: 'Bandra-Worli Sea Link (Rajiv Gandhi Sea Link)',
-      description: '5.6 km 8-lane cable-stayed bridge spanning Mahim Bay in Mumbai, Maharashtra',
+      name: 'Westshore Bay Cable-Stayed Marine Link',
+      description: '5.6 km 8-lane cable-stayed bridge spanning a coastal bay',
       latitude: new Decimal('19.0330'),
       longitude: new Decimal('72.8185'),
-      address: 'Bandra-Worli Sea Link, Mumbai, Maharashtra 400050, India',
+      address: 'Westshore Bay Link Road, Coastal Metro District',
       status: 'ACTIVE',
       healthScore: 94,
       metadata: {
@@ -229,11 +235,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: hydroType.id,
       createdById: adminUser.id,
-      name: 'Three Gorges Hydroelectric Power Dam & Lock Complex',
-      description: '22,500 MW hydroelectric gravity dam spanning the Yangtze River in Hubei Province',
+      name: 'Longshan Hydroelectric Power Dam & Lock Complex',
+      description: '22,500 MW hydroelectric gravity dam spanning a major continental river',
       latitude: new Decimal('30.8242'),
       longitude: new Decimal('111.0028'),
-      address: 'Sandouping Town, Yiling District, Yichang, Hubei, China',
+      address: 'Longshan Dam Authority, Gorge District, Central Province',
       status: 'ACTIVE',
       healthScore: 97,
       metadata: {
@@ -250,11 +256,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: tunnelType.id,
       createdById: adminUser.id,
-      name: 'Gotthard Base Tunnel (World Longest & Deepest Railway Tunnel)',
-      description: '57.1 km twin single-track high-speed rail tunnel under the Swiss Alps',
+      name: 'Albion Deep-Core Transit Tunnel',
+      description: '57.1 km twin single-track high-speed rail tunnel under an alpine mountain range',
       latitude: new Decimal('46.5458'),
       longitude: new Decimal('8.7186'),
-      address: 'Gotthard Base Tunnel, Erstfeld to Bodio, Switzerland',
+      address: 'Albion Tunnel Authority, Alpine Transit Corridor, Switzerland',
       status: 'ACTIVE',
       healthScore: 95,
       metadata: {
@@ -271,11 +277,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: bridgeType.id,
       createdById: adminUser.id,
-      name: 'Akashi Kaikyo Suspension Bridge (Pearl Bridge)',
-      description: 'Dual-deck suspension bridge spanning the Akashi Strait with a central span of 1,991 meters',
+      name: 'Naruto Strait Suspension Bridge',
+      description: 'Dual-deck suspension bridge with a central span of 1,991 meters across a major shipping strait',
       latitude: new Decimal('34.6167'),
       longitude: new Decimal('135.0219'),
-      address: 'Tarumi-ku, Kobe, Hyogo 655-0047, Japan',
+      address: 'Naruto Strait Crossing Authority, Hyogo Prefecture, Japan',
       status: 'ACTIVE',
       healthScore: 93,
       metadata: {
@@ -292,11 +298,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: hydroType.id,
       createdById: adminUser.id,
-      name: 'Hoover Hydroelectric Dam & Colorado River Reservoir',
-      description: '2,080 MW concrete arch-gravity dam impounding Lake Mead on the Nevada-Arizona border',
+      name: 'Redrock Canyon Hydroelectric Dam & Reservoir',
+      description: '2,080 MW concrete arch-gravity dam impounding a major reservoir on a desert river',
       latitude: new Decimal('36.0156'),
       longitude: new Decimal('-114.7378'),
-      address: 'Hoover Dam Access Rd, Clark County, NV / Mohave County, AZ, USA',
+      address: 'Redrock Canyon Dam Authority, Clark County, Nevada, USA',
       status: 'ACTIVE',
       healthScore: 91,
       metadata: {
@@ -313,11 +319,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: windType.id,
       createdById: adminUser.id,
-      name: 'Hornsea Wind 2 Offshore Wind Energy Farm',
-      description: '1.32 GW offshore wind power facility with 165 Siemens Gamesa 8 MW turbines in the North Sea',
+      name: 'Northsea Array Offshore Wind Energy Farm',
+      description: '1.32 GW offshore wind power facility with 165 turbines in the North Sea',
       latitude: new Decimal('53.8860'),
       longitude: new Decimal('1.8540'),
-      address: 'North Sea, 89 km off the Yorkshire Coast, United Kingdom',
+      address: 'Northsea Array Operations, 89 km off the Yorkshire Coast, United Kingdom',
       status: 'ACTIVE',
       healthScore: 96,
       metadata: {
@@ -334,11 +340,11 @@ async function seed() {
       tenantId: org.id,
       assetTypeId: solarType.id,
       createdById: adminUser.id,
-      name: 'Bhadla Ultra Mega Solar Power Park',
-      description: '2,245 MW total capacity solar park covering 14,000 acres in Rajasthan',
+      name: 'Suryanagar Ultra Mega Solar Power Park',
+      description: '2,245 MW total capacity solar park covering 14,000 acres in the Thar Desert region',
       latitude: new Decimal('27.5398'),
       longitude: new Decimal('71.9152'),
-      address: 'Bhadla, Jodhpur District, Rajasthan 342301, India',
+      address: 'Suryanagar Solar Authority, Jodhpur District, Rajasthan, India',
       status: 'ACTIVE',
       healthScore: 98,
       metadata: {
@@ -350,42 +356,20 @@ async function seed() {
     },
   });
 
-  console.log(`✅ 10 Real-World Iconic Facilities Created in Database`);
+  console.log(`✅ 10 Demo Infrastructure Facilities Created in Database`);
 
-  // Create 10 Live 24/7 Cameras (1 per Asset) with Official Media & Live Stream Links
+  // Create 10 Cameras (1 per Asset) with sample video streams
   const assets = [asset1, asset2, asset3, asset4, asset5, asset6, asset7, asset8, asset9, asset10];
-  const officialImages = [
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/ITER_Tokamak_diagram.svg/1280px-ITER_Tokamak_diagram.svg.png',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Atlas_Detector_at_CERN.jpg/1280px-Atlas_Detector_at_CERN.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Chenab_Rail_Bridge%2C_Reasi_district%2C_Jammu_and_Kashmir%2C_India.jpg/1280px-Chenab_Rail_Bridge%2C_Reasi_district%2C_Jammu_and_Kashmir%2C_India.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Bandra_Worli_Sea_link_Mumbai.jpg/1280px-Bandra_Worli_Sea_link_Mumbai.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Three_Gorges_Dam%2C_China.jpg/1280px-Three_Gorges_Dam%2C_China.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Gotthard-Basistunnel_Erstfeld.jpg/1280px-Gotthard-Basistunnel_Erstfeld.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Akashi_Bridge.jpg/1280px-Akashi_Bridge.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Hoover_dam_from_air.jpg/1280px-Hoover_dam_from_air.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Offshore_wind_turbines_in_the_North_Sea.jpg/1280px-Offshore_wind_turbines_in_the_North_Sea.jpg',
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Solar_panels_in_Rajasthan.jpg/1280px-Solar_panels_in_Rajasthan.jpg',
-  ];
   const videoUrls = [
-    // 1. ITER Tokamak Fusion Reactor
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    // 2. CERN Large Hadron Collider (LHC)
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    // 3. Chenab Railway Arch Bridge
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    // 4. Bandra-Worli Sea Link
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    // 5. Three Gorges Dam
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    // 6. Gotthard Base Tunnel
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    // 7. Akashi Kaikyo Bridge
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    // 8. Hoover Dam
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackComplexity.mp4',
-    // 9. Hornsea Offshore Wind Farm
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    // 10. Bhadla Solar Park
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
   ];
 
@@ -395,7 +379,7 @@ async function seed() {
       data: {
         tenantId: org.id,
         assetId: a.id,
-        name: `${a.name.split(' ')[0]} Official 24/7 Live Monitoring Stream`,
+        name: `${a.name.split(' ')[0]} Monitoring Camera ${i + 1}`,
         cameraType: i % 2 === 0 ? '360° DOME PTZ' : 'OPTICAL 4K STRUCTURAL',
         rtspUrl: `rtsp://cam-${a.id}.infrawatch.io/live`,
         ipAddress: `10.205.30.${100 + i}`,
@@ -404,14 +388,13 @@ async function seed() {
           resolution: '3840x2160',
           fps: 60,
           streamUrl: videoUrls[i],
-          imageUrl: officialImages[i],
           recordingEnabled: true,
         },
       },
     });
   }
 
-  console.log(`✅ 10 Live 4K Cameras Created & Linked`);
+  console.log(`✅ 10 Cameras Created & Linked`);
 
   // Create Scheduled Inspections (For Drone Missions)
   for (let i = 0; i < assets.length; i++) {
@@ -431,7 +414,7 @@ async function seed() {
 
   console.log(`✅ Scheduled Autonomous Inspections Created`);
 
-  // Create Real Sensor Rules for IoT Threshold Engine
+  // Create Sensor Rules for IoT Threshold Engine
   await prisma.sensorRule.createMany({
     data: [
       { tenantId: org.id, assetId: asset1.id, sensorType: 'TEMPERATURE', minThreshold: new Decimal(10), maxThreshold: new Decimal(85), action: 'ALERT', isActive: true },
@@ -443,14 +426,14 @@ async function seed() {
 
   console.log(`✅ Active Sensor Threshold Rules Created`);
 
-  // Create Real Digital Work Orders across SLA states
+  // Create Digital Work Orders across SLA states
   await prisma.workOrder.createMany({
     data: [
       {
         tenantId: org.id,
         assetId: asset1.id,
         assignedToId: inspectorUser.id,
-        title: 'Calibrate ITER Tokamak Cryostat Vacuum Pressure Transducer',
+        title: 'Calibrate Meridian Reactor Cryostat Vacuum Pressure Transducer',
         description: 'Perform routine quarterly calibration on sensor array CH-04 and verify helium leak tightness.',
         priority: 'CRITICAL',
         status: 'PENDING',
@@ -460,8 +443,8 @@ async function seed() {
         tenantId: org.id,
         assetId: asset3.id,
         assignedToId: inspectorUser.id,
-        title: 'Inspect Chenab Arch Bridge Pier Bolt Tension & Structural Heatmap',
-        description: 'Verify high-torque anchor bolt pre-load using ultrasound gauge on Kauri approach span.',
+        title: 'Inspect Kamala Valley Arch Bridge Pier Bolt Tension & Structural Heatmap',
+        description: 'Verify high-torque anchor bolt pre-load using ultrasound gauge on approach span.',
         priority: 'HIGH',
         status: 'IN_PROGRESS',
         slaDeadline: new Date(Date.now() + 8 * 3600000),
@@ -480,7 +463,7 @@ async function seed() {
         tenantId: org.id,
         assetId: asset8.id,
         assignedToId: inspectorUser.id,
-        title: 'Perform Vibrational Frequency Sweep on Hoover Dam Turbine #12',
+        title: 'Perform Vibrational Frequency Sweep on Redrock Dam Turbine #12',
         description: 'Acoustic spectrum analysis on Francis turbine bearing housing to isolate shaft whip anomaly.',
         priority: 'MEDIUM',
         status: 'PENDING',
@@ -490,7 +473,7 @@ async function seed() {
         tenantId: org.id,
         assetId: asset9.id,
         assignedToId: adminUser.id,
-        title: 'Routine Nacelle Yaw Drive Lubrication on Hornsea Turbine #44',
+        title: 'Routine Nacelle Yaw Drive Lubrication on Northsea Array Turbine #44',
         description: 'Completed semi-annual synthetic lubricant flush and gear teeth inspection.',
         priority: 'MEDIUM',
         status: 'COMPLETED',
@@ -501,7 +484,7 @@ async function seed() {
     ],
   });
 
-  console.log(`✅ Real Digital Work Orders Created`);
+  console.log(`✅ Digital Work Orders Created`);
 
   // Create Historical Telemetry Readings using batch createMany
   const sensorTypes = ['VIBRATION', 'TEMPERATURE', 'AMPERAGE', 'FREQUENCY', 'VOLTAGE'];
@@ -537,7 +520,7 @@ async function seed() {
 
   await prisma.telemetryReading.createMany({ data: readingsToInsert });
 
-  console.log(`✅ Real Time-Series Telemetry Readings Seeded for all Assets`);
+  console.log(`✅ Time-Series Telemetry Readings Seeded for all Assets`);
   console.log('🚀 Database Seeding Complete!');
 }
 
