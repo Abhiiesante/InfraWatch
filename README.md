@@ -28,42 +28,42 @@ Built with a modern monorepo architecture, InfraWatch provides strict multi-tena
 ## 🏛️ System Architecture
 
 ```mermaid
-graph TB
-    subgraph Client Layer
-        UI[React 18 + Vite Web App<br/>Tailwind CSS + Framer Motion]
-        CamTx[WebRTC / RTSP Camera Transmitter]
+flowchart TD
+    subgraph ClientLayer ["Client Layer"]
+        UI["React 18 + Vite Web App<br/>Tailwind CSS & Framer Motion"]
+        CamTx["WebRTC / RTSP Camera Transmitter"]
     end
 
-    subgraph Control Plane [Backend & Ingestion]
-        API[Express.js / Node.js 20+ API<br/>JWT Auth + RBAC + Zod Validation]
-        SocketIO[Socket.io Realtime Telemetry Server]
-        AuthMW[Multi-Tenant Context Middleware]
+    subgraph ControlPlane ["Control Plane (Backend & Ingestion)"]
+        API["Node.js / Express.js REST API<br/>JWT Auth & RBAC Validation"]
+        SocketIO["Socket.io Realtime Telemetry Server"]
+        AuthMW["Multi-Tenant Isolation Middleware"]
     end
 
-    subgraph Storage & Queues
-        PG[(PostgreSQL Database<br/>Prisma ORM - Multi-Tenant Schema)]
-        Redis[(Redis 7.0<br/>Cache & Pub/Sub)]
-        BullMQ[BullMQ Job Queue<br/>Reports, Image Processing, Alerts]
+    subgraph StorageQueues ["Storage & Queues"]
+        PG[("PostgreSQL Database<br/>Prisma ORM Multi-Tenant")]
+        Redis[("Redis 7.0<br/>Cache & Pub/Sub")]
+        BullMQ["BullMQ Job Queue<br/>Workers & Alerts"]
     end
 
-    subgraph Intelligence Plane [Data Platform]
-        Bronze[Bronze Ingestion Lake]
-        Silver[Silver Quality & Deduplication]
-        Gold[Gold Aggregation & Metrics Sync]
-        ML[Prophet & CV Anomaly Engine<br/>Isolation Forest + Defect Classifier]
+    subgraph IntelligencePlane ["Intelligence Plane (Data Platform)"]
+        Bronze["Bronze Ingestion Lake"]
+        Silver["Silver Quality & Deduplication"]
+        Gold["Gold Aggregation & Metrics Sync"]
+        ML["ML & Anomaly Engine<br/>Isolation Forest + Defect Classifier"]
     end
 
-    UI <-->|HTTPS / REST API| API
-    UI <-->|WebSocket / WSS| SocketIO
-    CamTx -->|WebRTC / HLS| API
+    UI -->|"HTTPS / REST API"| API
+    UI -->|"WebSocket (WSS)"| SocketIO
+    CamTx -->|"WebRTC / HLS Stream"| API
     API --> AuthMW
     AuthMW --> PG
     API --> Redis
     API --> BullMQ
     BullMQ --> Redis
-    PG <-->|Change Data Sync| Gold
+    PG -->|"Data Lake Sync"| Gold
     Gold --> ML
-    ML -->|Inference Signals| API
+    ML -->|"Inference Telemetry"| API
 ```
 
 ---
