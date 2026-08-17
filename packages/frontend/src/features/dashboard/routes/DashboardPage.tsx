@@ -123,7 +123,7 @@ export function DashboardPage() {
           <div 
             className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
             style={{ 
-              backgroundImage: `url(${INFRA_IMAGES.bridge[0]})`, 
+              backgroundImage: `url(${INFRA_IMAGES.bridge?.[0] || INFRA_IMAGES.general[0]})`, 
               backgroundSize: '150% auto', 
               animation: 'pan-cctv 20s ease-in-out infinite',
               filter: 'grayscale(100%) contrast(1.2) brightness(0.9)'

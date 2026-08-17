@@ -123,4 +123,56 @@ export class ContextGathererService {
 
     return contextStr;
   }
+
+  /**
+   * Gathers all relevant context for a specific inspection to inject into an LLM prompt.
+   */
+  static async gatherInspectionContext(tenantId: number, inspectionId: number): Promise<string> {
+    logger.info(`[ContextGatherer] Assembling context for inspection ${inspectionId} (tenant ${tenantId})...`);
+
+    const inspection: any = await prisma.inspection.findFirst({
+      where: { id: inspectionId, tenantId },
+      include: {
+        asset: {
+          include: {
+            assetType: true
+          }
+        },
+        inspector: {
+          select: { name: true, role: true }
+        },
+        inspectionImages: true
+      }
+    });
+
+    if (!inspection) {
+      throw new Error(`Inspection ${inspectionId} not found`);
+    }
+
+    let contextStr = `## INSPECTION DETAILS\n`;
+    contextStr += `- **ID:** ${inspection.id}\n`;
+    contextStr += `- **Status:** ${inspection.status}\n`;
+    contextStr += `- **Scheduled Date:** ${inspection.scheduledDate.toISOString()}\n`;
+    if (inspection.completedAt) {
+      contextStr += `- **Completed At:** ${inspection.completedAt.toISOString()}\n`;
+    }
+    contextStr += `- **Inspector:** ${inspection.inspector.name} (${inspection.inspector.role})\n`;
+    contextStr += `- **Notes:** ${inspection.notes || 'No notes provided.'}\n`;
+
+    if (inspection.asset) {
+      contextStr += `\n## ASSET UNDER INSPECTION\n`;
+      contextStr += `- **Name:** ${inspection.asset.name}\n`;
+      contextStr += `- **Type:** ${inspection.asset.assetType.name}\n`;
+      contextStr += `- **Health Score:** ${inspection.asset.healthScore}/100\n`;
+    }
+
+    if (inspection.inspectionImages && inspection.inspectionImages.length > 0) {
+      contextStr += `\n## CAPTURED IMAGES LOG\n`;
+      inspection.inspectionImages.forEach((img: any, index: number) => {
+        contextStr += `- **Image ${index + 1}:** ${img.caption || 'No caption'}\n`;
+      });
+    }
+
+    return contextStr;
+  }
 }

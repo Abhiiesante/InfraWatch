@@ -4,6 +4,7 @@ import logger from './utils/logger.js';
 import prisma from './lib/prisma.js';
 import { telemetryDaemon } from './services/telemetry-daemon.js';
 import { cvDaemon } from './services/cv-daemon.js';
+import { GoldMetricsSyncService } from './services/gold-metrics-sync.service.js';
 
 const app = createApp();
 
@@ -12,6 +13,20 @@ const server = app.listen(env.PORT, () => {
   telemetryDaemon.start(); // Enabled: Now fetching purely from real-world official APIs
   cvDaemon.attachSocket(server);
   cvDaemon.start(100); // 10fps websocket broadcast
+
+  // Gold Metrics Sync: run immediately, then every 60 seconds
+  GoldMetricsSyncService.syncAnomalyDetectionsToGold()
+    .then(r => logger.info(`📊 Initial Gold sync: ${r.aggregated} buckets`))
+    .catch(err => logger.error(`Gold sync error: ${err}`));
+
+  setInterval(async () => {
+    try {
+      await GoldMetricsSyncService.syncLocalCVToGold();
+      await GoldMetricsSyncService.syncAnomalyDetectionsToGold();
+    } catch (err) {
+      logger.error(`[GoldSync] Periodic sync error: ${err}`);
+    }
+  }, 60_000);
 });
 
 // Graceful shutdown

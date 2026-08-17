@@ -45,3 +45,17 @@ export const useUpdateInspection = () => {
     },
   });
 };
+
+export const useUploadInspectionImage = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, imageUrl, caption }: { id: number; imageUrl: string; caption?: string }) => {
+      const response = await apiClient.post(`/inspections/${id}/images`, { imageUrl, caption });
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['inspections', variables.id] });
+    },
+  });
+};

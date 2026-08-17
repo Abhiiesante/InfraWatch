@@ -205,6 +205,30 @@ APPLICATION_EVENTS_SCHEMA = _with_metadata([
 
 
 # ============================================================================
+# bronze.cv_events
+# ============================================================================
+from pyspark.sql.types import ArrayType
+
+CV_EVENTS_SCHEMA = _with_metadata([
+    StructField("camera_id", StringType(), nullable=False),
+    StructField("timestamp", StringType(), nullable=False),
+    StructField("model", StringType(), nullable=True),
+    StructField("detections", ArrayType(
+        StructType([
+            StructField("id", StringType(), nullable=True),
+            StructField("label", StringType(), nullable=True),
+            StructField("conf", IntegerType(), nullable=True),
+            StructField("x", DoubleType(), nullable=True),
+            StructField("y", DoubleType(), nullable=True),
+            StructField("w", DoubleType(), nullable=True),
+            StructField("h", DoubleType(), nullable=True),
+            StructField("color", StringType(), nullable=True),
+            StructField("isViolation", BooleanType(), nullable=True)
+        ])
+    ), nullable=True),
+])
+
+# ============================================================================
 # Registry of all bronze table schemas
 # ============================================================================
 
@@ -217,4 +241,5 @@ BRONZE_TABLE_SCHEMAS: dict[str, StructType] = {
     "image_metadata": IMAGE_METADATA_SCHEMA,
     "model_feedback": MODEL_FEEDBACK_SCHEMA,
     "application_events": APPLICATION_EVENTS_SCHEMA,
+    "cv_events": CV_EVENTS_SCHEMA,
 }

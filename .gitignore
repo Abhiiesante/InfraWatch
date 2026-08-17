@@ -73,3 +73,8 @@ packages/backend/storage/
 
 # Hadoop Windows binaries (should be fetched externally, not committed)
 packages/hadoop/
+
+# Data Platform Volumes & Raw Data
+Volumes/
+packages/data-platform/Volumes/
+**/Volumes/

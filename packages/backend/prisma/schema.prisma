@@ -52,6 +52,7 @@ model Organization {
   facilityZones     FacilityZone[]
   storageRacks      StorageRack[]
   logisticsFleets   LogisticsFleet[]
+  cvSafetyMetrics   CVSafetyMetricGold[]
 
   @@map("organizations")
 }
@@ -183,6 +184,7 @@ model Camera {
   inspectionImages InspectionImage[]
   anomalies   AnomalyDetection[]
   aiPredictions AIPrediction[]
+  cvSafetyMetrics CVSafetyMetricGold[]
 
   @@index([tenantId])
   @@index([assetId])
@@ -399,6 +401,29 @@ model AnomalyDetection {
   @@index([cameraId])
   @@index([status])
   @@map("anomaly_detections")
+}
+
+// ============================================================================
+// GOLD LAYER SAFETY METRICS (Local Fallback)
+// ============================================================================
+
+model CVSafetyMetricGold {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  cameraId        Int
+  timestamp       DateTime @db.Timestamptz(6)
+  totalDetections Int      @default(0)
+  zoneViolations  Int      @default(0)
+  maxActiveAMRs   Int      @default(0)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+
+  organization    Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  camera          Camera       @relation(fields: [cameraId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([cameraId])
+  @@index([timestamp])
+  @@map("cv_safety_metrics_gold")
 }
 
 // ============================================================================

@@ -43,16 +43,31 @@ class MockProvider implements LLMProvider {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async streamCompletion(_prompt: string, onChunk: (chunk: string) => void, _options?: GenerateOptions): Promise<void> {
+  async streamCompletion(prompt: string, onChunk: (chunk: string) => void, _options?: GenerateOptions): Promise<void> {
     logger.debug('[LLM:Mock] Streaming mock completion...');
-    const words = [
-      "Based", " on", " the", " provided", " context,", " this", " incident", " appears", " to",
-      " be", " related", " to", " a", " potential", " sensor", " malfunction.", "\n\n",
-      "**Recommended Actions:**\n",
-      "- Dispatch an inspector to check the physical sensor connections.\n",
-      "- Correlate with adjacent sensors for environmental anomalies.\n",
-      "- Review camera feeds from the past 24 hours."
-    ];
+    
+    const isInspection = prompt.toLowerCase().includes("inspection");
+    
+    let words: string[] = [];
+    if (isInspection) {
+      words = [
+        "Based", " on", " the", " provided", " inspection", " context,", " the", " asset", " shows",
+        " minor", " signs", " of", " wear", " but", " remains", " structurally", " sound.", "\n\n",
+        "**Summary & Recommendations:**\n",
+        "- No critical anomalies detected in the captured images.\n",
+        "- The inspector noted standard operational conditions.\n",
+        "- Recommendation: Continue regular maintenance schedule; no immediate action required."
+      ];
+    } else {
+      words = [
+        "Based", " on", " the", " provided", " context,", " this", " incident", " appears", " to",
+        " be", " related", " to", " a", " potential", " sensor", " malfunction.", "\n\n",
+        "**Recommended Actions:**\n",
+        "- Dispatch an inspector to check the physical sensor connections.\n",
+        "- Correlate with adjacent sensors for environmental anomalies.\n",
+        "- Review camera feeds from the past 24 hours."
+      ];
+    }
     
     for (const word of words) {
       onChunk(word);

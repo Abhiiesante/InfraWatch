@@ -2,17 +2,22 @@ import { Server as SocketServer } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import logger from '@/utils/logger.js';
 import { DataIntelligenceService } from './data-intelligence.service.js';
+import prisma from '@/lib/prisma.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+
+const execAsync = promisify(exec);
+const ffmpegPath = ffmpegInstaller.path;
+
+export type FrameSource = 'live' | 'static_test' | 'simulated';
 
 /**
  * CV Daemon — Real-time object detection streaming over WebSockets.
  *
- * When ROBOFLOW_API_KEY is configured, this daemon calls the Roboflow
- * Inference API on a timer. When it is NOT configured, it runs a
- * clearly-marked simulation with bouncing bounding boxes and sets
- * `simulated: true` on every emission.
- *
- * IMPORTANT: Simulated detections are NEVER synced to Databricks.
- * Only real inference results should flow into the data lake.
+ * When ROBOFLOW_API_KEY is configured, this daemon fetches live frames from
+ * camera stream URLs and calls the Roboflow Inference API. 
+ * When it is NOT configured, it runs a clearly-marked simulation.
  */
 export class CVDaemon {
   private timer: NodeJS.Timeout | null = null;
@@ -20,20 +25,17 @@ export class CVDaemon {
   private io: SocketServer | null = null;
   private isSimulated = true;
   private roboflowApiKey: string | null = null;
-  private roboflowModelId: string = 'infrawatch-safety/1'; // default model
+  private roboflowModelId: string = 'infrawatch-safety/1';
 
   // Simulated box state (only used when no real inference is available)
-  private boxes = [
+  private simulatedBoxes = [
     { id: 'track_1', label: 'AMR', conf: 92, x: 25, y: 70, w: 12, h: 15, dx: 0.8, dy: -0.3, color: '#06B6D4' },
     { id: 'track_2', label: 'AMR', conf: 87, x: 65, y: 75, w: 10, h: 12, dx: -0.8, dy: -0.2, color: '#06B6D4' },
     { id: 'track_3', label: 'PERSON', conf: 74, x: 45, y: 40, w: 6, h: 20, dx: 0.1, dy: 0.1, color: '#EF4444' },
   ];
 
   attachSocket(server: HttpServer) {
-    this.io = new SocketServer(server, {
-      cors: { origin: '*' }
-    });
-
+    this.io = new SocketServer(server, { cors: { origin: '*' } });
     this.io.on('connection', (socket) => {
       logger.info(`🔌 CV Socket Client connected: ${socket.id}`);
       socket.on('disconnect', () => {
@@ -42,7 +44,7 @@ export class CVDaemon {
     });
   }
 
-  start(intervalMs = 100) {
+  start(defaultIntervalMs = 1000) {
     if (this.isRunning) return;
     this.isRunning = true;
 
@@ -50,10 +52,14 @@ export class CVDaemon {
     this.roboflowModelId = process.env.ROBOFLOW_MODEL_ID || 'infrawatch-safety/1';
     this.isSimulated = !this.roboflowApiKey;
 
+    const intervalMs = process.env.CV_INFERENCE_INTERVAL_MS 
+      ? parseInt(process.env.CV_INFERENCE_INTERVAL_MS, 10) 
+      : (this.isSimulated ? 100 : defaultIntervalMs);
+
     if (this.isSimulated) {
-      logger.warn('👁️ CV Daemon started in SIMULATED mode — ROBOFLOW_API_KEY not configured');
+      logger.warn(`👁️ CV Daemon started in SIMULATED mode — ROBOFLOW_API_KEY not configured. Tick: ${intervalMs}ms`);
     } else {
-      logger.info(`👁️ CV Daemon started with real Roboflow inference (model: ${this.roboflowModelId})`);
+      logger.info(`👁️ CV Daemon started with REAL Roboflow inference (model: ${this.roboflowModelId}). Tick: ${intervalMs}ms`);
     }
 
     this.timer = setInterval(() => {
@@ -78,134 +84,177 @@ export class CVDaemon {
     }
   }
 
-  private cachedFrameBase64: string | null = null;
-  private lastRealTick = 0;
-
-  private async getTestFrameBase64(): Promise<string> {
-    if (this.cachedFrameBase64) return this.cachedFrameBase64;
+  /**
+   * Capture a single frame from the video stream URL using ffmpeg.
+   */
+  private async captureFrameFromStream(streamUrl: string): Promise<Buffer | null> {
     try {
-      logger.info('[CVDaemon] Fetching sample warehouse frame...');
-      // A stock image of a warehouse floor
-      const resp = await fetch('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800');
-      const buffer = await resp.arrayBuffer();
-      this.cachedFrameBase64 = Buffer.from(buffer).toString('base64');
-      return this.cachedFrameBase64;
-    } catch (e) {
-      logger.error('[CVDaemon] Failed to fetch frame, using fallback pixel');
-      return 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      // Use max_muxing_queue_size to prevent buffer issues, and timeout at 5 seconds
+      const cmd = `"${ffmpegPath}" -y -i "${streamUrl}" -vframes 1 -f image2 -c:v mjpeg pipe:1`;
+      const { stdout } = await execAsync(cmd, { encoding: 'buffer', timeout: 5000 });
+      return stdout as Buffer;
+    } catch (err) {
+      logger.warn(`[CVDaemon] ffmpeg frame capture failed for ${streamUrl}: ${String(err).split('\n')[0]}`);
+      return null;
     }
   }
 
   /**
-   * Real inference path — calls Roboflow Hosted Inference API.
+   * Real inference path — iterates through cameras, captures frames, calls Roboflow.
    */
   private async tickReal() {
-    const now = Date.now();
-    // Throttle to 1 fps to avoid burning through API quota
-    if (now - this.lastRealTick < 1000) return;
-    this.lastRealTick = now;
-
     try {
-      const frameBase64 = await this.getTestFrameBase64();
-
-      const response = await fetch(
-        `https://detect.roboflow.com/${this.roboflowModelId}?api_key=${this.roboflowApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: frameBase64,
-          signal: AbortSignal.timeout(5000),
+      // 1. Fetch active cameras
+      const cameras = await prisma.camera.findMany({
+        where: { 
+          status: { not: 'OFFLINE' }
         }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Roboflow API ${response.status}: ${await response.text()}`);
-      }
-
-      const result = await response.json() as {
-        predictions?: Array<{
-          class: string;
-          confidence: number;
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-        }>;
-        image?: { width: number; height: number };
-      };
-
-      const imgW = result.image?.width || 1;
-      const imgH = result.image?.height || 1;
-
-      let zoneViolationsCount = 0;
-      let activeAmrsCount = 0;
-
-      const boxes = (result.predictions || []).map((pred, idx) => {
-        const cls = pred.class.toLowerCase();
-        // Assuming the model predicts 'person', 'worker', 'forklift', 'amr'
-        const isPerson = cls === 'person' || cls === 'worker';
-        const isForklift = cls === 'forklift' || cls === 'amr' || cls === 'vehicle';
-        
-        // Spatial Rule: Keep-Out Zone is the bottom 50% of the frame (y > 50%)
-        const yCenter = (pred.y / imgH) * 100;
-        const isViolation = isPerson && yCenter > 50;
-        
-        if (isViolation) zoneViolationsCount++;
-        if (isForklift) activeAmrsCount++;
-
-        let color = '#10B981'; // default green
-        if (isViolation) color = '#EF4444'; // red for violation
-        else if (isForklift) color = '#06B6D4'; // cyan for AMRs
-        else if (isPerson) color = '#F59E0B'; // amber for safe people
-
-        return {
-          id: `rf_${idx}`,
-          label: pred.class.toUpperCase(),
-          conf: Math.round(pred.confidence * 100),
-          x: +((pred.x - pred.width / 2) / imgW * 100).toFixed(1),
-          y: +((pred.y - pred.height / 2) / imgH * 100).toFixed(1),
-          w: +(pred.width / imgW * 100).toFixed(1),
-          h: +(pred.height / imgH * 100).toFixed(1),
-          color,
-          isViolation
-        };
       });
 
-      if (this.io) {
-        this.io.emit('cv-detections', {
-          simulated: false,
-          boxes,
-          stats: {
-             zoneViolations: zoneViolationsCount,
-             activeAMRs: activeAmrsCount
+      if (cameras.length === 0) {
+        logger.debug('[CVDaemon] No active cameras found.');
+        return;
+      }
+
+      // 2. Process each camera concurrently
+      await Promise.all(cameras.map(async (camera) => {
+        const streamUrl = (camera.config as any)?.streamUrl;
+        if (!streamUrl) return;
+
+        // Capture frame
+        let frameBuffer = await this.captureFrameFromStream(streamUrl);
+        let frameBase64: string;
+        
+        if (!frameBuffer) {
+          // If frame capture fails, we SKIP THIS TICK unless we want to test locally.
+          // For demo/testing, we can inject a dummy 1x1 image, but roboflow might reject it.
+          // Let's just return to avoid spamming Roboflow with empty images.
+          return;
+        } else {
+          frameBase64 = frameBuffer.toString('base64');
+        }
+
+        // Call Roboflow
+        const response = await fetch(
+          `https://detect.roboflow.com/${this.roboflowModelId}?api_key=${this.roboflowApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: frameBase64,
+            signal: AbortSignal.timeout(5000),
           }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Roboflow API ${response.status}: ${await response.text()}`);
+        }
+
+        const result = await response.json() as any;
+        const imgW = result.image?.width || 1;
+        const imgH = result.image?.height || 1;
+
+        let zoneViolationsCount = 0;
+        let activeAmrsCount = 0;
+
+        const boxes = (result.predictions || []).map((pred: any, idx: number) => {
+          const cls = pred.class.toLowerCase();
+          const isPerson = cls === 'person' || cls === 'worker';
+          const isForklift = cls === 'forklift' || cls === 'amr' || cls === 'vehicle';
+          
+          // Spatial Rule: Keep-Out Zone is the bottom 50% of the frame (y > 50%)
+          const yCenter = (pred.y / imgH) * 100;
+          const isViolation = isPerson && yCenter > 50;
+          
+          if (isViolation) zoneViolationsCount++;
+          if (isForklift) activeAmrsCount++;
+
+          let color = '#10B981'; // green
+          if (isViolation) color = '#EF4444'; // red
+          else if (isForklift) color = '#06B6D4'; // cyan
+          else if (isPerson) color = '#F59E0B'; // amber
+
+          return {
+            id: `rf_${camera.id}_${idx}`,
+            label: pred.class.toUpperCase(),
+            conf: Math.round(pred.confidence * 100),
+            x: +((pred.x - pred.width / 2) / imgW * 100).toFixed(1),
+            y: +((pred.y - pred.height / 2) / imgH * 100).toFixed(1),
+            w: +(pred.width / imgW * 100).toFixed(1),
+            h: +(pred.height / imgH * 100).toFixed(1),
+            color,
+            isViolation
+          };
         });
-      }
 
-      // Auto-generate incident on violation (throttled randomly for demo so it doesn't spam DB)
-      if (zoneViolationsCount > 0 && Math.random() > 0.9) {
-         logger.warn('[CVDaemon] Spatial rule violated! Triggering Incident and SCADA Trip.');
-         // Real DB creation would go here, omitting for brevity so we don't need prisma client in this scope
-      }
+        // Emit real payload with LIVE status
+        if (this.io) {
+          this.io.emit('cv-detections', {
+            frameSource: 'live' as FrameSource,
+            cameraId: camera.id,
+            boxes,
+            stats: {
+               zoneViolations: zoneViolationsCount,
+               activeAMRs: activeAmrsCount
+            }
+          });
+        }
 
-      // Sync real detections to Databricks
-      if (boxes.length > 0) {
-        DataIntelligenceService.syncCVToDataPlatform({
-          camera_id: 'primary',
-          detections: boxes,
-          timestamp: new Date().toISOString(),
-          model: this.roboflowModelId,
-        }).catch(err => logger.error(`[CVDaemon] Databricks sync failed: ${err}`));
-      }
+        // Auto-generate anomaly on violation (throttled randomly for demo so it doesn't spam DB)
+        if (zoneViolationsCount > 0 && Math.random() > 0.9) {
+           logger.warn(`[CVDaemon] Camera ${camera.id}: Spatial rule violated! Triggering Anomaly.`);
+           
+           const violations = (result.predictions || []).filter((pred: any) => {
+             const cls = pred.class.toLowerCase();
+             const yCenter = (pred.y / imgH) * 100;
+             return (cls === 'person' || cls === 'worker') && yCenter > 50;
+           });
+
+           if (violations.length > 0) {
+             const formattedDetections = violations.map((pred: any) => ({
+               label: 'RESTRICTED_ZONE_VIOLATION',
+               confidence: pred.confidence,
+               severity: 'CRITICAL',
+               bbox: [
+                 pred.x - pred.width / 2, // left
+                 pred.y - pred.height / 2, // top
+                 pred.width, // w
+                 pred.height // h
+               ],
+               imageWidth: imgW,
+               imageHeight: imgH
+             }));
+
+             prisma.anomalyDetection.create({
+               data: {
+                 tenantId: camera.tenantId,
+                 cameraId: camera.id,
+                 imageUrl: `data:image/jpeg;base64,${frameBase64}`,
+                 detections: formattedDetections,
+                 confidence: violations[0].confidence,
+                 status: 'PENDING_REVIEW'
+               }
+             }).catch(err => logger.error(`[CVDaemon] Failed to create anomaly: ${err}`));
+           }
+        }
+
+        // Sync real detections to Databricks
+        if (boxes.length > 0) {
+          DataIntelligenceService.syncCVToDataPlatform({
+            camera_id: String(camera.id),
+            detections: boxes,
+            timestamp: new Date().toISOString(),
+            model: this.roboflowModelId,
+          }).catch(err => logger.error(`[CVDaemon] Databricks sync failed for camera ${camera.id}: ${err}`));
+        }
+      }));
+
     } catch (error) {
-      logger.error(`[CVDaemon] Roboflow inference failed, falling back to simulated: ${error}`);
-      this.tickSimulated('Roboflow API call failed');
+      logger.error(`[CVDaemon] Real inference cycle failed: ${error}`);
     }
   }
 
   private tickSimulated(reason?: string) {
-    // Advance simulated bounding boxes (clearly fake — bouncing off walls)
-    this.boxes = this.boxes.map(box => {
+    this.simulatedBoxes = this.simulatedBoxes.map(box => {
       let newX = box.x + box.dx;
       let newY = box.y + box.dy;
       let newDx = box.dx;
@@ -221,17 +270,13 @@ export class CVDaemon {
       return { ...box, x: newX, y: newY, dx: newDx, dy: newDy, conf: newConf };
     });
 
-    // Emit with simulated flag — frontend must display this honestly
     if (this.io) {
       this.io.emit('cv-detections', {
-        simulated: true,
+        frameSource: 'simulated' as FrameSource,
         simulationReason: reason || 'ROBOFLOW_API_KEY not configured',
-        boxes: this.boxes,
+        boxes: this.simulatedBoxes,
       });
     }
-
-    // NEVER sync simulated data to Databricks.
-    // Fake data in a real data lake is worse than no data.
   }
 }
 

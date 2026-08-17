@@ -185,6 +185,27 @@ OPERATOR_FEEDBACK_SCHEMA = _with_metadata([
 
 
 # ============================================================================
+# silver.cv_detections
+# ============================================================================
+
+CV_DETECTIONS_SCHEMA = _with_metadata([
+    StructField("detection_id", StringType(), nullable=False),
+    StructField("camera_id", IntegerType(), nullable=False),
+    StructField("tenant_id", IntegerType(), nullable=False),
+    StructField("event_timestamp", TimestampType(), nullable=False),
+    StructField("model_name", StringType(), nullable=True),
+    StructField("label", StringType(), nullable=False),
+    StructField("confidence", IntegerType(), nullable=False),
+    StructField("x", DoubleType(), nullable=False),
+    StructField("y", DoubleType(), nullable=False),
+    StructField("width", DoubleType(), nullable=False),
+    StructField("height", DoubleType(), nullable=False),
+    StructField("is_violation", BooleanType(), nullable=False),
+    StructField("event_date", StringType(), nullable=False),      # YYYY-MM-DD partition
+])
+
+
+# ============================================================================
 # Registry
 # ============================================================================
 
@@ -196,4 +217,5 @@ SILVER_TABLE_SCHEMAS: dict[str, StructType] = {
     "incidents": INCIDENTS_SCHEMA,
     "image_metadata": IMAGE_METADATA_SCHEMA,
     "operator_feedback": OPERATOR_FEEDBACK_SCHEMA,
+    "cv_detections": CV_DETECTIONS_SCHEMA,
 }

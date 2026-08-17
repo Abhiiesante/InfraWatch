@@ -1,5 +1,5 @@
 """
-Bronze Ingestion Pipeline: Telemetry
+Bronze Ingestion Pipeline: CV Events
 Reads raw JSON from the landing zone and losslessly writes it to a Bronze Delta table.
 """
 import os
@@ -13,13 +13,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import current_timestamp, lit, input_file_name, udf, to_json, struct
 from pyspark.sql.types import StringType
-from pipelines.bronze.schemas import SENSOR_TELEMETRY_SCHEMA
+from pipelines.bronze.schemas import CV_EVENTS_SCHEMA
 
 # Configure paths
 # If DATA_LAKE_PATH is set, use it (for local testing). Otherwise default to Databricks /Volumes path.
 DATA_LAKE_PATH = os.environ.get("DATA_LAKE_PATH", "/Volumes")
-RAW_DATA_PATH = f"{DATA_LAKE_PATH}/workspace/default/infrawatch_raw/telemetry/*/*.json"
-BRONZE_TABLE_PATH = "workspace.default.sensor_telemetry_bronze"
+RAW_DATA_PATH = f"{DATA_LAKE_PATH}/workspace/default/infrawatch_raw/cv_events/*/*.json"
+BRONZE_TABLE_PATH = "workspace.default.cv_events_bronze"
 
 def generate_hash(record: str) -> str:
     import hashlib
@@ -32,33 +32,31 @@ uuid_udf = udf(lambda: str(uuid.uuid4()), StringType())
 date_udf = udf(lambda: datetime.datetime.now().strftime("%Y-%m-%d"), StringType())
 
 def run():
-    print(f"Starting Bronze Telemetry Ingestion from {RAW_DATA_PATH}")
+    print(f"Starting Bronze CV Events Ingestion from {RAW_DATA_PATH}")
     
-    # In Databricks Serverless Job, spark session is automatically available or created this way
     spark = SparkSession.builder.getOrCreate()
 
     try:
-        # Check if any files exist to avoid path not found error
         import glob
         if not glob.glob(RAW_DATA_PATH):
-            print(f"No raw files found in {RAW_DATA_PATH}. Skipping Bronze ingestion.")
+            print(f"No raw files found in {RAW_DATA_PATH}. Skipping Bronze CV ingestion.")
             return
 
         df = spark.read \
-            .schema(SENSOR_TELEMETRY_SCHEMA) \
+            .schema(CV_EVENTS_SCHEMA) \
             .json(RAW_DATA_PATH)
 
         # Append standard bronze metadata
         enriched_df = df \
             .withColumn("_ingestion_timestamp", current_timestamp()) \
-            .withColumn("_source", lit("operational_db")) \
+            .withColumn("_source", lit("cv_daemon")) \
             .withColumn("_source_file", input_file_name()) \
             .withColumn("_batch_id", uuid_udf()) \
             .withColumn("_record_hash", hash_udf(to_json(struct([df[x] for x in df.columns])))) \
             .withColumn("_schema_version", lit(1)) \
             .withColumn("_ingestion_date", date_udf())
 
-        print("Writing to Bronze Delta table...")
+        print("Writing to Bronze CV Events Delta table...")
         
         enriched_df.write \
             .format("delta") \
@@ -67,9 +65,9 @@ def run():
             .partitionBy("_ingestion_date") \
             .saveAsTable(BRONZE_TABLE_PATH)
             
-        print(f"Successfully ingested telemetry to {BRONZE_TABLE_PATH}")
+        print(f"Successfully ingested CV events to {BRONZE_TABLE_PATH}")
     except Exception as e:
-        print(f"Error processing bronze telemetry: {e}")
+        print(f"Error processing bronze cv events: {e}")
         import traceback
         traceback.print_exc()
         raise e

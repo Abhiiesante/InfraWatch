@@ -361,16 +361,16 @@ async function seed() {
   // Create 10 Cameras (1 per Asset) with sample video streams
   const assets = [asset1, asset2, asset3, asset4, asset5, asset6, asset7, asset8, asset9, asset10];
   const videoUrls = [
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackComplexity.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+    'https://media.roboflow.com/supervision/video-examples/store-aisle.mp4',
+    'https://media.roboflow.com/supervision/video-examples/vehicles.mp4',
+    'https://media.roboflow.com/supervision/video-examples/people-walking.mp4',
+    'https://media.roboflow.com/supervision/video-examples/store-aisle.mp4',
+    'https://media.roboflow.com/supervision/video-examples/vehicles.mp4',
+    'https://media.roboflow.com/supervision/video-examples/people-walking.mp4',
+    'https://media.roboflow.com/supervision/video-examples/store-aisle.mp4',
+    'https://media.roboflow.com/supervision/video-examples/vehicles.mp4',
+    'https://media.roboflow.com/supervision/video-examples/people-walking.mp4',
+    'https://media.roboflow.com/supervision/video-examples/store-aisle.mp4',
   ];
 
   for (let i = 0; i < assets.length; i++) {

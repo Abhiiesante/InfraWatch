@@ -110,10 +110,6 @@ export class AnomalyService {
         detections: analysis.detections as any,
         confidence: analysis.overallConfidence,
         status: 'PENDING_REVIEW',
-        metadata: {
-          simulated: analysis.simulated,
-          simulationReason: analysis.simulationReason || null,
-        },
       },
     });
   }

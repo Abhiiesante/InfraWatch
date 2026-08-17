@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useInspectionDetails, useUpdateInspection } from '../api/useInspectionDetails';
+import { useInspectionDetails, useUpdateInspection, useUploadInspectionImage } from '../api/useInspectionDetails';
 import { useAuthStore } from '@/store/auth.store';
-import { ClipboardCheck, ArrowLeft, Loader2, Camera, User, Calendar, FileText, ChevronRight, CheckCircle2, Clock, Play } from 'lucide-react';
+import { ClipboardCheck, ArrowLeft, Loader2, Camera, User, Calendar, FileText, ChevronRight, CheckCircle2, Clock, Play, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { useRef } from 'react';
+import { InspectionCopilot } from '../components/InspectionCopilot';
 
 const statusConfig: Record<string, { bg: string; icon: typeof Clock }> = {
   SCHEDULED: { bg: 'bg-blue-100 text-blue-800 border-blue-200', icon: Calendar },
@@ -17,8 +19,10 @@ export const InspectionDetailPage = () => {
   const { user: currentUser } = useAuthStore();
   const { data: inspection, isLoading } = useInspectionDetails(inspectionId);
   const { mutateAsync: updateInspection, isPending: isUpdating } = useUpdateInspection();
+  const { mutateAsync: uploadImage, isPending: isUploading } = useUploadInspectionImage();
   const [notes, setNotes] = useState('');
   const [notesEditing, setNotesEditing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) {
     return (
@@ -55,6 +59,26 @@ export const InspectionDetailPage = () => {
     } catch (error) {
       console.error('Failed to save notes:', error);
     }
+  };
+
+  const handleCaptureImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64Data = reader.result as string;
+        await uploadImage({ 
+          id: inspectionId, 
+          imageUrl: base64Data, 
+          caption: `Photo taken on ${format(new Date(), 'PPp')}` 
+        });
+      } catch (error) {
+        console.error('Failed to upload image:', error);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -147,14 +171,18 @@ export const InspectionDetailPage = () => {
               <FileText className="w-5 h-5 text-primary" />
               Inspection Notes
             </h2>
-            {canManage && !notesEditing && (
-              <button
-                onClick={() => { setNotes(inspection.notes || ''); setNotesEditing(true); }}
-                className="text-sm font-bold text-primary hover:bg-primary/10 px-3 py-1 rounded-lg transition-colors"
-              >
-                Edit
-              </button>
-            )}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <InspectionCopilot inspectionId={inspectionId} />
+
+                {canManage && (
+                  <button
+                    onClick={() => { setNotes(inspection.notes || ''); setNotesEditing(true); }}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg font-medium transition-colors border border-primary/20"
+                  >
+                    Edit Notes
+                  </button>
+                )}
+            </div>
           </div>
 
           {notesEditing ? (
@@ -192,11 +220,33 @@ export const InspectionDetailPage = () => {
 
         {/* Inspection Images */}
         <div className="glass rounded-2xl border border-white/20 p-6 shadow-xl slide-in-bottom" style={{ animationDelay: '100ms' }}>
-          <h2 className="text-xl font-extrabold text-[#3A4046] flex items-center gap-2 mb-6">
-            <div className="w-1.5 h-6 bg-primary rounded-full"></div>
-            <Camera className="w-5 h-5 text-primary" />
-            Photos ({inspection.inspectionImages?.length || 0})
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-extrabold text-[#3A4046] flex items-center gap-2">
+              <div className="w-1.5 h-6 bg-primary rounded-full"></div>
+              <Camera className="w-5 h-5 text-primary" />
+              Photos ({inspection.inspectionImages?.length || 0})
+            </h2>
+            {canManage && (
+              <>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleCaptureImage}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Take Photo
+                </button>
+              </>
+            )}
+          </div>
 
           {inspection.inspectionImages?.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">

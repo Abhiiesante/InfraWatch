@@ -7,24 +7,23 @@ import { format } from 'date-fns';
 import Hls from 'hls.js';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
+const socket = io(window.location.origin, { path: '/socket.io' });
 
 const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
   const [boxes, setBoxes] = useState<any[]>([]);
-  const [isSimulated, setIsSimulated] = useState(false);
+  const [frameSource, setFrameSource] = useState<'live' | 'static_test' | 'simulated'>('simulated');
 
   useEffect(() => {
     if (!isPlaying) return;
     
     socket.on('cv-detections', (data) => {
       if (data && typeof data === 'object' && 'boxes' in data) {
-        // New format: { simulated: boolean, boxes: [] }
         setBoxes(data.boxes || []);
-        setIsSimulated(!!data.simulated);
+        // Legacy fallback support for older payload
+        setFrameSource(data.frameSource || (data.simulated ? 'simulated' : 'live'));
       } else if (Array.isArray(data)) {
-        // Legacy format: raw array
         setBoxes(data);
-        setIsSimulated(false);
+        setFrameSource('live');
       }
     });
 
@@ -37,12 +36,23 @@ const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
-      {/* Simulated badge */}
-      {isSimulated && (
-        <div className="absolute top-2 right-2 z-30 bg-amber-500/90 text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
+      {/* 3-State Honesty Badge */}
+      {frameSource === 'simulated' && (
+        <div className="absolute top-2 right-2 z-30 bg-rose-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
           ⚠ SIMULATED — AI NOT CONNECTED
         </div>
       )}
+      {frameSource === 'static_test' && (
+        <div className="absolute top-2 right-2 z-30 bg-amber-500/90 text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
+          ⚠ REAL INFERENCE, STATIC TEST FRAME
+        </div>
+      )}
+      {frameSource === 'live' && (
+        <div className="absolute top-2 right-2 z-30 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
+          🟢 LIVE INFERENCE
+        </div>
+      )}
+
       {boxes.map(box => (
         <div
           key={box.id}
@@ -54,7 +64,7 @@ const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
             height: `${box.h}%`,
             borderColor: box.color,
             boxShadow: `0 0 10px ${box.color}40`,
-            borderStyle: isSimulated ? 'dashed' : 'solid',
+            borderStyle: frameSource === 'simulated' ? 'dashed' : 'solid',
           }}
         >
           {/* Label Tab */}
@@ -275,24 +285,13 @@ export const CamerasListPage = () => {
   };
 
   // Resolve video stream URL for each camera. Returns isDemoStream flag
-  // to honestly indicate when a YouTube fallback is used instead of a real camera feed.
+  // to honestly indicate when a fallback video is used instead of a real camera feed.
   const getCameraHlsStream = (camera: any): { url: string; isDemoStream: boolean } => {
     if (camera.config?.streamUrl) {
       return { url: camera.config.streamUrl, isDemoStream: false };
     }
-    const name = camera.name?.toLowerCase() || '';
-    const assetName = camera.asset?.name?.toLowerCase() || '';
-
-    if (name.includes('venice') || assetName.includes('venice')) {
-      return { url: 'https://www.youtube.com/embed/gL-5u1mB12g?autoplay=1&mute=1&playsinline=1&loop=1&playlist=gL-5u1mB12g&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0', isDemoStream: true };
-    }
-    
-    if (name.includes('nyc') || assetName.includes('york')) {
-       return { url: 'https://www.youtube.com/embed/e1X_zIu25Gg?autoplay=1&mute=1&playsinline=1&loop=1&playlist=e1X_zIu25Gg&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0', isDemoStream: true };
-    }
-    
-    // Default fallback — YouTube demo stream
-    return { url: 'https://www.youtube.com/embed/8gy5tYVR-28?autoplay=1&mute=1&playsinline=1&loop=1&playlist=8gy5tYVR-28&controls=0&modestbranding=1&rel=0&disablekb=1&cc_load_policy=0', isDemoStream: true };
+    // Default fallback — Generic demonstration video
+    return { url: 'https://media.roboflow.com/supervision/video-examples/vehicles.mp4', isDemoStream: true };
   };
 
   const getCameraPoster = (camera: any) => {

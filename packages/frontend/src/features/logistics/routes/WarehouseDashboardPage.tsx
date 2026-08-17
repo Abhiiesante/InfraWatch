@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Box, Activity, ShieldAlert, Cpu, AlertTriangle } from 'lucide-react';
+import { Box, Activity, ShieldAlert, Cpu, AlertTriangle, BarChart3, TrendingDown } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { apiClient } from '@/lib/api';
 
-const socket = io('http://localhost:3000');
+const socket = io(window.location.origin, { path: '/socket.io' });
 
 export function WarehouseDashboardPage() {
   const [stats, setStats] = useState({
@@ -12,6 +14,9 @@ export function WarehouseDashboardPage() {
     safetyScore: 99
   });
   const [boxes, setBoxes] = useState<any[]>([]);
+  const [frameSource, setFrameSource] = useState<'live' | 'static_test' | 'simulated'>('simulated');
+  const [goldMetrics, setGoldMetrics] = useState<any[]>([]);
+  const [goldTotals, setGoldTotals] = useState<any>(null);
 
   useEffect(() => {
     socket.on('cv-detections', (data) => {
@@ -27,11 +32,32 @@ export function WarehouseDashboardPage() {
       if (data && data.boxes) {
         setBoxes(data.boxes);
       }
+      if (data && data.frameSource) {
+        setFrameSource(data.frameSource);
+      }
     });
 
     return () => {
       socket.off('cv-detections');
     };
+  }, []);
+
+  // Fetch Gold-layer historical metrics
+  useEffect(() => {
+    const fetchGoldMetrics = async () => {
+      try {
+        const res = await apiClient.get('/v4/dashboard/safety-metrics?hours=24');
+        if (res.data?.data) {
+          setGoldMetrics(res.data.data.timeSeries || []);
+          setGoldTotals(res.data.data.totals || null);
+        }
+      } catch (err) {
+        // Silently fail — Gold metrics are supplementary
+      }
+    };
+    fetchGoldMetrics();
+    const interval = setInterval(fetchGoldMetrics, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -47,10 +73,24 @@ export function WarehouseDashboardPage() {
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-emerald-700 font-bold text-sm">Roboflow Model Active</span>
-          </div>
+          {frameSource === 'live' && (
+            <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-emerald-700 font-bold text-sm">Roboflow Model Active (Live)</span>
+            </div>
+          )}
+          {frameSource === 'static_test' && (
+            <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <span className="text-amber-700 font-bold text-sm">Roboflow Model Active (Static Test)</span>
+            </div>
+          )}
+          {frameSource === 'simulated' && (
+            <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+              <span className="text-rose-700 font-bold text-sm">AI Disconnected (Simulated)</span>
+            </div>
+          )}
           <button className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
             Configure Zones
           </button>
@@ -150,6 +190,96 @@ export function WarehouseDashboardPage() {
              </div>
            ))}
          </div>
+      </div>
+
+      {/* Historical Safety Trends (Gold Layer) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Detections Over Time */}
+        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-8 shadow-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Detection Trends (24h)</h3>
+              <p className="text-xs text-slate-500">Hourly aggregated from Gold metrics layer</p>
+            </div>
+          </div>
+          {goldMetrics.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={goldMetrics}>
+                <defs>
+                  <linearGradient id="gradDetections" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradViolations" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="timestamp" tickFormatter={(t: string) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} fontSize={11} stroke="#94a3b8" />
+                <YAxis fontSize={11} stroke="#94a3b8" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }}
+                  labelFormatter={(t: string) => new Date(t).toLocaleString()}
+                />
+                <Area type="monotone" dataKey="totalDetections" stroke="#6366f1" fill="url(#gradDetections)" strokeWidth={2} name="Total Detections" />
+                <Area type="monotone" dataKey="zoneViolations" stroke="#ef4444" fill="url(#gradViolations)" strokeWidth={2} name="Zone Violations" />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[280px] flex items-center justify-center text-slate-400 text-sm">
+              <div className="text-center">
+                <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">No historical data yet</p>
+                <p className="text-xs mt-1">Gold metrics sync every 60 seconds</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Gold Totals Summary */}
+        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-8 shadow-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+              <TrendingDown className="w-5 h-5 text-rose-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Safety Summary (24h)</h3>
+              <p className="text-xs text-slate-500">Aggregated from the Gold metrics pipeline</p>
+            </div>
+          </div>
+          {goldTotals ? (
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-slate-50 rounded-xl p-6 text-center">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Total Detections</p>
+                <p className="text-4xl font-extrabold text-indigo-600">{goldTotals.totalDetections}</p>
+              </div>
+              <div className="bg-rose-50 rounded-xl p-6 text-center">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Zone Violations</p>
+                <p className="text-4xl font-extrabold text-rose-600">{goldTotals.zoneViolations}</p>
+              </div>
+              <div className="bg-cyan-50 rounded-xl p-6 text-center">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Peak Active AMRs</p>
+                <p className="text-4xl font-extrabold text-cyan-600">{goldTotals.maxActiveAMRs}</p>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-6 text-center">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Data Points</p>
+                <p className="text-4xl font-extrabold text-emerald-600">{goldTotals.dataPoints}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[240px] flex items-center justify-center text-slate-400 text-sm">
+              <div className="text-center">
+                <TrendingDown className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium">Awaiting Gold layer sync</p>
+                <p className="text-xs mt-1">Metrics appear after the first sync cycle</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
     </div>

@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import prisma from '@/lib/prisma.js';
 import logger from '@/utils/logger.js';
 
@@ -11,33 +13,51 @@ import logger from '@/utils/logger.js';
 export class DataIntelligenceService {
   
   /**
+   * Helper to write raw payloads to a local directory when Databricks is not configured.
+   */
+  private static async fallbackToLocalStorage(volumePath: string, payload: string) {
+    try {
+      const localBasePath = process.env.DATA_LAKE_PATH || path.join(process.cwd(), '..', 'data-platform');
+      const fullLocalPath = path.join(localBasePath, volumePath);
+      const dirPath = path.dirname(fullLocalPath);
+      
+      await fs.mkdir(dirPath, { recursive: true });
+      await fs.writeFile(fullLocalPath, payload);
+      
+      logger.debug(`[DataIntelligence] Fallback: Wrote to local storage: ${fullLocalPath}`);
+    } catch (err) {
+      logger.error(`[DataIntelligence] Local storage fallback failed: ${err}`);
+    }
+  }
+
+  /**
    * Emits an asset creation/update event to the data platform.
    * In a production setup, this would publish to Kafka/EventHubs 
    * or write a JSON record to cloud storage for Databricks Auto Loader.
    */
   static async syncAssetToDataPlatform(tenantId: number, assetId: number) {
     try {
-      const host = process.env.DATABRICKS_HOST;
-      const token = process.env.DATABRICKS_TOKEN;
-
-      if (!host || !token) {
-        logger.warn('[DataIntelligence] Databricks credentials not configured, skipping asset sync.');
-        return { success: false, reason: 'DATABRICKS_NOT_CONFIGURED' };
-      }
-
       const asset = await prisma.asset.findFirst({ where: { id: assetId, tenantId } });
       if (!asset) return { success: false, reason: 'ASSET_NOT_FOUND' };
 
       const date = new Date().toISOString().split('T')[0];
       const filename = `${Date.now()}-${assetId}-${Math.random().toString(36).substring(7)}.json`;
-      const fullPath = `/Volumes/workspace/default/infrawatch_raw/assets/${date}/${filename}`;
-
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/assets/${date}/${filename}`;
       const payload = JSON.stringify({
         ...asset,
         _ingestion_event_time: new Date().toISOString(),
       }) + '\n';
 
-      const response = await fetch(`${host}/api/2.0/fs/files${fullPath}?overwrite=true`, {
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+
+      if (!host || !token) {
+        logger.warn('[DataIntelligence] Databricks not configured. Falling back to local storage...');
+        await this.fallbackToLocalStorage(volumePath, payload);
+        return { success: true, localFallback: true };
+      }
+
+      const response = await fetch(`${host}/api/2.0/fs/files${volumePath}?overwrite=true`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
         body: payload,
@@ -48,7 +68,7 @@ export class DataIntelligenceService {
         throw new Error(`Databricks API Error: ${response.status} ${err}`);
       }
 
-      logger.debug(`[DataIntelligence] Asset landed in Databricks UC Volume: ${fullPath}`);
+      logger.debug(`[DataIntelligence] Asset landed in Databricks UC Volume: ${volumePath}`);
       return { success: true, syncedAt: new Date() };
     } catch (error) {
       logger.error(`[DataIntelligence] Failed to sync asset to data platform: ${error}`);
@@ -61,27 +81,27 @@ export class DataIntelligenceService {
    */
   static async syncIncidentToDataPlatform(tenantId: number, incidentId: number) {
     try {
-      const host = process.env.DATABRICKS_HOST;
-      const token = process.env.DATABRICKS_TOKEN;
-
-      if (!host || !token) {
-        logger.warn('[DataIntelligence] Databricks credentials not configured, skipping incident sync.');
-        return { success: false, reason: 'DATABRICKS_NOT_CONFIGURED' };
-      }
-
       const incident = await prisma.incident.findFirst({ where: { id: incidentId, tenantId } });
       if (!incident) return { success: false, reason: 'INCIDENT_NOT_FOUND' };
 
       const date = new Date().toISOString().split('T')[0];
       const filename = `${Date.now()}-${incidentId}-${Math.random().toString(36).substring(7)}.json`;
-      const fullPath = `/Volumes/workspace/default/infrawatch_raw/incidents/${date}/${filename}`;
-
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/incidents/${date}/${filename}`;
       const payload = JSON.stringify({
         ...incident,
         _ingestion_event_time: new Date().toISOString(),
       }) + '\n';
 
-      const response = await fetch(`${host}/api/2.0/fs/files${fullPath}?overwrite=true`, {
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+
+      if (!host || !token) {
+        logger.warn('[DataIntelligence] Databricks not configured. Falling back to local storage...');
+        await this.fallbackToLocalStorage(volumePath, payload);
+        return { success: true, localFallback: true };
+      }
+
+      const response = await fetch(`${host}/api/2.0/fs/files${volumePath}?overwrite=true`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
         body: payload,
@@ -92,7 +112,7 @@ export class DataIntelligenceService {
         throw new Error(`Databricks API Error: ${response.status} ${err}`);
       }
 
-      logger.debug(`[DataIntelligence] Incident landed in Databricks UC Volume: ${fullPath}`);
+      logger.debug(`[DataIntelligence] Incident landed in Databricks UC Volume: ${volumePath}`);
       return { success: true, syncedAt: new Date() };
     } catch (error) {
       logger.error(`[DataIntelligence] Failed to sync incident to data platform: ${error}`);
@@ -109,25 +129,21 @@ export class DataIntelligenceService {
       const date = new Date().toISOString().split('T')[0];
       const filename = `${Date.now()}-${data.assetId || 'unknown'}-${Math.random().toString(36).substring(7)}.json`;
       
-      const host = process.env.DATABRICKS_HOST;
-      const token = process.env.DATABRICKS_TOKEN;
-      
-      if (!host || !token) {
-        logger.warn('[DataIntelligence] Databricks credentials not configured, skipping telemetry sync.');
-        return { success: false };
-      }
-
-      const volumePath = `/Volumes/workspace/default/infrawatch_raw/telemetry/${date}`;
-      const fullPath = `${volumePath}/${filename}`;
-      
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/telemetry/${date}/${filename}`;
       const payload = JSON.stringify({
         ...data,
         _ingestion_event_time: new Date().toISOString()
       }) + '\n';
 
-      // Ensure directory exists (Volumes API creates parent dirs automatically on file upload)
-      // Upload using REST API
-      const response = await fetch(`${host}/api/2.0/fs/files${fullPath}?overwrite=true`, {
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+      
+      if (!host || !token) {
+        await this.fallbackToLocalStorage(volumePath, payload);
+        return { success: true, localFallback: true };
+      }
+
+      const response = await fetch(`${host}/api/2.0/fs/files${volumePath}?overwrite=true`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -141,7 +157,7 @@ export class DataIntelligenceService {
         throw new Error(`Databricks API Error: ${response.status} ${err}`);
       }
       
-      logger.debug(`[DataIntelligence] Telemetry landed in Databricks UC Volume: ${fullPath}`);
+      logger.debug(`[DataIntelligence] Telemetry landed in Databricks UC Volume: ${volumePath}`);
       return { success: true };
     } catch (error) {
       logger.error(`[DataIntelligence] Failed to sync telemetry to data platform: ${error}`);
@@ -154,23 +170,21 @@ export class DataIntelligenceService {
       const date = new Date().toISOString().split('T')[0];
       const filename = `${Date.now()}-${data.camera_id || 'unknown'}-${Math.random().toString(36).substring(7)}.json`;
       
-      const host = process.env.DATABRICKS_HOST;
-      const token = process.env.DATABRICKS_TOKEN;
-      
-      if (!host || !token) {
-        logger.warn('[DataIntelligence] Databricks credentials not configured, skipping CV sync.');
-        return { success: false };
-      }
-
-      const volumePath = `/Volumes/workspace/default/infrawatch_raw/cv_events/${date}`;
-      const fullPath = `${volumePath}/${filename}`;
-      
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/cv_events/${date}/${filename}`;
       const payload = JSON.stringify({
         ...data,
         _ingestion_event_time: new Date().toISOString()
       }) + '\n';
 
-      const response = await fetch(`${host}/api/2.0/fs/files${fullPath}?overwrite=true`, {
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+      
+      if (!host || !token) {
+        await this.fallbackToLocalStorage(volumePath, payload);
+        return { success: true, localFallback: true };
+      }
+
+      const response = await fetch(`${host}/api/2.0/fs/files${volumePath}?overwrite=true`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -184,7 +198,7 @@ export class DataIntelligenceService {
         throw new Error(`Databricks API Error: ${response.status} ${err}`);
       }
       
-      logger.debug(`[DataIntelligence] CV Event landed in Databricks UC Volume: ${fullPath}`);
+      logger.debug(`[DataIntelligence] CV Event landed in Databricks UC Volume: ${volumePath}`);
       return { success: true };
     } catch (error) {
       logger.error(`[DataIntelligence] Failed to sync CV to data platform: ${error}`);

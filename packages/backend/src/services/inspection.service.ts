@@ -85,6 +85,25 @@ export class InspectionService {
       include: { asset: true, inspector: true },
     });
   }
+
+  async uploadImage(id: number, tenantId: number, data: { imageUrl: string; caption?: string }) {
+    const inspection = await prisma.inspection.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!inspection) {
+      throw new NotFoundError('Inspection');
+    }
+
+    return prisma.inspectionImage.create({
+      data: {
+        tenantId: tenantId,
+        inspectionId: id,
+        imageUrl: data.imageUrl,
+        caption: data.caption,
+      },
+    });
+  }
 }
 
 export const inspectionService = new InspectionService();

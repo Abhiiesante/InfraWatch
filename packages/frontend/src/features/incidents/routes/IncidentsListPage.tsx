@@ -1,172 +1,193 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useIncidents } from '../api/useIncidents';
-import { AlertTriangle, Search, Plus, MessageSquare } from 'lucide-react';
+import { AlertTriangle, Plus, MessageSquare, GripVertical, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { CreateIncidentModal } from '../components/CreateIncidentModal';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { apiClient } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 
-function getSeverityChipClass(severity: string) {
+const COLUMNS = ['OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED'];
+
+function getSeverityColor(severity: string) {
   switch (severity) {
-    case 'CRITICAL': return 'status-chip status-chip--critical';
-    case 'HIGH': return 'status-chip status-chip--high';
-    case 'MEDIUM': return 'status-chip status-chip--medium';
-    default: return 'status-chip status-chip--low';
+    case 'CRITICAL': return 'bg-rose-500/10 text-rose-600 border-rose-500/20';
+    case 'HIGH': return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+    case 'MEDIUM': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+    default: return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
   }
 }
 
 export const IncidentsListPage = () => {
-  const [page, setPage] = useState(1);
-  const take = 10;
-  const skip = (page - 1) * take;
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useIncidents({ skip: 0, take: 100 });
+  
+  // Local state for optimistic UI updates during drag-and-drop
+  const [boardData, setBoardData] = useState<Record<string, any[]>>({
+    OPEN: [],
+    INVESTIGATING: [],
+    RESOLVED: [],
+    CLOSED: [],
+  });
 
-  const { data, isLoading } = useIncidents({ skip, take });
+  // Sync server data to local state when loaded
+  useEffect(() => {
+    if (data?.incidents) {
+      const newBoard: Record<string, any[]> = {
+        OPEN: [],
+        INVESTIGATING: [],
+        RESOLVED: [],
+        CLOSED: [],
+      };
+      
+      data.incidents.forEach((incident: any) => {
+        if (newBoard[incident.status]) {
+          newBoard[incident.status].push(incident);
+        } else {
+          newBoard['OPEN'].push(incident); // fallback
+        }
+      });
+      
+      setBoardData(newBoard);
+    }
+  }, [data]);
+
+  const onDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+
+    // Dropped outside a valid column
+    if (!destination) return;
+
+    // Dropped in the same spot
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    const sourceColId = source.droppableId;
+    const destColId = destination.droppableId;
+
+    const sourceCol = [...boardData[sourceColId]];
+    const destCol = sourceColId === destColId ? sourceCol : [...boardData[destColId]];
+
+    const [movedItem] = sourceCol.splice(source.index, 1);
+    
+    // Update local status optimistically
+    movedItem.status = destColId;
+    destCol.splice(destination.index, 0, movedItem);
+
+    setBoardData(prev => ({
+      ...prev,
+      [sourceColId]: sourceCol,
+      [destColId]: destCol,
+    }));
+
+    // Trigger API call
+    try {
+      await apiClient.put(`/incidents/${draggableId}`, { status: destColId });
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+    } catch (err) {
+      // Revert if API fails
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+    }
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 w-full">
+    <div className="max-w-[1600px] mx-auto space-y-8 w-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: '#3A4046' }}>
-            Incidents
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-800">
+            Incident Kanban
           </h1>
-          <p className="mt-2 text-lg font-medium" style={{ color: '#6B7280' }}>Track and resolve reported infrastructure issues.</p>
+          <p className="mt-2 text-lg font-medium text-slate-500">
+            Drag and drop incidents across investigation stages.
+          </p>
         </div>
         <CreateIncidentModal>
-          <button className="glass-btn-primary flex items-center gap-2">
+          <button className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Report Incident
           </button>
         </CreateIncidentModal>
       </div>
 
-      {/* Main Content Area */}
-      <div className="glass-panel overflow-hidden glass-sheen">
-        {/* Toolbar */}
-        <div
-          className="p-5 flex flex-col md:flex-row items-center gap-4 relative z-10"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.40)', background: 'rgba(255,255,255,0.20)' }}
-        >
-          <div className="relative flex-1 max-w-md w-full group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="w-5 h-5" style={{ color: '#9CA3AF' }} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Search incidents..." 
-              className="glass-input w-full pl-11"
-            />
-          </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center p-24">
+          <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
         </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto relative z-10">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.30)' }}>
-                <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Title</th>
-                <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Asset</th>
-                <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Severity</th>
-                <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Status</th>
-                <th className="px-8 py-5 text-xs font-bold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-10 h-10 border-4 rounded-full animate-spin mb-4" style={{ borderColor: 'rgba(127,184,176,0.20)', borderTopColor: '#7FB8B0' }}></div>
-                      <p className="font-medium" style={{ color: '#9CA3AF' }}>Loading incidents...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : data?.incidents?.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.40)' }}>
-                        <AlertTriangle className="w-8 h-8" style={{ color: '#9CA3AF' }} />
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+            {COLUMNS.map((columnId) => (
+              <div key={columnId} className="flex flex-col h-full bg-slate-100/50 rounded-2xl border border-slate-200/50 p-4">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <h3 className="font-extrabold text-slate-700 tracking-wide text-sm">{columnId}</h3>
+                  <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {boardData[columnId]?.length || 0}
+                  </span>
+                </div>
+                
+                <Droppable droppableId={columnId}>
+                  {(provided, snapshot) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className={`flex-1 transition-colors rounded-xl overflow-y-auto ${
+                        snapshot.isDraggingOver ? 'bg-slate-200/50' : ''
+                      }`}
+                    >
+                      <div className="space-y-3 p-1">
+                        {boardData[columnId]?.map((incident, index) => (
+                          <Draggable key={String(incident.id)} draggableId={String(incident.id)} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`bg-white rounded-xl p-4 shadow-sm border transition-shadow ${
+                                  snapshot.isDragging ? 'shadow-xl border-indigo-300 ring-2 ring-indigo-500/20 rotate-2' : 'border-slate-200 hover:border-slate-300'
+                                }`}
+                                onClick={() => window.location.href = `/incidents/${incident.id}`}
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex gap-2">
+                                    <div {...provided.dragHandleProps} className="mt-0.5 cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600">
+                                      <GripVertical className="w-4 h-4" />
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getSeverityColor(incident.severity)} uppercase`}>
+                                      {incident.severity}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs font-bold text-slate-400">#{incident.id}</span>
+                                </div>
+                                
+                                <h4 className="font-bold text-slate-800 text-sm leading-tight line-clamp-2 mb-2">
+                                  {incident.title}
+                                </h4>
+                                
+                                <div className="flex items-center justify-between text-xs font-medium text-slate-500 mt-4">
+                                  <div className="flex items-center gap-1.5 truncate max-w-[120px]">
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    <span className="truncate">{incident.asset?.name || 'No Asset'}</span>
+                                  </div>
+                                  <span>{format(new Date(incident.createdAt), 'MMM d')}</span>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                      <p className="font-medium text-lg" style={{ color: '#6B7280' }}>No incidents reported</p>
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                data?.incidents?.map((incident: any, i: number) => (
-                  <tr
-                    key={incident.id}
-                    className="group transition-colors duration-200 cursor-pointer animate-stagger-up"
-                    style={{ animationDelay: `${i * 60}ms`, borderBottom: '1px solid rgba(255,255,255,0.30)' }}
-                    onClick={() => window.location.href = `/incidents/${incident.id}`}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.30)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="p-3 rounded-xl "
-                          style={{ background: 'rgba(224,133,133,0.10)', border: '1px solid rgba(224,133,133,0.20)' }}
-                        >
-                          <AlertTriangle className="w-5 h-5" style={{ color: '#E08585' }} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-base" style={{ color: '#3A4046' }}>{incident.title}</p>
-                          <p className="text-sm font-medium mt-0.5 flex items-center gap-1" style={{ color: '#9CA3AF' }}>
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            Reported by {incident.reporter?.name}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 font-bold" style={{ color: '#3A4046' }}>
-                      {incident.asset?.name || '-'}
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className={getSeverityChipClass(incident.severity)}>
-                        {incident.severity}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
-                        style={{ background: 'rgba(255,255,255,0.40)', color: '#6B7280', border: '1px solid rgba(255,255,255,0.50)' }}
-                      >
-                        {incident.status}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 font-medium" style={{ color: '#9CA3AF' }}>
-                      {format(new Date(incident.createdAt), 'MMM d, yyyy')}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination controls */}
-        <div
-          className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-medium relative z-10"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.40)', background: 'rgba(255,255,255,0.15)', color: '#6B7280' }}
-        >
-          <p>Showing <span className="font-bold" style={{ color: '#3A4046' }}>{data?.incidents?.length || 0}</span> of <span className="font-bold" style={{ color: '#3A4046' }}>{data?.total || 0}</span> results</p>
-          <div className="flex gap-2">
-            <button 
-              disabled={page === 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="glass-btn-secondary px-4 py-2 text-xs disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button 
-              disabled={data?.incidents?.length < take}
-              onClick={() => setPage(p => p + 1)}
-              className="glass-btn-secondary px-4 py-2 text-xs disabled:opacity-50"
-            >
-              Next
-            </button>
+                  )}
+                </Droppable>
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
+        </DragDropContext>
+      )}
     </div>
   );
 };

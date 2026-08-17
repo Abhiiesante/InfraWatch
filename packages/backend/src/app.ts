@@ -58,7 +58,7 @@ export const createApp = (): Express => {
   app.use('/api', limiter);
 
   // Request parsing & logging
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
   app.use(requestLogger);
 
   // Global middleware

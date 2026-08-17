@@ -208,6 +208,20 @@ MODEL_DETECTION_SUMMARY_SCHEMA = StructType([
 
 
 # ============================================================================
+# gold.cv_hourly_safety_metrics
+# ============================================================================
+
+CV_HOURLY_SAFETY_METRICS_SCHEMA = StructType([
+    StructField("camera_id", IntegerType(), nullable=False),
+    StructField("tenant_id", IntegerType(), nullable=False),
+    StructField("hour_start", TimestampType(), nullable=False),
+    StructField("total_detections", IntegerType(), nullable=False),
+    StructField("zone_violations", IntegerType(), nullable=False),
+    StructField("max_active_amrs", IntegerType(), nullable=False),
+    StructField("last_updated", TimestampType(), nullable=False),
+])
+
+# ============================================================================
 # Registry
 # ============================================================================
 
@@ -221,4 +235,5 @@ GOLD_TABLE_SCHEMAS: dict[str, StructType] = {
     "asset_risk_score": ASSET_RISK_SCORE_SCHEMA,
     "maintenance_candidates": MAINTENANCE_CANDIDATES_SCHEMA,
     "model_detection_summary": MODEL_DETECTION_SUMMARY_SCHEMA,
+    "cv_hourly_safety_metrics": CV_HOURLY_SAFETY_METRICS_SCHEMA,
 }

@@ -87,4 +87,67 @@ router.post('/incident/:id/analyze', authMiddleware, async (req: Request, res: R
   }
 });
 
+/**
+ * @route POST /api/copilot/inspection/:id/analyze
+ * @desc Streams LLM analysis of a specific inspection via Server-Sent Events (SSE).
+ */
+router.post('/inspection/:id/analyze', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tenantId = req.tenantId!;
+    const inspectionId = parseInt(req.params.id, 10);
+
+    if (isNaN(inspectionId)) {
+      res.status(400).json({ error: 'Invalid inspection ID' });
+      return;
+    }
+
+    // 1. Gather Context
+    let inspectionContext = "";
+    try {
+      inspectionContext = await ContextGathererService.gatherInspectionContext(tenantId, inspectionId);
+    } catch (e: any) {
+      res.status(404).json({ error: e.message || 'Inspection not found' });
+      return;
+    }
+
+    // 2. Set up SSE HTTP headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const prompt = `Please summarize the following infrastructure inspection. Extract any anomalies, evaluate the asset health, and recommend whether maintenance is required.\n\n${inspectionContext}`;
+
+    // 3. Stream the LLM response
+    const isSimulated = LLMService.isSimulated();
+    res.write(`event: metadata\ndata: ${JSON.stringify({ simulated: isSimulated, reason: isSimulated ? 'GEMINI_API_KEY not configured' : undefined })}\n\n`);
+
+    const onChunk = (chunk: string) => {
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+      if ((res as any).flush) {
+        (res as any).flush();
+      }
+    };
+
+    await LLMService.streamCompletion(prompt, onChunk, {
+      systemInstruction: COPILOT_SYSTEM_PROMPT,
+      temperature: 0.2,
+      maxTokens: 1024,
+    });
+
+    // 4. Close the stream
+    res.write('data: [DONE]\n\n');
+    res.end();
+
+  } catch (err: any) {
+    logger.error('Error in Copilot analyze route:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate copilot analysis' });
+    } else {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.end();
+    }
+  }
+});
+
 export default router;

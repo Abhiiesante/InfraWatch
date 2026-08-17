@@ -3,8 +3,10 @@ import React from 'react';
 export interface Detection {
   label: string;
   confidence: number;
-  bbox?: [number, number, number, number]; // [x, y, w, h] in absolute coordinates (1280x720)
+  bbox?: [number, number, number, number]; // [left, top, w, h] in absolute coordinates
   severity?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 interface BoundingBoxOverlayProps {
@@ -14,10 +16,6 @@ interface BoundingBoxOverlayProps {
 }
 
 export const BoundingBoxOverlay: React.FC<BoundingBoxOverlayProps> = ({ imageUrl, detections, cameraName }) => {
-  // The VisionModelEngine currently assumes 1280x720
-  const ORIGINAL_WIDTH = 1280;
-  const ORIGINAL_HEIGHT = 720;
-
   return (
     <div className="relative w-full aspect-video bg-black overflow-hidden group">
       <img
@@ -41,6 +39,10 @@ export const BoundingBoxOverlay: React.FC<BoundingBoxOverlayProps> = ({ imageUrl
         if (!detection.bbox || detection.bbox.length !== 4) return null;
         
         const [x, y, w, h] = detection.bbox;
+        
+        // Use provided dimensions or fallback to 1280x720
+        const ORIGINAL_WIDTH = detection.imageWidth || 1280;
+        const ORIGINAL_HEIGHT = detection.imageHeight || 720;
         
         // Convert to percentages for dynamic scaling
         const left = (x / ORIGINAL_WIDTH) * 100;

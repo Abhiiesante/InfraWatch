@@ -87,23 +87,22 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
             key={img}
             className="absolute inset-0 transition-all ease-in-out"
             style={{
-              backgroundImage: `url(${img})`,
+              backgroundImage: `url('${img}')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               opacity: index === currentIndex ? 1 : 0,
-              filter: 'brightness(0.85) saturate(0.6)',
+              filter: 'brightness(0.9) saturate(1.1)',
               transform: `scale(${index === currentIndex ? 1.05 : 1.0}) translateY(${scrollY * 0.1}px)`,
               transitionDuration: '1000ms',
-              transitionProperty: 'opacity',
+              transitionProperty: 'all',
             }}
           />
         ))}
 
         {/* Global wash to neutralize harsh background colors and ensure text legibility */}
-        {/* Global wash to neutralize harsh background colors and ensure text legibility */}
         <div
           className="absolute inset-0"
-          style={{ background: 'rgba(238, 242, 243, 0.45)' }}
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4))' }}
         />
       </div>
 

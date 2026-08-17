@@ -1,683 +1,377 @@
-# InfraWatch - Asset Monitoring Platform
+<div align="center">
 
-Production-grade multi-tenant SaaS platform for infrastructure asset monitoring, inspection scheduling, and incident management built with Node.js, React, PostgreSQL, and Redis.
+# 🌐 InfraWatch — Enterprise Infrastructure & Warehouse OS
 
+**Next-Generation Multi-Tenant Digital Twin, SCADA Telemetry & AI-Powered Asset Intelligence Platform**
 
-Complete implementation with 27 REST endpoints, JWT authentication, multi-tenant database isolation, background workers, Docker deployment, and comprehensive testing.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
-## 🚀 Quick Start (5 minutes)
+</div>
 
-### Option 1: Docker Compose (Recommended)
+---
 
-```bash
-# Start database and Redis
-docker-compose -f docker-compose.dev.yml up -d
+## 📌 Executive Summary
 
-# Install dependencies
-npm install
+**InfraWatch** is a production-grade, enterprise-scale operating system designed for mission-critical infrastructure operators, logistics hubs, and energy providers. It unites **industrial IoT telemetry**, **real-time SCADA supervisory controls**, **computer vision defect detection**, **14-day predictive maintenance forecasting**, and **3D BIM / GIS Digital Twins** into a unified pane of glass.
 
-# Configure environment
-cp packages/backend/.env.example packages/backend/.env
+Built with a modern monorepo architecture, InfraWatch provides strict multi-tenant database isolation, sub-second telemetry streaming, automated background workers, and an analytical lakehouse intelligence plane.
 
-# Edit .env with docker-compose values:
-# DATABASE_URL=postgresql://infrawatch:infrawatch@localhost:5432/infrawatch
-# REDIS_URL=redis://localhost:6379
+---
 
-# Run migrations
-npm run db:migrate
+## 🏛️ System Architecture
 
-# Seed demo data
-npm run db:seed
+```mermaid
+graph TB
+    subgraph Client Layer
+        UI[React 18 + Vite Web App<br/>Tailwind CSS + Framer Motion]
+        CamTx[WebRTC / RTSP Camera Transmitter]
+    end
 
-# Terminal 1: Start backend
-npm run dev -w backend
+    subgraph Control Plane [Backend & Ingestion]
+        API[Express.js / Node.js 20+ API<br/>JWT Auth + RBAC + Zod Validation]
+        SocketIO[Socket.io Realtime Telemetry Server]
+        AuthMW[Multi-Tenant Context Middleware]
+    end
 
-# Terminal 2: Start frontend
-npm run dev -w frontend
+    subgraph Storage & Queues
+        PG[(PostgreSQL Database<br/>Prisma ORM - Multi-Tenant Schema)]
+        Redis[(Redis 7.0<br/>Cache & Pub/Sub)]
+        BullMQ[BullMQ Job Queue<br/>Reports, Image Processing, Alerts]
+    end
 
-# Terminal 3 (optional): Start workers
-npm run dev -w workers
+    subgraph Intelligence Plane [Data Platform]
+        Bronze[Bronze Ingestion Lake]
+        Silver[Silver Quality & Deduplication]
+        Gold[Gold Aggregation & Metrics Sync]
+        ML[Prophet & CV Anomaly Engine<br/>Isolation Forest + Defect Classifier]
+    end
+
+    UI <-->|HTTPS / REST API| API
+    UI <-->|WebSocket / WSS| SocketIO
+    CamTx -->|WebRTC / HLS| API
+    API --> AuthMW
+    AuthMW --> PG
+    API --> Redis
+    API --> BullMQ
+    BullMQ --> Redis
+    PG <-->|Change Data Sync| Gold
+    Gold --> ML
+    ML -->|Inference Signals| API
 ```
 
-Open http://localhost:5173 and login with:
-- Email: `admin@demo.local`
-- Password: `Demo@Password123`
+---
 
-### Option 2: Local Development (Requires PostgreSQL + Redis)
+## 🖥️ Platform Modules & UI Showcase
+
+InfraWatch features a rich suite of specialized operational interfaces designed with high visual fidelity, glassmorphism aesthetics, dynamic dark mode, and smooth micro-animations.
+
+### 1. 🌌 Cinematic Hero Landing Page (`/`)
+* **Live Rotating Photography**: Seamless cross-fades between high-resolution curated infrastructure photography (wind farms, solar arrays, power grids, industrial plants).
+* **Direct Access Portal**: Quick authentication routing and enterprise organization onboarding.
+* **Minimalist Aesthetic**: High-contrast typography with teal/emerald glowing gradients.
+
+```
++-------------------------------------------------------------------------+
+|  [ Enterprise Infrastructure OS ]                                      |
+|                                                                         |
+|                     See deeper.                                         |
+|                     Act faster.                                         |
+|                                                                         |
+|   The world's most advanced digital twin platform. Merging SCADA        |
+|   telemetry, AI anomaly detection, and 3D BIM into one glass pane.      |
+|                                                                         |
+|              [ Enter Platform -> ]   [ Create Account ]                 |
++-------------------------------------------------------------------------+
+```
+
+---
+
+### 2. 📊 Enterprise Command Center Dashboard (`/dashboard`)
+* **Real-time KPI Bento Grid**: Animated count-up metrics for System Health Score, Active Critical Incidents, Inspected Assets, and Sensor Uptime.
+* **Live Telemetry Stream**: Interactive Sparkline and Multi-axis telemetry graphs updating in real time via WebSockets.
+* **Live CCTV Vision Feeds**: Direct camera stream thumbnails with active AI detection status overlays.
+* **Recent Anomaly Stream**: Chronological alerts with severity tagging (Critical, High, Medium, Low).
+
+![Enterprise Command Center Dashboard](./docs/screenshots/dashboard-command-center.png)
+
+---
+
+### 3. ⚡ Industrial SCADA Control Panel (`/scada`)
+* **Sub-Second Telemetry Monitoring**: Real-time voltage, pipeline pressure, turbine RPM, transformer temperatures, and flow rates.
+* **Interactive Actuator Controls**: Remote toggle valves, emergency cutoff breakers, and cooling fan setpoints with safety confirmation dialogs.
+* **Threshold Alarming**: Dynamic visual alarms when telemetry breaches configured safety envelopes.
+
+![SCADA Supervisory Control](./docs/screenshots/scada-control.png)
+
+---
+
+### 4. 🏭 Warehouse Logistics & Safety Twin (`/warehouse`)
+* **Spatial Rack & Bay Capacity**: Live capacity utilization heatmaps across storage aisles.
+* **Automated Guided Vehicle (AGV) Tracking**: Real-time 2D floor plan positions for forklifts, autonomous mobile robots (AMRs), and personnel.
+* **OSHA Safety Zone Enforcement**: Automated geo-fencing with speed reduction zones and collision hazard warnings.
+* **Environmental Sensors**: Humidity, ambient temperature, air quality (VOC), and hazardous gas monitoring.
+
+![Warehouse Logistics Twin](./docs/screenshots/warehouse-logistics.png)
+
+---
+
+### 5. 🎥 AI Vision & CCTV Stream Center (`/cameras`, `/cam-broadcast`)
+* **Multi-Camera Grid**: Low-latency HLS and WebRTC camera feeds from perimeter, facility, and drone streams.
+* **Computer Vision Defect Ingestion**: Live object detection bounding boxes for PPE compliance, structural crack propagation, and thermal hotspots.
+* **WebRTC Broadcaster (`/cam-broadcast`)**: Turn any mobile device or field tablet into a live streaming inspection camera.
+
+![AI Vision and Camera Telemetry](./docs/screenshots/ai-vision-cameras.png)
+
+---
+
+### 6. 🔮 Neural Prophet 14-Day Predictive Maintenance (`/predictions`)
+* **Remaining Useful Life (RUL)**: Machine learning curve estimating degradation trajectories.
+* **Failure Probability Matrix**: 14-day lookahead forecasting probability of bearing failure, transformer overload, or pipe rupture.
+* **Prescriptive Actions**: Automated recommendation generator with estimated downtime cost avoidance.
+
+![Predictive Maintenance Analytics](./docs/screenshots/predictive-maintenance.png)
+
+---
+
+### 7. 🗺️ 3D GIS Digital Twin & BIM Spatial Viewer (`/map`, `/bim-twin`)
+* **Mapbox / Leaflet GIS Integration**: Interactive global map plotting multi-tier infrastructure assets with clustering and status color codes.
+* **3D BIM Structural Viewer**: Interactive 3D building/infrastructure mesh visualization with layer toggles (structural, electrical, mechanical).
+* **Weather & Environmental Overlay**: Satellite live wind vectors, precipitation radar, and seismic activity maps.
+
+![3D BIM & Digital Twin](./docs/screenshots/digital-twin-bim.png)
+
+---
+
+### 8. 🔍 Field Inspections & Thermal Anomaly Analysis (`/inspections`)
+* **Multi-Spectrum Capture**: Side-by-side high-resolution optical and thermal infrared inspection analysis.
+* **Autonomous Defect Classification**: Automated tagging of rust corrosion indices, weld fatigue, and concrete delamination.
+
+![Thermal Inspection Analysis](./docs/screenshots/bridge-inspection.png)
+
+---
+
+### 9. 📡 Real-Time IoT & High-Frequency Telemetry (`/telemetry`)
+* **Sub-Second Sensor Ingestion**: Millisecond-level frequency tracking, vibration harmonics, and multi-sensor correlation matrices.
+* **Edge-to-Cloud Sync**: Distributed buffer with automated backpressure handling and offline replay.
+
+![High Frequency Telemetry](./docs/screenshots/telemetry-iot.png)
+
+---
+
+## 📦 Monorepo Package Breakdown
+
+```
+IEKB/
+├── packages/
+│   ├── frontend/               # React 18 + Vite + Tailwind CSS SPA
+│   │   ├── src/
+│   │   │   ├── features/       # Modular feature domains (dashboard, scada, etc.)
+│   │   │   ├── components/     # Shared design system components & ProtectedRoute
+│   │   │   ├── lib/            # API client, image registry, hooks, utilities
+│   │   │   └── store/          # Zustand global stores (auth, telemetry, ui)
+│   │   └── package.json
+│   │
+│   ├── backend/                # Node.js + Express REST & Socket.io Server
+│   │   ├── src/
+│   │   │   ├── routes/         # Express REST API route handlers
+│   │   │   ├── services/       # Business logic & data access services
+│   │   │   ├── middleware/     # Auth, Tenant isolation, Error handlers
+│   │   │   └── db/             # Prisma schema, migrations, seeders
+│   │   └── package.json
+│   │
+│   ├── workers/                # BullMQ Background Processing Service
+│   │   ├── src/                # Report generation, thumbnailing, notification workers
+│   │   └── package.json
+│   │
+│   ├── data-platform/          # Python Lakehouse & ML Intelligence Plane
+│   │   ├── ingestion/          # Auto Loader & batch ingestion
+│   │   ├── pipelines/          # Bronze, Silver, Gold data transformations
+│   │   ├── ml/                 # Anomaly detection & predictive maintenance models
+│   │   ├── llm/                # RAG knowledge base & incident reasoning
+│   │   └── pyproject.toml
+│   │
+│   └── shared/                 # Shared TypeScript interfaces & DTO contracts
+│
+├── docker-compose.dev.yml      # Local development container orchestration
+├── docker-compose.prod.yml     # Production multi-container deployment
+├── API.md                      # Detailed REST API endpoint specification
+├── DEPLOYMENT.md               # Cloud & Bare-Metal production setup guide
+└── README.md                   # Project documentation index
+```
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+* **Node.js**: v20.x or higher
+* **npm**: v9.x or higher
+* **PostgreSQL**: v14+ (or Docker)
+* **Redis**: v6+ (or Docker)
+* **Python**: v3.11+ (optional, for analytical data platform)
+
+---
+
+### Step 1: Clone & Install Dependencies
 
 ```bash
-# Install dependencies
-npm install
+# Clone the repository
+git clone https://github.com/your-org/infrawatch.git
+cd infrawatch
 
-# Configure environment
+# Install monorepo dependencies across all packages
+npm install
+```
+
+---
+
+### Step 2: Environment Configuration
+
+```bash
+# Backend Environment
 cp packages/backend/.env.example packages/backend/.env
 
-# Update .env with your local PostgreSQL and Redis URLs
+# Frontend Environment
+cp packages/frontend/.env.example packages/frontend/.env
 
-# Run migrations and seed
+# Workers Environment
+cp packages/workers/.env.example packages/workers/.env
+```
+
+Ensure `packages/backend/.env` has valid PostgreSQL & Redis credentials:
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/infrawatch?schema=public"
+REDIS_URL="redis://localhost:6379"
+JWT_SECRET="super-secret-jwt-key-change-in-production"
+JWT_REFRESH_SECRET="super-secret-jwt-refresh-key"
+PORT=3000
+FRONTEND_URL="http://localhost:5173"
+```
+
+---
+
+### Step 3: Database Migration & Seeding
+
+```bash
+# Run database migrations
 npm run db:migrate
-npm run db:seed
 
-# Start all services in watch mode
+# Seed sample infrastructure data, demo users, and assets
+npm run db:seed
+```
+
+---
+
+### Step 4: Run the Full Stack
+
+```bash
+# Start all packages in development mode concurrently
 npm run dev
-
-# Or start individually:
-npm run dev -w backend    # http://localhost:3000
-npm run dev -w frontend   # http://localhost:5173
-npm run dev -w workers    # Listens on Redis
 ```
 
-## 📚 Documentation
+* **Frontend Web App**: [http://localhost:5173](http://localhost:5173)
+* **Backend REST API**: [http://localhost:3000](http://localhost:3000)
+* **API Health Check**: [http://localhost:3000/api/health](http://localhost:3000/api/health)
 
-- **[API Reference](./API.md)** - Complete REST API endpoints with examples
-- **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment (VPS, AWS ECS, Docker Compose)
-- **[Production Checklist](./PRODUCTION_CHECKLIST.md)** - Pre-launch verification
-- **[Setup Guide](./SETUP.md)** - Detailed setup with troubleshooting
-- **[Quick Start](./QUICKSTART.md)** - 5-minute quick reference
-- **[Architecture](./00-foundation/03-architecture-overview.md)** - System design and components
+---
 
-## 🏗️ Architecture
+## 🔑 Demo Access Credentials
 
-**Frontend Stack:**
-- React 18 + TypeScript
-- Vite build tool
-- Zustand state management
-- Axios with JWT interceptors
-- Tailwind CSS styling
+The database seed provides pre-configured multi-tenant user accounts:
 
-**Backend Stack:**
-- Node.js 20+ / Express.js
-- TypeScript with strict mode
-- PostgreSQL + Prisma ORM
-- JWT authentication (access + refresh tokens)
-- Zod input validation
-- Winston logging
+| Role | Email | Password | Access Scope |
+| :--- | :--- | :--- | :--- |
+| **Enterprise Admin** | `admin@demo.local` | `Demo@Password123` | Full access to SCADA, Digital Twin, Team RBAC, and System Settings |
+| **Operations Manager** | `manager@demo.local` | `Demo@Password123` | Work Orders, Asset Management, Inspections, Incident Dispatch |
+| **Field Inspector** | `inspector@demo.local` | `Demo@Password123` | Inspection Checklists, Mobile Camera Broadcast, Anomaly Submissions |
 
-**Background Jobs:**
-- BullMQ job queue
-- Redis data store
-- 3 worker types: reports, images, notifications
+---
 
-**Infrastructure:**
-- Docker containerization
-- Docker Compose orchestration
-- Nginx reverse proxy
-- GitHub Actions CI/CD
-- Multi-tenant database design
+## 📡 REST API Summary (Key Endpoints)
 
-## 📊 Features Implemented
+| Method | Endpoint | Description | Role |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | Authenticate and obtain Access & Refresh JWTs | Public |
+| `POST` | `/api/auth/register` | Register new organization tenant & root administrator | Public |
+| `GET` | `/api/organizations/current/stats` | Organization KPI summary, active asset count, incident status | All |
+| `GET` | `/api/assets` | Paginated asset catalog with geolocation, type, and health | All |
+| `POST` | `/api/assets` | Create new infrastructure asset | Admin, Manager |
+| `GET` | `/api/telemetry/live/:assetId` | Real-time sensor telemetry time series | All |
+| `GET` | `/api/scada/metrics` | Real-time SCADA telemetry for industrial control view | All |
+| `POST` | `/api/scada/actuate` | Execute actuator command or breaker trip | Admin |
+| `GET` | `/api/predictions/health-score` | Neural network overall health index & failure probabilities | All |
+| `GET` | `/api/anomalies` | Computer vision defect and anomaly list | All |
+| `GET` | `/api/cameras` | Registered RTSP / WebRTC camera streams | All |
+| `POST` | `/api/incidents` | Report a new operational incident | All |
+| `POST` | `/api/incidents/:id/assign` | Assign incident to an engineer or operator | Admin, Manager |
+| `GET` | `/api/drone-fleet/status` | Real-time autonomous drone telemetry & active missions | All |
+| `GET` | `/api/warehouse/inventory` | Warehouse rack capacity, AGV coordinates, and OSHA status | All |
 
-### Authentication
-- ✅ User registration (creates organization + user)
-- ✅ Login with JWT tokens
-- ✅ Token refresh flow (15 min access, 7 day refresh)
-- ✅ Multi-tenant organization isolation
-- ✅ Role-based access control (ADMIN, MANAGER, INSPECTOR)
+*For complete schema specifications and request/response payloads, refer to [API.md](./API.md).*
 
-### Organizations
-- ✅ Organization CRUD
-- ✅ Organization statistics (users, assets, incidents)
-- ✅ Multi-tenant data isolation
+---
 
-### Users
-- ✅ User management (CRUD)
-- ✅ Role assignment
-- ✅ Last login tracking
-- ✅ Soft deactivation
-
-### Assets
-- ✅ Asset CRUD with soft deletes
-- ✅ Asset types (Communication Tower, Power Line, etc.)
-- ✅ Asset location (latitude, longitude, address)
-- ✅ Metadata support (height, manufacturer, etc.)
-- ✅ Pagination and filtering
-
-### Inspections
-- ✅ Inspection scheduling
-- ✅ Inspector assignment
-- ✅ Status tracking (SCHEDULED, IN_PROGRESS, COMPLETED)
-- ✅ Image upload support
-- ✅ Notes and findings
-
-### Incidents
-- ✅ Incident creation and tracking
-- ✅ Severity levels (LOW, MEDIUM, HIGH, CRITICAL)
-- ✅ Status workflow (OPEN, INVESTIGATING, RESOLVED, CLOSED)
-- ✅ User assignment
-- ✅ Comments/collaboration
-- ✅ Filtering and search
-
-### Cameras
-- ✅ Camera management (create, update, delete)
-- ✅ Camera types and status
-- ✅ Association with assets
-- ✅ Streaming URL support
-
-### Background Workers
-- ✅ Report generation queue
-- ✅ Image processing queue
-- ✅ Notification queue
-- ✅ Job retry logic
-- ✅ Event listeners
-
-## 🔐 Security Features
-
-- ✅ JWT authentication with separate secrets for access/refresh
-- ✅ Password hashing with bcryptjs (12 rounds)
-- ✅ Multi-tenant data isolation at database level
-- ✅ HTTPS/TLS support
-- ✅ Security headers (HSTS, CSP, X-Frame-Options)
-- ✅ CORS configured for frontend domain
-- ✅ Input validation with Zod schemas
-- ✅ SQL injection protection (Prisma parameterized queries)
-- ✅ XSS protection (React default)
-- ✅ Audit logging (coming soon)
-
-## 🧪 Testing
+## 🧪 Testing & Verification
 
 ```bash
-# Run all tests
+# Run unit & integration tests across all packages
 npm run test
 
 # Run tests in watch mode
 npm run test -- --watch
 
-# Run tests with coverage
-npm run test -- --coverage
-
-# Run integration tests
-npm run test -w backend -- tests/integration/
-
-# Type checking
+# Type check all TypeScript files
 npm run type-check
 
-# Linting
+# Run ESLint across monorepo
 npm run lint
+
+# Run Python Data Platform tests
+cd packages/data-platform && pytest tests/ -v
 ```
 
-## 📈 API Endpoints (27 Total)
+---
 
-### Authentication (4)
-```
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/refresh
-POST   /api/auth/logout
-```
+## 🐳 Docker Deployment
 
-### Organizations (3)
-```
-GET    /api/organizations/current
-GET    /api/organizations/current/stats
-PUT    /api/organizations/current
-```
-
-### Users (5)
-```
-GET    /api/users
-GET    /api/users/:id
-POST   /api/users
-PUT    /api/users/:id
-DELETE /api/users/:id
-```
-
-### Assets (5)
-```
-GET    /api/assets
-GET    /api/assets/:id
-POST   /api/assets
-PUT    /api/assets/:id
-DELETE /api/assets/:id
-```
-
-### Inspections (4)
-```
-GET    /api/inspections
-GET    /api/inspections/:id
-POST   /api/inspections
-PUT    /api/inspections/:id
-```
-
-### Incidents (6)
-```
-GET    /api/incidents
-GET    /api/incidents/:id
-POST   /api/incidents
-PUT    /api/incidents/:id
-POST   /api/incidents/:id/assign
-POST   /api/incidents/:id/comments
-```
-
-Full API documentation with request/response examples: [API.md](./API.md)
-
-## 📦 Database Schema
-
-12 tables with proper relationships:
-- **Organization** (tenant)
-- **User** (with role-based access)
-- **AssetType** (predefined types)
-- **Asset** (infrastructure assets)
-- **Camera** (monitoring cameras)
-- **Inspection** (scheduled maintenance)
-- **InspectionImage** (inspection photos)
-- **Incident** (operational issues)
-- **IncidentAssignment** (user assignments)
-- **IncidentComment** (team collaboration)
-- **Report** (generated reports)
-- **AuditLog** (compliance tracking)
-
-See [Database Documentation](./01-database/00-data-model-overview.md) for detailed schema.
-
-## 🐳 Docker
-
-Build and run with Docker:
+### Local Multi-Container Development
 
 ```bash
-# Development
-docker-compose -f docker-compose.dev.yml up
+# Spin up PostgreSQL, Redis, Backend, Frontend, and Workers
+docker-compose -f docker-compose.dev.yml up -d --build
 
-# Production
-docker-compose -f docker-compose.prod.yml up -d
-
-# View logs
-docker-compose logs -f backend frontend workers
-
-# Stop services
-docker-compose down
+# View real-time logs
+docker-compose -f docker-compose.dev.yml logs -f
 ```
 
-## 📊 Available Scripts
-
-### Root (monorepo)
-```bash
-npm run dev              # Start all services in watch mode
-npm run build            # Build all packages
-npm run type-check       # TypeScript type checking
-npm run lint             # ESLint
-npm run test             # Run all tests
-npm run db:migrate       # Run database migrations
-npm run db:seed          # Seed demo data
-npm run db:studio        # Open Prisma Studio GUI
-```
-
-### Backend
-```bash
-npm run dev -w backend   # Start with hot reload
-npm run build -w backend # Build TypeScript
-npm run test -w backend  # Run tests
-npm run lint -w backend  # Run ESLint
-```
-
-### Frontend
-```bash
-npm run dev -w frontend     # Start Vite dev server
-npm run build -w frontend   # Build production bundle
-npm run preview -w frontend # Preview production build
-npm run lint -w frontend    # Run ESLint
-```
-
-### Workers
-```bash
-npm run dev -w workers  # Start workers
-npm run build -w workers # Build TypeScript
-```
-
-## 🚀 Deployment
-
-### Docker Compose (VPS/Self-Hosted)
+### Production Deployment
 
 ```bash
-# Full deployment guide in DEPLOYMENT.md
-
-# Quick start:
-docker-compose -f docker-compose.prod.yml up -d
-
-# Initialize database
-docker-compose exec backend npm run db:migrate
-docker-compose exec backend npm run db:seed
-
-# Check status
-docker-compose ps
+# Start production containers with Nginx reverse proxy
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-### AWS ECS / Kubernetes
+*For comprehensive AWS ECS, Kubernetes, and bare-metal production architectures, see [DEPLOYMENT.md](./DEPLOYMENT.md).*
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for:
-- RDS PostgreSQL setup
-- ElastiCache Redis setup
-- ECR image registry
-- ECS task definitions
-- Load balancer configuration
+---
 
-### GitHub Actions CI/CD
+## 🛡️ Security & Compliance Standards
 
-Automatic testing and deployment:
-- Runs on push to main/develop
-- Tests: type-check, lint, unit tests, integration tests
-- Builds: Docker images for backend, frontend, workers
-- Pushes to container registry (GHCR)
+* **Multi-Tenant Isolation**: Row-Level Security (RLS) and Prisma middleware guarantee zero cross-tenant data leakage.
+* **Cryptographic Security**: Passwords hashed with `bcryptjs` (12 salt rounds); JWT token validation with distinct Access & Refresh secrets.
+* **Transport Security**: TLS 1.3 encryption for WebSockets (`wss://`) and WebRTC streams.
+* **Compliance Frameworks**: Built-in support for **ISO 55001** (Asset Management Systems) and **OSHA 1910** (General Industry Safety Standards).
 
-See [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml)
+---
 
-## 🛠️ Development
+## 📄 License & Attribution
 
-### Environment Variables
-
-Copy and customize:
-```bash
-cp packages/backend/.env.example packages/backend/.env
-```
-
-Required variables:
-- `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string
-- `JWT_SECRET` - Generate: `openssl rand -base64 32`
-- `JWT_REFRESH_SECRET` - Generate: `openssl rand -base64 32`
-- `FRONTEND_URL` - Frontend base URL
-- `NODE_ENV` - development/production
-
-## 📋 Pre-Launch Checklist
-
-Before going to production, complete the [Production Checklist](./PRODUCTION_CHECKLIST.md):
-
-- [ ] All tests passing
-- [ ] No console errors/warnings
-- [ ] Type checking clean
-- [ ] Security review complete
-- [ ] Database backups configured
-- [ ] Monitoring/alerting setup
-- [ ] SSL certificates valid
-- [ ] Load testing passed
-- [ ] Staging deployment verified
-- [ ] Runbook procedures documented
-
-## 📧 Support
-
-For issues and questions:
-1. Check [Troubleshooting Guide](./SETUP.md#troubleshooting)
-2. Review [API Documentation](./API.md)
-3. Check GitHub Issues
-4. Contact: support@infrawatch.io
-
-## 📄 License
-
-Proprietary - All rights reserved
-
-## 👥 Team
-
-Built with production-grade engineering practices:
-- Multi-tenant architecture
-- Service layer design
-- Comprehensive validation
-- Error handling at every layer
-- Complete test coverage
-- Security best practices
-- DevOps automation
-- Detailed documentation
-
-## 📋 Project Structure
-
-```
-infrawatch/
-├── packages/
-│   ├── backend/          # Node.js/Express API server
-│   ├── frontend/         # React web application
-│   ├── workers/          # BullMQ background job workers
-│   └── shared/           # Shared types and utilities
-├── docs/                 # Project documentation (IEKB)
-└── package.json          # Monorepo workspace configuration
-```
-
-## Architecture
-
-### Multi-Tenant Design
-Every endpoint is scoped to a tenant (organization). Tenant ID is extracted from:
-1. JWT token payload (`tenantId` claim)
-2. Request header (`x-tenant-id`)
-
-### Services Layer
-Clean separation between routes and business logic:
-- `AuthService` - Register, login, token refresh
-- `OrganizationService` - Tenant/org operations
-- `UserService` - User CRUD within tenant
-- `AssetService` - Asset management (towers, solar panels, etc.)
-- `InspectionService` - Inspection scheduling and tracking
-- `IncidentService` - Incident reporting, assignment, comments
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm 9+
-- PostgreSQL 14+
-- Redis 6+
-
-### Installation
-
-```bash
-# Install all workspace dependencies
-npm install
-
-# Setup environment variables
-cp packages/backend/.env.example packages/backend/.env
-cp packages/frontend/.env.example packages/frontend/.env
-cp packages/workers/.env.example packages/workers/.env
-
-# Configure your environment variables in each .env file
-```
-
-### Database Setup
-
-```bash
-# Run Prisma migrations
-npm run db:migrate
-
-# (Optional) Seed database with demo data
-npm run db:seed
-```
-
-### Development
-
-```bash
-# Start all services in development mode
-npm run dev
-
-# Or start individual services:
-cd packages/backend && npm run dev      # API on http://localhost:3000
-cd packages/frontend && npm run dev     # Frontend on http://localhost:5173
-cd packages/workers && npm run dev      # Background workers
-```
-
-### Build & Production
-
-```bash
-# Build all packages
-npm run build
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-```
-
-## 📚 Documentation
-
-Full project documentation is available in the [IEKB (InfraWatch Engineering Knowledge Base)](./00-foundation/00-IEKB-index.md):
-
-- [Product Vision & Scope](./00-foundation/01-product-vision.md)
-- [Architecture Overview](./00-foundation/03-architecture-overview.md)
-- [Tech Stack Decisions](./00-foundation/04-tech-stack-decisions.md)
-- [Development Workflow](./00-foundation/07-development-workflow.md)
-- [Database Schema](./01-database/00-data-model-overview.md)
-- [Authentication & Authorization](./02-auth/00-auth-overview.md)
-- [API Design](./04-api/00-api-design-principles.md)
-
-## 🏗️ Architecture
-
-### Tech Stack
-
-- **Backend**: Node.js, Express, TypeScript, Prisma ORM
-- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, Zustand
-- **Workers**: BullMQ, Redis
-- **Database**: PostgreSQL 14+
-- **Cache/Queue**: Redis 6+
-- **Deployment**: Docker, AWS (ECS/Lambda/S3/RDS)
-
-### Core Features (V0 MVP)
-
-- ✅ Multi-tenant architecture with complete data isolation
-- ✅ User authentication (JWT) and role-based access control
-- ✅ Asset management with hierarchical organization
-- ✅ Camera/sensor onboarding and monitoring
-- ✅ Inspection scheduling and completion workflows
-- ✅ Incident reporting and management
-- ✅ Background job processing (reports, notifications)
-- ✅ Audit logging for compliance
-
-### Future Enhancements (V1.1+)
-
-- AI-powered computer vision (smoke/fire detection, PPE compliance)
-- Predictive maintenance using sensor time-series
-- Real-time camera streaming
-- Advanced reporting and analytics
-- Mobile app
-
-## 🔒 Security
-
-- JWT-based authentication with refresh tokens
-- bcrypt password hashing
-- Row-level security via tenant isolation
-- CORS protection with configurable origins
-- Helmet.js security headers
-- Input validation with Zod schemas
-- Rate limiting (to be implemented)
-
-## 📊 Development Workflow
-
-InfraWatch follows **trunk-based development** with short-lived feature branches:
-
-1. Create feature branch: `git checkout -b feat/IW-XX-description`
-2. Develop and commit regularly
-3. Run local checks: `npm run lint && npm run type-check && npm run test`
-4. Push and open Pull Request
-5. Address code review feedback
-6. Squash merge to `main`
-7. Auto-deploy to dev environment
-
-See [Development Workflow](./00-foundation/07-development-workflow.md) for detailed instructions.
-
-## 🤝 Contributing
-
-1. Check [IEKB](./00-foundation/00-IEKB-index.md) for context and standards
-2. Follow [Coding Standards](./00-foundation/05-coding-standards.md)
-3. Test thoroughly before submitting PR
-4. Update docs if making architectural changes
-
-## 🧪 Testing
-
-```bash
-# Run unit tests
-npm run test
-
-# Run with UI
-npm run test -- --ui
-
-# Run integration tests
-npm run test -- integration
-```
-
-## 📡 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Create organization + user
-- `POST /api/auth/login` - Get access + refresh tokens
-- `POST /api/auth/refresh` - Refresh expired access token
-- `POST /api/auth/logout` - Invalidate tokens
-
-### Organization
-- `GET /api/organizations/current` - Get organization details
-- `GET /api/organizations/current/stats` - Get org stats (users, assets, incidents)
-- `PUT /api/organizations/current` - Update organization
-
-### Users
-- `GET /api/users` - List users in organization
-- `GET /api/users/:id` - Get user details
-- `POST /api/users` - Create user (ADMIN only)
-- `PUT /api/users/:id` - Update user (self or ADMIN)
-- `DELETE /api/users/:id` - Deactivate user (ADMIN only)
-
-### Assets
-- `GET /api/assets` - List assets with pagination
-- `GET /api/assets/:id` - Get asset details
-- `POST /api/assets` - Create asset (MANAGER/ADMIN)
-- `PUT /api/assets/:id` - Update asset (MANAGER/ADMIN)
-- `DELETE /api/assets/:id` - Soft delete asset (MANAGER/ADMIN)
-
-### Inspections
-- `GET /api/inspections` - List inspections
-- `GET /api/inspections/:id` - Get inspection details
-- `POST /api/inspections` - Create inspection (MANAGER/ADMIN)
-- `PUT /api/inspections/:id` - Update inspection status/notes
-
-### Incidents
-- `GET /api/incidents` - List incidents with filtering
-- `GET /api/incidents/:id` - Get incident with assignments + comments
-- `POST /api/incidents` - Create incident
-- `PUT /api/incidents/:id` - Update incident (MANAGER/ADMIN)
-- `POST /api/incidents/:id/assign` - Assign to user (MANAGER/ADMIN)
-- `POST /api/incidents/:id/comments` - Add comment
-
-## 🎯 Demo Credentials
-
-After running `npm run db:seed`:
-
-| Email | Password | Role |
-|-------|----------|------|
-| admin@demo.local | Demo@Password123 | ADMIN |
-| manager@demo.local | Demo@Password123 | MANAGER |
-| inspector@demo.local | Demo@Password123 | INSPECTOR |
-
-**Demo Data Includes:**
-- Demo Tower Company organization
-- 3 users with different roles
-- 2 asset types (towers, solar panels)
-- 3 assets with geolocation
-- 2 IP cameras
-- 2 scheduled inspections
-- 2 incidents with assignments and comments
-
-## 🚢 Deployment
-
-### Docker
-
-```bash
-# Build backend container
-docker build -t infrawatch-backend packages/backend
-
-# Build frontend container
-docker build -t infrawatch-frontend packages/frontend
-
-# Run with docker-compose
-docker-compose up
-```
-
-### Environment Variables
-
-See `.env.example` files in each package for all required variables:
-- Database connection strings
-- JWT secrets (generate with `openssl rand -base64 32`)
-- AWS credentials (for S3, SES)
-- Redis connection details
-
-## 📞 Support & Issues
-
-- Check existing [documentation](./00-foundation/) for help
-- Review [Architecture Overview](./00-foundation/03-architecture-overview.md)
-- Check database schema in [Data Model](./01-database/00-data-model-overview.md)
-- Review service implementations in `packages/backend/src/services/`
-
-## 📝 License
-
-Proprietary - InfraWatch Platform
->>>>>>> 5dd2821 (ph-01)
+Copyright © 2026 InfraWatch Inc. All rights reserved.
+Proprietary enterprise software. Built for high-reliability infrastructure monitoring and operations.

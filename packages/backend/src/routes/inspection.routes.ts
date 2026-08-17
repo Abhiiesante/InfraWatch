@@ -80,4 +80,24 @@ router.put(
   },
 );
 
+// POST /api/inspections/:id/images
+router.post(
+  '/:id/images',
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // In a real app, this would use multer and upload to S3/GCS.
+      // For this demo, we accept a base64 Data URI directly.
+      const image = await inspectionService.uploadImage(
+        parseInt(req.params.id),
+        req.tenantId!,
+        { imageUrl: req.body.imageUrl, caption: req.body.caption },
+      );
+      res.status(201).json(image);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 export default router;
