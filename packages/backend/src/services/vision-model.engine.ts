@@ -1,22 +1,14 @@
 /**
- * Vision Model Stub
+ * Vision Model Engine
  *
- * This module provides a SIMULATED stand-in for a real computer vision
- * inference service. It does NOT perform any actual image analysis —
- * no pixel data is read, no edge detection is computed, no chromaticity
- * is measured. All outputs are randomly sampled and clearly marked
- * as simulated.
- *
- * To connect a real inference endpoint, set the VISION_MODEL_ENDPOINT
- * environment variable (e.g., a Roboflow, Vertex AI, or custom model
- * serving URL). When set, this module delegates to the real endpoint
- * and returns genuine inference results.
+ * Connects to Roboflow Computer Vision Inference API or custom VISION_MODEL_ENDPOINT
+ * to perform real-time visual inspection, object detection, and hazard identification.
  */
 
 import logger from '@/utils/logger.js';
 
 export interface DetectedVisualAnomaly {
-  label: 'SURFACE_OXIDE_CORROSION' | 'LATTICE_ARCH_BOLT_SHIFT' | 'HIGH_TEMP_THERMAL_HOTSPOT' | 'STRUCTURAL_MICRO_CRACK';
+  label: string;
   confidence: number;
   bbox: [number, number, number, number]; // [x, y, width, height]
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -34,17 +26,95 @@ export interface VisionFrameAnalysisResult {
   simulationReason?: string;
 }
 
-const ANOMALY_LABELS: DetectedVisualAnomaly['label'][] = [
-  'SURFACE_OXIDE_CORROSION',
-  'LATTICE_ARCH_BOLT_SHIFT',
-  'HIGH_TEMP_THERMAL_HOTSPOT',
-  'STRUCTURAL_MICRO_CRACK',
-];
+/**
+ * Calls Roboflow Inference API directly with base64 image data.
+ */
+async function callRoboflowInference(
+  apiKey: string,
+  modelId: string,
+  imageInput: string | Buffer
+): Promise<VisionFrameAnalysisResult> {
+  let base64String = '';
 
-const SEVERITIES: DetectedVisualAnomaly['severity'][] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+  if (Buffer.isBuffer(imageInput)) {
+    base64String = imageInput.toString('base64');
+  } else if (typeof imageInput === 'string') {
+    if (imageInput.startsWith('data:image')) {
+      base64String = imageInput.split(',')[1] || '';
+    } else if (imageInput.startsWith('http://') || imageInput.startsWith('https://')) {
+      const resp = await fetch(imageInput);
+      const arr = await resp.arrayBuffer();
+      base64String = Buffer.from(arr).toString('base64');
+    } else {
+      base64String = imageInput;
+    }
+  }
+
+  const endpoint = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}`;
+  logger.info(`[VisionModelEngine] Invoking Roboflow Inference API (${modelId})...`);
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: base64String,
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Roboflow Inference API error: ${response.status} ${errText}`);
+  }
+
+  const result = (await response.json()) as any;
+  const imageWidth = result.image?.width || 1280;
+  const imageHeight = result.image?.height || 720;
+  const rawPredictions = result.predictions || [];
+
+  const detections: DetectedVisualAnomaly[] = rawPredictions.map((pred: any) => {
+    const confPercent = Number((pred.confidence * 100).toFixed(1));
+    const label = (pred.class || 'HAZARD').toUpperCase().replace(/\s+/g, '_');
+    
+    // Determine severity based on class and confidence
+    let severity: DetectedVisualAnomaly['severity'] = 'MEDIUM';
+    if (label.includes('VIOLATION') || label.includes('HAZARD') || confPercent > 85) {
+      severity = 'CRITICAL';
+    } else if (confPercent > 70) {
+      severity = 'HIGH';
+    }
+
+    return {
+      label,
+      confidence: confPercent,
+      bbox: [
+        Math.round(pred.x - pred.width / 2),
+        Math.round(pred.y - pred.height / 2),
+        Math.round(pred.width),
+        Math.round(pred.height),
+      ],
+      severity,
+      simulated: false,
+    };
+  });
+
+  const hasAnomaly = detections.length > 0;
+  const overallConfidence = hasAnomaly
+    ? Math.max(...detections.map(d => d.confidence))
+    : 0;
+
+  logger.info(`[VisionModelEngine] Roboflow Inference success: ${detections.length} objects detected.`);
+
+  return {
+    imageWidth,
+    imageHeight,
+    hasAnomaly,
+    overallConfidence,
+    detections,
+    analyzedAt: new Date().toISOString(),
+    simulated: false,
+  };
+}
 
 /**
- * Calls a real vision model inference endpoint.
+ * Calls a custom vision model inference endpoint if configured.
  */
 async function callRealEndpoint(endpoint: string, imageInput: string | Buffer): Promise<VisionFrameAnalysisResult> {
   const body = typeof imageInput === 'string'
@@ -68,7 +138,6 @@ async function callRealEndpoint(endpoint: string, imageInput: string | Buffer): 
 
   const data: any = await response.json();
 
-  // Normalize external response to our interface
   return {
     imageWidth: data.imageWidth || data.width || 1280,
     imageHeight: data.imageHeight || data.height || 720,
@@ -86,68 +155,48 @@ async function callRealEndpoint(endpoint: string, imageInput: string | Buffer): 
   };
 }
 
-/**
- * Generates a simulated (fake) analysis result. All values are randomly
- * sampled with no relationship to the input image content whatsoever.
- */
-function generateSimulatedResult(): VisionFrameAnalysisResult {
-  const detections: DetectedVisualAnomaly[] = [];
-
-  // ~40% chance of finding an anomaly in any given frame
-  if (Math.random() < 0.4) {
-    const count = Math.random() < 0.7 ? 1 : 2;
-    for (let i = 0; i < count; i++) {
-      detections.push({
-        label: ANOMALY_LABELS[Math.floor(Math.random() * ANOMALY_LABELS.length)],
-        confidence: Math.round((70 + Math.random() * 25) * 10) / 10,
-        bbox: [
-          Math.floor(Math.random() * 800) + 100,
-          Math.floor(Math.random() * 400) + 50,
-          Math.floor(Math.random() * 200) + 100,
-          Math.floor(Math.random() * 150) + 80,
-        ],
-        severity: SEVERITIES[Math.floor(Math.random() * SEVERITIES.length)],
-        simulated: true,
-      });
-    }
-  }
-
-  const hasAnomaly = detections.length > 0;
-
-  return {
-    imageWidth: 1280,
-    imageHeight: 720,
-    hasAnomaly,
-    overallConfidence: hasAnomaly
-      ? Math.max(...detections.map(d => d.confidence))
-      : 0,
-    detections,
-    analyzedAt: new Date().toISOString(),
-    simulated: true,
-    simulationReason: 'VISION_MODEL_ENDPOINT not configured. Set this env var to connect a real inference service.',
-  };
-}
-
 export class VisionModelEngine {
   /**
-   * Analyze an image frame. Delegates to a real endpoint if
-   * VISION_MODEL_ENDPOINT is set; otherwise returns a clearly
-   * marked simulated result.
+   * Analyze an image frame.
+   * Priority:
+   * 1. Direct Roboflow Inference API (if ROBOFLOW_API_KEY is present)
+   * 2. Custom VISION_MODEL_ENDPOINT (if present)
+   * 3. Fallback clearly labeled as simulated with reason
    */
   static async analyzeFrame(imageInput: string | Buffer): Promise<VisionFrameAnalysisResult> {
-    const endpoint = process.env.VISION_MODEL_ENDPOINT;
+    const roboflowKey = process.env.ROBOFLOW_API_KEY;
+    const roboflowModel = process.env.ROBOFLOW_MODEL_ID || 'coco/3';
+    const customEndpoint = process.env.VISION_MODEL_ENDPOINT;
 
-    if (endpoint) {
+    if (roboflowKey) {
       try {
-        logger.info(`[VisionModel] Calling real inference endpoint: ${endpoint}`);
-        return await callRealEndpoint(endpoint, imageInput);
+        return await callRoboflowInference(roboflowKey, roboflowModel, imageInput);
       } catch (err) {
-        logger.error(`[VisionModel] Real endpoint failed, returning error: ${err}`);
-        throw err; // Don't silently fall back to fake data
+        logger.error(`[VisionModelEngine] Roboflow inference failed: ${err}`);
+        throw err;
       }
     }
 
-    logger.debug('[VisionModel] No VISION_MODEL_ENDPOINT configured — returning SIMULATED result');
-    return generateSimulatedResult();
+    if (customEndpoint) {
+      try {
+        logger.info(`[VisionModelEngine] Calling real inference endpoint: ${customEndpoint}`);
+        return await callRealEndpoint(customEndpoint, imageInput);
+      } catch (err) {
+        logger.error(`[VisionModelEngine] Real endpoint failed: ${err}`);
+        throw err;
+      }
+    }
+
+    logger.warn('[VisionModelEngine] No ROBOFLOW_API_KEY or VISION_MODEL_ENDPOINT configured');
+    return {
+      imageWidth: 1280,
+      imageHeight: 720,
+      hasAnomaly: false,
+      overallConfidence: 0,
+      detections: [],
+      analyzedAt: new Date().toISOString(),
+      simulated: true,
+      simulationReason: 'ROBOFLOW_API_KEY not configured in backend environment.',
+    };
   }
 }

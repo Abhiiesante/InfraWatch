@@ -75,7 +75,7 @@ export class CVDaemon {
     this.isRunning = true;
 
     this.roboflowApiKey = process.env.ROBOFLOW_API_KEY || null;
-    this.roboflowModelId = process.env.ROBOFLOW_MODEL_ID || 'infrawatch-safety/1';
+    this.roboflowModelId = process.env.ROBOFLOW_MODEL_ID || 'coco/3';
     this.isSimulated = !this.roboflowApiKey;
 
     const intervalMs = process.env.CV_INFERENCE_INTERVAL_MS 

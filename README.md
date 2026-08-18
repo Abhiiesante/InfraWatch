@@ -1,170 +1,240 @@
-<div align="center">
+# InfraWatch
 
-# 🌐 InfraWatch
+**Infrastructure Telemetry, Computer Vision Safety & Medallion Data Platform**
 
-### Enterprise Infrastructure & Warehouse Intelligence OS
-
-**Next-Generation Multi-Tenant Digital Twin, SCADA Telemetry & AI-Powered Asset Monitoring**
-
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-
-[Quick Start](#-quick-start) • [Feature Tour](#-product-tour) • [Tech Stack](#-technology-stack) • [Demo Credentials](#-demo-accounts) • [API Documentation](./API.md)
-
-</div>
+InfraWatch is an open, modular operations platform for monitoring physical assets, warehouse facilities, and distributed infrastructure. It integrates live IoT sensor telemetry, real-time Roboflow computer vision safety tracking, a PySpark/Delta Lake medallion analytical engine, and mobile-first inspection execution into a unified interface.
 
 ---
 
-## ⚡ Overview
+## 🏛️ System Architecture
 
-**InfraWatch** is a production-grade enterprise platform designed for critical infrastructure operators, logistics hubs, and energy grids. It unifies **industrial IoT telemetry**, **SCADA supervisory controls**, **computer vision defect detection**, **14-day predictive maintenance forecasting**, and **3D BIM / GIS Digital Twins** into a single glass pane.
-
----
-
-## 🚀 Key Capabilities
-
-- **Unified Command Center**: Live KPI bento grid with real-time health score, active telemetry sparklines, and CCTV vision feeds.
-- **3D BIM CAD Digital Twin**: Interactive 3D WebGL mesh visualizer with structural stress heatmaps and anchor pier metrics.
-- **Industrial SCADA Control**: Sub-second telemetry (voltage, frequency, pressure, RPM) with interactive breaker actuators and threshold alarms.
-- **Live IoT Telemetry Engine**: Millisecond-level packet stream analysis, dynamic rule evaluators, and multi-sensor waveform monitoring.
-- **Warehouse Logistics & Safety Twin**: Spatial rack capacity heatmaps, AGV & forklift tracking, and OSHA geo-fenced safety zones.
-- **AI Computer Vision**: Live WebRTC camera stream ingestion with automated defect detection and PPE compliance tracking.
-- **Predictive Maintenance**: 14-day Prophet AI failure risk forecasting, Remaining Useful Life (RUL) curves, and prescriptive maintenance actions.
-- **Field Inspections**: End-to-end audit workflows with multi-spectrum optical and thermal capture logging.
-
----
-
-## 📸 Product Tour
-
-### 1. Command Center Dashboard (`/dashboard`)
-Centralized operational cockpit featuring count-up KPIs, real-time telemetry graphs, live CCTV vision stream, and active incident tracking.
-
-![Enterprise Command Center Dashboard](./docs/screenshots/dashboard-command-center.png)
-
----
-
-### 2. 3D BIM CAD Digital Twin (`/bim-twin`)
-Interactive 3D WebGL structural wireframe with live stress heatmaps, anchor pier stress breakdown, and real-time 60 FPS viewport rendering.
-
-![3D BIM CAD Digital Twin Visualizer](./docs/screenshots/digital-twin-bim.png)
-
----
-
-### 3. Industrial SCADA Supervisory Control (`/scada`)
-Real-time substation telemetry monitoring voltage, pipeline pressure, and temperatures with emergency cutoff actuators and alarm envelopes.
-
-![SCADA Supervisory Control Panel](./docs/screenshots/scada-control.png)
+```
+                                    +-----------------------------------------+
+                                    |            Frontend (Vite / React)       |
+                                    |  • Operations Dashboard  • Incident Board|
+                                    |  • Spatial Zone Editor   • AI Review     |
+                                    |  • BIM 3D Visualizer     • Field Runs    |
+                                    +--------------------+--------------------+
+                                                         |
+                                      HTTPS REST / WSS   |
+                                                         v
+                                    +--------------------+--------------------+
+                                    |         Backend (Node / Express)         |
+                                    |  • Auth & Multi-Tenant RBAC             |
+                                    |  • CV Daemon & Frame Ingestion Buffer   |
+                                    |  • IoT Telemetry Streamer               |
+                                    |  • Asynchronous Report Compiler         |
+                                    +---------+--------------------+----------+
+                                              |                    |
+                         Postgres / Prisma    |                    | Inference API
+                                              v                    v
+                          +-------------------+---+      +---------+----------+
+                          | PostgreSQL Database   |      | Roboflow Inference |
+                          | (OLTP / Metadata)     |      | (Object & Hazard)  |
+                          +-----------------------+      +--------------------+
+                                              |
+                                              | Event Streams / Storage Sink
+                                              v
+                          +---------------------------------------------------+
+                          |          Data Intelligence Lakehouse              |
+                          |  • Bronze: Raw JSON Event Ingestion               |
+                          |  • Silver: Schema Validation & RTSP Sanitization  |
+                          |  • Gold: Asset Health, MTTR & Compliance Aggs     |
+                          +---------------------------------------------------+
+```
 
 ---
 
-### 4. Live IoT Telemetry & Sensor Engine (`/telemetry`)
-High-frequency sensor packet stream engine with dynamic threshold evaluators and continuous waveform vibration/pressure analysis.
+## ⚡ Key Subsystems
 
-![Live IoT Telemetry Engine](./docs/screenshots/telemetry-iot.png)
+### 1. Computer Vision & Roboflow Safety Tracking
+- **Live Frame Ingestion**: Captures frames from RTSP camera streams or WebRTC camera broadcasts.
+- **Roboflow Inference API**: Directly queries Roboflow object detection models (`coco/3`, custom logistics safety checkpoints) to track personnel, equipment, and moving automated machinery.
+- **Configurable Keep-Out Zones**: Interactive spatial boundary editor allowing operators to configure restricted zones per camera.
+- **Alert Deduplication**: Enforces a 30-second cooldown window per violation track to prevent duplicate anomaly alerts from continuous presence.
+- **Three-State Honesty Protocol**: Explicitly flags stream status across all interfaces:
+  - `🟢 Real Live Inference`
+  - `🟡 Real Inference (Awaiting Stream / Offline)`
+  - `🔵 Simulated Demo Mode`
+
+### 2. Medallion Lakehouse Data Platform (Python / PySpark)
+- **Bronze Layer**: Lossless raw event ingestion across all 6 core domains (`assets`, `cameras`, `incidents`, `inspections`, `image_metadata`, `cv_events`).
+- **Silver Layer**: Data cleansing, schema validation, and quarantine table routing.
+- **RTSP Credential Sanitization**: Strips embedded authentication credentials from camera stream URLs (`rtsp://***:***@host:port/path`) before analytical persistence.
+- **Gold Layer**: Generates domain aggregates including:
+  - Dynamic Asset Risk & Health Indices
+  - Tenant-level Mean Time to Resolution (MTTR)
+  - Inspection Audit Compliance & Completion Rates
+- **Local Storage Adapter**: Zero-dependency filesystem fallback when cloud object storage credentials are not configured.
+
+### 3. Mobile-First Field Inspections
+- **Execution Mode (`/inspections/:id/execute`)**: Responsive workflow for on-site field engineers.
+- **Interactive Checklists**: Standardized verification for structural, mechanical, electrical, and environmental parameters.
+- **Photo Evidence Capture**: Direct optical evidence capture with inline thumbnail previews.
+- **Automatic Asset Sync**: Completing an inspection immediately updates `lastInspectionAt` and maintenance history on the target asset.
+
+### 4. Operational SCADA & IoT Telemetry
+- Sub-second telemetry ingestion for vibration, temperature, acoustic frequency, and grid load.
+- Interactive breaker actuators and automated alarm threshold evaluators.
+
+### 5. Incident Kanban & Human-in-the-Loop Review
+- 5-stage lifecycle state machine (`OPEN` → `ACKNOWLEDGED` → `IN_PROGRESS` → `RESOLVED` → `CLOSED`) with drag-and-drop transitions.
+- Dedicated AI review queue for one-click approval or dismissal of computer vision hazard flags.
 
 ---
 
-### 5. Warehouse Logistics & Safety Twin (`/warehouse`)
-Interactive floorplan with real-time AGV/forklift tracking, OSHA speed zones, rack utilization heatmaps, and environmental hazard detection.
+## 📸 Interface Overview
 
-![Warehouse Logistics Twin](./docs/screenshots/warehouse-logistics.png)
+### Command Center Dashboard (`/dashboard`)
+Central operational cockpit featuring live telemetry metrics, health scores, and active incident feeds.
 
----
-
-### 6. AI Vision & CCTV Stream Center (`/cameras`)
-Multi-camera grid with low-latency WebRTC streaming, bounding-box defect overlays, and automated PPE compliance verification.
-
-![AI Vision and Camera Telemetry](./docs/screenshots/ai-vision-cameras.png)
+![Command Center Dashboard](./docs/screenshots/dashboard-command-center.png)
 
 ---
 
-### 7. Predictive Maintenance Engine V2.0 (`/predictions`)
-Machine learning failure risk forecasting with 14-day lookahead probability curves, overall health indices, and prescriptive work order dispatch.
+### Warehouse Safety & Spatial Tracking (`/warehouse`)
+Spatial map overlay tracking personnel and machinery relative to restricted keep-out zones.
+
+![Warehouse Safety Tracking](./docs/screenshots/warehouse-logistics.png)
+
+---
+
+### AI Vision & Camera Inventory (`/cameras`)
+Surveillance feed grid with transparent stream state badges and hardware registration.
+
+![Camera Inventory and Stream Feed](./docs/screenshots/ai-vision-cameras.png)
+
+---
+
+### 3D BIM CAD Digital Twin (`/bim-twin`)
+Interactive 3D WebGL structural wireframe with live stress heatmaps and anchor pier monitoring.
+
+![3D BIM Digital Twin](./docs/screenshots/digital-twin-bim.png)
+
+---
+
+### SCADA Supervisory Control (`/scada`)
+Industrial control panel with live power, pressure, and temperature telemetry plus breaker actuators.
+
+![SCADA Supervisory Control](./docs/screenshots/scada-control.png)
+
+---
+
+### Predictive Maintenance Forecasts (`/predictions`)
+14-day lookahead failure risk curves, Remaining Useful Life (RUL) projections, and automated service recommendations.
 
 ![Predictive Maintenance Engine](./docs/screenshots/predictive-maintenance.png)
 
 ---
 
-### 8. Field Inspections Management (`/inspections`)
-Routine audit registry and inspector assignment for solar power parks, transit tunnels, suspension bridges, and hydroelectric dams.
+### Field Inspections Registry (`/inspections`)
+Routine audit workflows with mobile camera capture and asset maintenance history linking.
 
 ![Field Inspections Registry](./docs/screenshots/bridge-inspection.png)
 
 ---
 
-## 🛠️ Technology Stack
+## 📁 Repository Structure
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Framer Motion, Zustand, Lucide Icons |
-| **Backend & APIs** | Node.js 20+, Express.js, TypeScript, Prisma ORM, Socket.io, Zod Validation |
-| **Storage & Cache** | PostgreSQL 15 (Multi-Tenant Row Isolation), Redis 7.0 (Pub/Sub & BullMQ Queues) |
-| **Intelligence Plane** | Python 3.11, Prophet Time-Series ML, Computer Vision Ingestion, Isolation Forest |
-| **DevOps & Containers** | Docker, Docker Compose, Nginx Reverse Proxy, GitHub Actions CI/CD |
+```
+infrawatch/
+├── packages/
+│   ├── backend/             # Node.js + Express REST API & CV Daemon
+│   │   ├── prisma/          # Database schema and migrations
+│   │   ├── src/services/    # CV Daemon, Roboflow engine, telemetry, reports
+│   │   └── src/routes/      # REST API route controllers
+│   │
+│   ├── frontend/            # React 18 + Vite Web Application
+│   │   └── src/features/    # Feature modules (cameras, incidents, logistics, etc.)
+│   │
+│   └── data-platform/       # Medallion Lakehouse pipelines & tests
+│       ├── pipelines/       # Bronze, Silver, and Gold PySpark pipelines
+│       ├── contracts/       # Pydantic schema validation contracts
+│       └── tests/           # Automated integration test suite
+│
+└── docs/                    # Architecture documentation & assets
+```
 
 ---
 
-## ⚡ Quick Start
+## 🚀 Getting Started
 
-### 1. Clone and Install
+### Prerequisites
+- **Node.js** 20+
+- **Python** 3.11+
+- **PostgreSQL** 15+ (or Supabase instance)
+
+### 1. Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/your-org/infrawatch.git
 cd infrawatch
+
+# Install root & workspace dependencies
 npm install
+
+# Setup Python environment for data platform
+cd packages/data-platform
+pip install -r requirements.txt
+cd ../..
 ```
 
-### 2. Configure Environment
+### 2. Environment Configuration
 
-```bash
-cp packages/backend/.env.example packages/backend/.env
-cp packages/frontend/.env.example packages/frontend/.env
+Copy the sample environment configuration in `packages/backend/.env`:
+
+```ini
+PORT=3000
+FRONTEND_URL=http://localhost:5173
+DATABASE_URL="postgresql://user:password@localhost:5432/infrawatch?schema=public"
+DIRECT_URL="postgresql://user:password@localhost:5432/infrawatch?schema=public"
+
+# Roboflow Computer Vision API
+ROBOFLOW_API_KEY="your-roboflow-api-key"
+ROBOFLOW_MODEL_ID="coco/3"
 ```
 
-### 3. Initialize Database & Seed Demo Data
+### 3. Database Migration & Seed
 
 ```bash
+# Generate Prisma Client & apply schema
 npm run db:migrate
+
+# Seed demo assets, cameras, inspections, and SCADA sensors
 npm run db:seed
 ```
 
-### 4. Launch Application
+### 4. Running the Application
 
 ```bash
+# Launch backend API and frontend development server concurrently
 npm run dev
 ```
 
-- **Frontend Web Application**: [http://localhost:5173](http://localhost:5173)
-- **Backend REST API**: [http://localhost:3000](http://localhost:3000)
+- **Frontend Application**: `http://localhost:5173`
+- **Backend API**: `http://localhost:3000`
 
 ---
 
-## 🔑 Demo Accounts
+## 🧪 Testing & Validation
 
-Use these pre-configured accounts after seeding demo data:
+```bash
+# Run Data Platform pipeline contracts & credential sanitization tests
+cd packages/data-platform
+pytest tests/ -v
 
-| Role | Email | Password | Access Scope |
-| :--- | :--- | :--- | :--- |
-| **Enterprise Admin** | `admin@demo.local` | `Demo@Password123` | Full access to SCADA, Digital Twin, Team RBAC, and System Settings |
-| **Operations Manager** | `manager@demo.local` | `Demo@Password123` | Work Orders, Asset Catalog, Inspections, Incident Dispatch |
-| **Field Inspector** | `inspector@demo.local` | `Demo@Password123` | Inspection Checklists, Mobile Camera Broadcast, Anomaly Submissions |
+# Verify backend TypeScript compilation
+cd ../backend
+npm run build
 
----
-
-## 📚 Additional Documentation
-
-- **[REST API Reference](./API.md)** — Complete endpoint definitions, request/response schemas, and auth headers.
-- **[Production Deployment Guide](./DEPLOYMENT.md)** — Docker Compose, AWS ECS, and SSL configuration.
-- **[Production Checklist](./PRODUCTION_CHECKLIST.md)** — Pre-launch security and reliability audit.
+# Verify frontend production bundle
+cd ../frontend
+npm run build
+```
 
 ---
 
-<div align="center">
+## 📄 License
 
-Copyright © 2026 InfraWatch Inc. All rights reserved.
-
-</div>
+MIT © 2026 InfraWatch Contributors.
