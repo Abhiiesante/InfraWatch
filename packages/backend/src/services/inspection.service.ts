@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma.js';
 import { NotFoundError } from '@/lib/errors.js';
+import { DataIntelligenceService } from './data-intelligence.service.js';
 
 export class InspectionService {
   async listInspections(
@@ -77,13 +78,41 @@ export class InspectionService {
     const updateData: any = { ...data };
     if (data.completedAt) {
       updateData.completedAt = new Date(data.completedAt);
+    } else if (data.status === 'COMPLETED') {
+      updateData.completedAt = new Date();
     }
 
-    return prisma.inspection.update({
+    const updated = await prisma.inspection.update({
       where: { id },
       data: updateData,
       include: { asset: true, inspector: true },
     });
+
+    // Requirement F5.3: Completing an inspection updates lastInspectionAt on the asset
+    if (data.status === 'COMPLETED' && updated.assetId) {
+      try {
+        const asset = await prisma.asset.findUnique({ where: { id: updated.assetId } });
+        const existingMeta = (asset?.metadata as Record<string, any>) || {};
+        await prisma.asset.update({
+          where: { id: updated.assetId },
+          data: {
+            metadata: {
+              ...existingMeta,
+              lastInspectionAt: new Date().toISOString(),
+              lastInspectionId: updated.id,
+              lastInspectionStatus: updated.status,
+            },
+          },
+        });
+      } catch (err) {
+        console.error('[InspectionService] Failed to update asset lastInspectionAt:', err);
+      }
+    }
+
+    // Sync event to Data Platform
+    DataIntelligenceService.syncInspectionToDataPlatform(tenantId, id).catch(() => {});
+
+    return updated;
   }
 
   async uploadImage(id: number, tenantId: number, data: { imageUrl: string; caption?: string }) {

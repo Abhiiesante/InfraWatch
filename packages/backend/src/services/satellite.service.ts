@@ -94,10 +94,10 @@ export class SatelliteService {
         return { magnitude: 0.0 };
       }
 
-      const json = await response.json();
+      const json = (await response.json()) as any;
       const features = json.features || [];
       if (features.length > 0) {
-        return { magnitude: features[0].properties.mag || 0.0 };
+        return { magnitude: features[0].properties?.mag || 0.0 };
       }
       
       return { magnitude: 0.0 };

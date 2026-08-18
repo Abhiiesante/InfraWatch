@@ -472,17 +472,22 @@ model AssetPrediction {
 }
 
 // ============================================================================
-// REPORT
+// REPORT (Phase 4 Asynchronous Reporting)
 // ============================================================================
 
 model Report {
-  id          Int      @id @default(autoincrement())
-  tenantId    Int
-  title       String   @db.VarChar(255)
-  type        String   @db.VarChar(50)
-  data        Json?    @db.JsonB
-  generatedAt DateTime @default(now()) @db.Timestamptz(6)
-  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  title        String   @db.VarChar(255)
+  type         String   @db.VarChar(50)
+  status       String   @default("COMPLETED") @db.VarChar(50) // GENERATING, COMPLETED, FAILED
+  format       String   @default("PDF") @db.VarChar(20) // PDF, CSV
+  downloadUrl  String?  @db.Text
+  data         Json?    @db.JsonB
+  summary      String?  @db.Text
+  generatedAt  DateTime @default(now()) @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
 
   // Relations
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)

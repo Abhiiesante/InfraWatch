@@ -7,14 +7,14 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { apiClient } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 
-const COLUMNS = ['OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED'];
+const COLUMNS = ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
 function getSeverityColor(severity: string) {
   switch (severity) {
-    case 'CRITICAL': return 'bg-rose-500/10 text-rose-600 border-rose-500/20';
-    case 'HIGH': return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
-    case 'MEDIUM': return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
-    default: return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+    case 'CRITICAL': return 'bg-rose-500/10 text-rose-600 border-rose-500/30';
+    case 'HIGH': return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+    case 'MEDIUM': return 'bg-amber-500/10 text-amber-600 border-amber-500/30';
+    default: return 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30';
   }
 }
 
@@ -25,7 +25,8 @@ export const IncidentsListPage = () => {
   // Local state for optimistic UI updates during drag-and-drop
   const [boardData, setBoardData] = useState<Record<string, any[]>>({
     OPEN: [],
-    INVESTIGATING: [],
+    ACKNOWLEDGED: [],
+    IN_PROGRESS: [],
     RESOLVED: [],
     CLOSED: [],
   });
@@ -35,14 +36,16 @@ export const IncidentsListPage = () => {
     if (data?.incidents) {
       const newBoard: Record<string, any[]> = {
         OPEN: [],
-        INVESTIGATING: [],
+        ACKNOWLEDGED: [],
+        IN_PROGRESS: [],
         RESOLVED: [],
         CLOSED: [],
       };
       
       data.incidents.forEach((incident: any) => {
-        if (newBoard[incident.status]) {
-          newBoard[incident.status].push(incident);
+        const mappedStatus = incident.status === 'INVESTIGATING' ? 'IN_PROGRESS' : incident.status;
+        if (newBoard[mappedStatus]) {
+          newBoard[mappedStatus].push(incident);
         } else {
           newBoard['OPEN'].push(incident); // fallback
         }
@@ -120,7 +123,7 @@ export const IncidentsListPage = () => {
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 h-[calc(100vh-220px)] min-h-[600px]">
             {COLUMNS.map((columnId) => (
               <div key={columnId} className="flex flex-col h-full bg-slate-100/50 rounded-2xl border border-slate-200/50 p-4">
                 <div className="flex items-center justify-between mb-4 px-2">

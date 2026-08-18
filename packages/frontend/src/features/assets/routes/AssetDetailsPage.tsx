@@ -237,6 +237,45 @@ export const AssetDetailsPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Last Field Inspection & Quick Run Card */}
+            <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)] rounded-3xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-extrabold text-base text-[#3A4046] flex items-center gap-2">
+                  <ClipboardCheck className="w-4 h-4 text-cyan-600" /> Field Operations Audit
+                </h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  {asset.metadata?.lastInspectionStatus || (asset.inspections?.[0]?.status ?? 'SCHEDULED')}
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Last Verified Run:</span>
+                  <span className="font-bold text-cyan-300">
+                    {asset.metadata?.lastInspectionAt
+                      ? new Date(asset.metadata.lastInspectionAt).toLocaleDateString()
+                      : (asset.inspections?.[0]?.completedAt ? new Date(asset.inspections[0].completedAt).toLocaleDateString() : 'Pending Inspection')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Assigned Inspector:</span>
+                  <span className="font-semibold text-slate-200">
+                    {asset.inspections?.[0]?.inspector?.name || 'Chief Field Engineer'}
+                  </span>
+                </div>
+                {asset.inspections?.[0]?.id && (
+                  <div className="pt-2 border-t border-slate-800">
+                    <a
+                      href={`/inspections/${asset.inspections[0].id}/execute`}
+                      className="w-full py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <span>Open Field Inspection Run</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

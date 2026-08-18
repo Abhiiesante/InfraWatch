@@ -206,6 +206,81 @@ export class DataIntelligenceService {
     }
   }
 
+  static async syncCameraToDataPlatform(tenantId: number, cameraId: number) {
+    try {
+      const camera = await prisma.camera.findFirst({ where: { id: cameraId, tenantId } });
+      if (!camera) return { success: false, reason: 'CAMERA_NOT_FOUND' };
+
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${Date.now()}-${cameraId}-${Math.random().toString(36).substring(7)}.json`;
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/cameras/${date}/${filename}`;
+      
+      // Mask credentials before serialization
+      const sanitizedStreamUrl = (camera.rtspUrl || '').replace(/:\/\/([^:@]+):([^@]+)@/, '://***:***@');
+      
+      const payload = JSON.stringify({
+        ...camera,
+        rtspUrl: sanitizedStreamUrl,
+        _ingestion_event_time: new Date().toISOString()
+      }) + '\n';
+
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+
+      if (!host || !token) {
+        await this.fallbackToLocalStorage(volumePath, payload);
+        return { success: true, localFallback: true };
+      }
+
+      const response = await fetch(`${host}/api/2.0/fs/files${volumePath}?overwrite=true`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
+        body: payload,
+      });
+
+      if (!response.ok) throw new Error(`Databricks API Error: ${response.status}`);
+      return { success: true, syncedAt: new Date() };
+    } catch (error) {
+      logger.error(`[DataIntelligence] Failed to sync camera: ${error}`);
+      return { success: false, reason: String(error) };
+    }
+  }
+
+  static async syncInspectionToDataPlatform(tenantId: number, inspectionId: number) {
+    try {
+      const inspection = await prisma.inspection.findFirst({ where: { id: inspectionId, tenantId } });
+      if (!inspection) return { success: false, reason: 'INSPECTION_NOT_FOUND' };
+
+      const date = new Date().toISOString().split('T')[0];
+      const filename = `${Date.now()}-${inspectionId}-${Math.random().toString(36).substring(7)}.json`;
+      const volumePath = `/Volumes/workspace/default/infrawatch_raw/inspections/${date}/${filename}`;
+      const payload = JSON.stringify({
+        ...inspection,
+        _ingestion_event_time: new Date().toISOString()
+      }) + '\n';
+
+      const host = process.env.DATABRICKS_HOST;
+      const token = process.env.DATABRICKS_TOKEN;
+
+      if (!host || !token) {
+        await this.fallbackToLocalStorage(volumePath, payload);
+        return { success: true, localFallback: true };
+      }
+
+      const response = await fetch(`${host}/api/2.0/fs/files${volumePath}?overwrite=true`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/octet-stream' },
+        body: payload,
+      });
+
+      if (!response.ok) throw new Error(`Databricks API Error: ${response.status}`);
+      return { success: true, syncedAt: new Date() };
+    } catch (error) {
+      logger.error(`[DataIntelligence] Failed to sync inspection: ${error}`);
+      return { success: false, reason: String(error) };
+    }
+  }
+
   /**
    * Registers a prediction made by a model (served from Databricks or MLflow).
    */

@@ -10,13 +10,13 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 const execAsync = promisify(exec);
 const ffmpegPath = ffmpegInstaller.path;
 
-export type FrameSource = 'live' | 'static_test' | 'simulated';
+export type FrameSource = 'live' | 'real_no_frame' | 'simulated';
 
 /**
  * CV Daemon — Real-time object detection streaming over WebSockets.
  *
  * When ROBOFLOW_API_KEY is configured, this daemon fetches live frames from
- * camera stream URLs and calls the Roboflow Inference API. 
+ * camera stream URLs or client WebRTC pushes and calls the Roboflow Inference API. 
  * When it is NOT configured, it runs a clearly-marked simulation.
  */
 export class CVDaemon {
@@ -26,6 +26,12 @@ export class CVDaemon {
   private isSimulated = true;
   private roboflowApiKey: string | null = null;
   private roboflowModelId: string = 'infrawatch-safety/1';
+
+  // Alert deduplication tracking map: key = `${cameraId}_${violationClass}`, value = lastTriggeredTimestampMs
+  private violationCooldowns = new Map<string, number>();
+
+  // Live in-memory frame buffer cache for WebRTC/browser-streamed cameras
+  private frameBuffers = new Map<number, { buffer: Buffer; timestamp: number }>();
 
   // Simulated box state (only used when no real inference is available)
   private simulatedBoxes = [
@@ -38,10 +44,30 @@ export class CVDaemon {
     this.io = new SocketServer(server, { cors: { origin: '*' } });
     this.io.on('connection', (socket) => {
       logger.info(`🔌 CV Socket Client connected: ${socket.id}`);
+
+      // Allow frontend WebRTC transmitters to push live camera frames directly into daemon buffer
+      socket.on('cv:push-frame', ({ cameraId, base64Image }: { cameraId: number; base64Image: string }) => {
+        if (!cameraId || !base64Image) return;
+        try {
+          const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(cleanBase64, 'base64');
+          this.frameBuffers.set(Number(cameraId), { buffer, timestamp: Date.now() });
+        } catch (err) {
+          logger.warn(`[CVDaemon] Failed to parse pushed frame for camera ${cameraId}: ${err}`);
+        }
+      });
+
       socket.on('disconnect', () => {
         logger.info(`🔌 CV Socket Client disconnected: ${socket.id}`);
       });
     });
+  }
+
+  /**
+   * Register a frame directly from HTTP/WebRTC routes
+   */
+  registerLiveFrame(cameraId: number, frameBuffer: Buffer) {
+    this.frameBuffers.set(cameraId, { buffer: frameBuffer, timestamp: Date.now() });
   }
 
   start(defaultIntervalMs = 1000) {
@@ -119,20 +145,35 @@ export class CVDaemon {
       // 2. Process each camera concurrently
       await Promise.all(cameras.map(async (camera) => {
         const streamUrl = (camera.config as any)?.streamUrl;
-        if (!streamUrl) return;
-
-        // Capture frame
-        let frameBuffer = await this.captureFrameFromStream(streamUrl);
-        let frameBase64: string;
         
-        if (!frameBuffer) {
-          // If frame capture fails, we SKIP THIS TICK unless we want to test locally.
-          // For demo/testing, we can inject a dummy 1x1 image, but roboflow might reject it.
-          // Let's just return to avoid spamming Roboflow with empty images.
-          return;
-        } else {
-          frameBase64 = frameBuffer.toString('base64');
+        // Check for fresh pushed WebRTC buffer (< 5 seconds old)
+        let frameBuffer: Buffer | null = null;
+        const cached = this.frameBuffers.get(camera.id);
+        if (cached && (Date.now() - cached.timestamp < 5000)) {
+          frameBuffer = cached.buffer;
+        } else if (streamUrl) {
+          frameBuffer = await this.captureFrameFromStream(streamUrl);
         }
+
+        // If no frame could be captured, emit real_no_frame state (requirement F1.4)
+        if (!frameBuffer) {
+          if (this.io) {
+            this.io.emit('cv-detections', {
+              frameSource: 'real_no_frame' as FrameSource,
+              cameraId: camera.id,
+              cameraName: camera.name,
+              reason: streamUrl ? 'Camera feed unreachable / frame decode failed' : 'No streamUrl configured on camera',
+              boxes: [],
+              stats: {
+                zoneViolations: 0,
+                activeAMRs: 0
+              }
+            });
+          }
+          return;
+        }
+
+        const frameBase64 = frameBuffer.toString('base64');
 
         // Call Roboflow
         const response = await fetch(
@@ -199,9 +240,14 @@ export class CVDaemon {
           });
         }
 
-        // Auto-generate anomaly on violation (throttled randomly for demo so it doesn't spam DB)
-        if (zoneViolationsCount > 0 && Math.random() > 0.9) {
-           logger.warn(`[CVDaemon] Camera ${camera.id}: Spatial rule violated! Triggering Anomaly.`);
+        // Auto-generate anomaly on violation with 30-second alert deduplication cooldown (Requirement F7.3)
+        const cooldownKey = `${camera.id}_ZONE_VIOLATION`;
+        const lastAlertTime = this.violationCooldowns.get(cooldownKey) || 0;
+        const now = Date.now();
+
+        if (zoneViolationsCount > 0 && (now - lastAlertTime > 30000)) {
+           this.violationCooldowns.set(cooldownKey, now);
+           logger.warn(`[CVDaemon] Camera ${camera.id}: Spatial rule violated! Triggering Anomaly (Cooldown: 30s).`);
            
            const violations = (result.predictions || []).filter((pred: any) => {
              const cls = pred.class.toLowerCase();

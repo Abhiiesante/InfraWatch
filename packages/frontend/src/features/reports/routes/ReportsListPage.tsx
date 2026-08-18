@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useReports } from '../api/useReports';
+import { useReports, useCreateReport } from '../api/useReports';
 import { useGenerateAIReport } from '@/features/ai/api/useAI';
-import { FileText, Search, Loader2, Download, Sparkles, X } from 'lucide-react';
+import { FileText, Search, Loader2, Download, Sparkles, X, Plus, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const ReportsListPage = () => {
@@ -12,6 +12,7 @@ export const ReportsListPage = () => {
 
   const { data, isLoading } = useReports({ skip, take });
   const { mutateAsync: generateAiReport, isPending: isGenerating } = useGenerateAIReport();
+  const { mutateAsync: createReport, isPending: isCreatingReport } = useCreateReport();
 
   const handleGenerateAiReport = async () => {
     try {
@@ -22,24 +23,44 @@ export const ReportsListPage = () => {
     }
   };
 
+  const handleTriggerAsyncReport = async (title: string, type: string, reportFormat: 'PDF' | 'CSV') => {
+    try {
+      await createReport({
+        title,
+        type,
+        format: reportFormat,
+      });
+    } catch (error) {
+      console.error('Failed to queue async report:', error);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 w-full animate-in fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 drop-">
-            Reports & Analytics
+            Reports & Intelligence
           </h1>
-          <p className="text-slate-800/70 mt-2 text-lg font-medium">Generate and view automated compliance, audit, and AI narrative reports.</p>
+          <p className="text-slate-600 mt-2 text-lg font-medium">Asynchronous analytics generation from Gold Lakehouse metrics.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleTriggerAsyncReport('Executive Asset Health & MTTR Audit', 'ASSET_HEALTH', 'CSV')}
+            disabled={isCreatingReport}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {isCreatingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+            Export Gold CSV
+          </button>
           <button
             onClick={handleGenerateAiReport}
             disabled={isGenerating}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-slate-800 px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
+            className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 flex items-center gap-2 disabled:opacity-50"
           >
-            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-            Generate AI Narrative Report
+            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            Generate AI Narrative
           </button>
         </div>
       </div>
@@ -175,18 +196,20 @@ export const ReportsListPage = () => {
                       {format(new Date(report.createdAt), 'MMM d, yyyy')}
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <button 
-                        disabled={report.status !== 'COMPLETED'}
-                        className={`inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-bold border  transition-all
-                          ${report.status === 'COMPLETED' 
-                            ? 'text-slate-700 glass-panel/50 hover:bg-[rgba(255,255,255,0.55)] border-[rgba(255,255,255,0.80)] hover:shadow' 
-                            : 'text-slate-400 bg-transparent/50 border-[rgba(255,255,255,0.80)]/50 cursor-not-allowed opacity-50'
-                          }
-                        `}
+                      <a
+                        href={report.status === 'COMPLETED' ? `/api/reports/${report.id}/download` : undefined}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          report.status === 'COMPLETED'
+                            ? 'text-slate-900 bg-white hover:bg-slate-50 border-slate-300 shadow-sm hover:-translate-y-0.5'
+                            : 'text-slate-400 bg-slate-100 border-slate-200 cursor-not-allowed opacity-60 pointer-events-none'
+                        }`}
                       >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </button>
+                        <Download className="w-3.5 h-3.5 mr-1.5" />
+                        {report.status === 'GENERATING' ? 'Generating...' : 'Download Export'}
+                      </a>
                     </td>
                   </tr>
                 ))

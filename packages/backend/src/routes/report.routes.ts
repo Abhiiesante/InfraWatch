@@ -7,6 +7,8 @@ import { validateRequest } from '@/middleware/validation.js';
 const createReportSchema = z.object({
   title: z.string().min(2).max(255),
   type: z.string().min(2).max(50),
+  format: z.enum(['PDF', 'CSV']).optional(),
+  domain: z.string().optional(),
   data: z.record(z.any()).optional(),
 });
 
@@ -43,16 +45,32 @@ router.get(
   },
 );
 
-// POST /api/reports
+// GET /api/reports/:id/download
+router.get(
+  '/:id/download',
+  authMiddleware,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const exportData = await reportService.generateExportDownload(parseInt(req.params.id), req.tenantId!);
+      res.setHeader('Content-Type', exportData.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
+      res.send(exportData.content);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// POST /api/reports (Async generation)
 router.post(
   '/',
   authMiddleware,
-  requireRole('ADMIN', 'MANAGER'),
+  requireRole('ADMIN', 'MANAGER', 'INSPECTOR'),
   validateRequest(createReportSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const report = await reportService.createReport(req.tenantId!, req.body);
-      res.status(201).json(report);
+      const result = await reportService.createReportAsync(req.tenantId!, req.body);
+      res.status(202).json(result);
     } catch (error) {
       next(error);
     }

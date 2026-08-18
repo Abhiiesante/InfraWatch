@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Box, Activity, ShieldAlert, Cpu, AlertTriangle, BarChart3, TrendingDown } from 'lucide-react';
+import { Box, Activity, ShieldAlert, Cpu, AlertTriangle, BarChart3, TrendingDown, Sliders } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { apiClient } from '@/lib/api';
+import { KeepOutZoneEditor, KeepOutZoneConfig } from '../components/KeepOutZoneEditor';
 
 const socket = io(window.location.origin, { path: '/socket.io' });
 
@@ -14,9 +15,18 @@ export function WarehouseDashboardPage() {
     safetyScore: 99
   });
   const [boxes, setBoxes] = useState<any[]>([]);
-  const [frameSource, setFrameSource] = useState<'live' | 'static_test' | 'simulated'>('simulated');
+  const [frameSource, setFrameSource] = useState<'live' | 'real_no_frame' | 'simulated'>('simulated');
   const [goldMetrics, setGoldMetrics] = useState<any[]>([]);
   const [goldTotals, setGoldTotals] = useState<any>(null);
+  const [isZoneEditorOpen, setIsZoneEditorOpen] = useState(false);
+  const [keepOutZone, setKeepOutZone] = useState<KeepOutZoneConfig>({
+    xMin: 0,
+    xMax: 100,
+    yMin: 50,
+    yMax: 100,
+    zoneName: 'AMR Automated Runway Alpha',
+    severity: 'CRITICAL',
+  });
 
   useEffect(() => {
     socket.on('cv-detections', (data) => {
@@ -61,12 +71,13 @@ export function WarehouseDashboardPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-10 w-full animate-in fade-in pb-24 mt-10">
+    <div className="min-h-screen p-8 max-w-7xl mx-auto space-y-8 animate-page-enter">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 drop-shadow-sm">
-            Warehouse Operations
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+            <Boxes className="w-10 h-10 text-slate-900" />
+            Warehouse Digital Twin
           </h1>
           <p className="text-slate-800/70 mt-3 text-xl font-medium">
             Logistics, Safety, & Fleet Tracking
@@ -76,26 +87,38 @@ export function WarehouseDashboardPage() {
           {frameSource === 'live' && (
             <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-700 font-bold text-sm">Roboflow Model Active (Live)</span>
+              <span className="text-emerald-700 font-bold text-sm">Real Inference (Live Feed)</span>
             </div>
           )}
-          {frameSource === 'static_test' && (
+          {frameSource === 'real_no_frame' && (
             <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <span className="text-amber-700 font-bold text-sm">Roboflow Model Active (Static Test)</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-amber-700 font-bold text-sm">Real Inference (Awaiting Stream)</span>
             </div>
           )}
           {frameSource === 'simulated' && (
-            <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-              <span className="text-rose-700 font-bold text-sm">AI Disconnected (Simulated)</span>
+            <div className="px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+              <span className="text-indigo-700 font-bold text-sm">Simulated Demo Mode</span>
             </div>
           )}
-          <button className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
+          <button
+            onClick={() => setIsZoneEditorOpen(true)}
+            className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2"
+          >
+            <Sliders className="w-4 h-4" />
             Configure Zones
           </button>
         </div>
       </div>
+
+      {/* Keep-Out Zone Editor Modal */}
+      <KeepOutZoneEditor
+        isOpen={isZoneEditorOpen}
+        onClose={() => setIsZoneEditorOpen(false)}
+        initialZone={keepOutZone}
+        onSaveZone={setKeepOutZone}
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -156,11 +179,19 @@ export function WarehouseDashboardPage() {
            {/* Background Image of Warehouse */}
            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200" className="absolute inset-0 w-full h-full object-cover opacity-30" alt="Warehouse Map" />
            
-           {/* Draw Keep-Out Zone Overlay (Bottom 50%) */}
-           <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-rose-500/10 border-t-2 border-dashed border-rose-500/50 pointer-events-none flex items-start justify-center pt-2">
-             <span className="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-               <AlertTriangle className="w-3 h-3" />
-               RESTRICTED: AUTOMATED MACHINERY ZONE
+           {/* Dynamic Configurable Keep-Out Zone Overlay */}
+           <div 
+             className="absolute border-t-2 border-dashed border-rose-500/80 bg-rose-500/15 pointer-events-none flex items-start justify-center pt-2 transition-all duration-300 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+             style={{
+               left: `${keepOutZone.xMin}%`,
+               top: `${keepOutZone.yMin}%`,
+               width: `${keepOutZone.xMax - keepOutZone.xMin}%`,
+               height: `${keepOutZone.yMax - keepOutZone.yMin}%`,
+             }}
+           >
+             <span className="bg-rose-600/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg uppercase tracking-wide">
+               <AlertTriangle className="w-3.5 h-3.5" />
+               RESTRICTED: {keepOutZone.zoneName}
              </span>
            </div>
 

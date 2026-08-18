@@ -13,6 +13,7 @@ import { IncidentsListPage } from '@/features/incidents/routes/IncidentsListPage
 import { IncidentDetailPage } from '@/features/incidents/routes/IncidentDetailPage';
 import { InspectionsListPage } from '@/features/inspections/routes/InspectionsListPage';
 import { InspectionDetailPage } from '@/features/inspections/routes/InspectionDetailPage';
+import { InspectionExecutionPage } from '@/features/inspections/routes/InspectionExecutionPage';
 import { CamerasListPage } from '@/features/cameras/routes/CamerasListPage';
 import { UsersListPage } from '@/features/users/routes/UsersListPage';
 import { UserDetailPage } from '@/features/users/routes/UserDetailPage';
@@ -210,6 +211,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <InspectionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inspections/:id/execute"
+            element={
+              <ProtectedRoute>
+                <InspectionExecutionPage />
               </ProtectedRoute>
             }
           />

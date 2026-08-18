@@ -54,12 +54,13 @@ export const InspectionsListPage = () => {
                 <th className="px-8 py-5">Inspector</th>
                 <th className="px-8 py-5">Scheduled Date</th>
                 <th className="px-8 py-5">Status</th>
+                <th className="px-8 py-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/50">
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
                       <p className="text-slate-800/70 font-medium">Loading inspections...</p>
@@ -68,7 +69,7 @@ export const InspectionsListPage = () => {
                 </tr>
               ) : data?.inspections?.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                         <ClipboardCheck className="w-8 h-8 text-slate-400" />
@@ -79,8 +80,8 @@ export const InspectionsListPage = () => {
                 </tr>
               ) : (
                 data?.inspections?.map((inspection: any) => (
-                  <tr key={inspection.id} className="group hover:glass-panel/60 transition-colors duration-200 cursor-pointer" onClick={() => window.location.href = `/inspections/${inspection.id}`}>
-                    <td className="px-8 py-5">
+                  <tr key={inspection.id} className="group hover:glass-panel/60 transition-colors duration-200">
+                    <td className="px-8 py-5" onClick={() => window.location.href = `/inspections/${inspection.id}`}>
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl text-slate-700 shadow-inner group-hover: transition-all">
                           <ClipboardCheck className="w-5 h-5" />
@@ -99,13 +100,21 @@ export const InspectionsListPage = () => {
                     <td className="px-8 py-5">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border  ${
                         inspection.status === 'COMPLETED' 
-                          ? 'bg-slate-800/10 text-emerald-800 border-emerald-200' 
-                          : 'bg-blue-100 text-blue-800 border-blue-200'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
                       }`}>
-                        {inspection.status === 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-slate-800 mr-2"></span>}
+                        {inspection.status === 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>}
                         {inspection.status !== 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2 animate-pulse"></span>}
                         {inspection.status}
                       </span>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <a
+                        href={`/inspections/${inspection.id}/execute`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-all hover:-translate-y-0.5"
+                      >
+                        <span>Execute Run</span>
+                      </a>
                     </td>
                   </tr>
                 ))

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCameras, useCreateCamera, useDeleteCamera } from '../api/useCameras';
 import { useAssets } from '@/features/assets/api/useAssets';
-import { Video, Plus, Loader2, X, Wifi, Trash2, Eye, Play, Pause, Maximize2, Radio, Shield, Move, ZoomIn, ZoomOut, Flame, RotateCcw, Compass, Camera as CameraIcon, Globe } from 'lucide-react';
+import { Video, Plus, Loader2, X, Wifi, Trash2, Eye, Play, Pause, Maximize2, Radio, Shield, Move, ZoomIn, ZoomOut, Flame, RotateCcw, Compass, Camera as CameraIcon, Globe, Settings } from 'lucide-react';
+import { CameraManagementModal } from '../components/CameraManagementModal';
 import * as Dialog from '@radix-ui/react-dialog';
 import { format } from 'date-fns';
 import Hls from 'hls.js';
@@ -38,18 +39,21 @@ const LiveRoboflowTracker = ({ isPlaying }: { isPlaying: boolean }) => {
     <div className="absolute inset-0 z-20 pointer-events-none">
       {/* 3-State Honesty Badge */}
       {frameSource === 'simulated' && (
-        <div className="absolute top-2 right-2 z-30 bg-rose-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
-          ⚠ SIMULATED — AI NOT CONNECTED
+        <div className="absolute top-2 right-2 z-30 bg-indigo-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          SIMULATED DEMO MODE
         </div>
       )}
-      {frameSource === 'static_test' && (
-        <div className="absolute top-2 right-2 z-30 bg-amber-500/90 text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
-          ⚠ REAL INFERENCE, STATIC TEST FRAME
+      {frameSource === 'real_no_frame' && (
+        <div className="absolute top-2 right-2 z-30 bg-amber-500/90 text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-900" />
+          REAL INFERENCE — AWAITING FEED
         </div>
       )}
       {frameSource === 'live' && (
-        <div className="absolute top-2 right-2 z-30 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide">
-          🟢 LIVE INFERENCE
+        <div className="absolute top-2 right-2 z-30 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg tracking-wide flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          REAL INFERENCE — LIVE STREAM
         </div>
       )}
 
@@ -162,6 +166,7 @@ const HlsVideoPlayer = ({ src, className, style, poster }: { src: string; classN
 export const CamerasListPage = () => {
   const [page] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
+  const [cameraToEdit, setCameraToEdit] = useState<any | null>(null);
   const [activeStreamCamera, setActiveStreamCamera] = useState<any | null>(null);
   const [thermalFilter, setThermalFilter] = useState(false);
   const [aiOverlay, setAiOverlay] = useState(true);
@@ -325,123 +330,76 @@ export const CamerasListPage = () => {
             Global Camera & Surveillance Network
           </p>
         </div>
-        <Dialog.Root open={showCreate} onOpenChange={setShowCreate}>
-          <Dialog.Trigger asChild>
-            <button className="bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Add Camera
-            </button>
-          </Dialog.Trigger>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-            <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-8 bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)] rounded-2xl shadow-2xl">
-              <div className="flex flex-col space-y-1.5">
-                <Dialog.Title className="text-2xl font-bold text-[#3A4046]">Register Camera Stream</Dialog.Title>
-                <Dialog.Description className="text-sm text-slate-800/70">
-                  Connect a new camera feed to the global monitoring matrix.
-                </Dialog.Description>
-              </div>
-              <form onSubmit={handleCreateCamera} className="space-y-4 py-2">
-                <div className="space-y-1.5">
-                  <label htmlFor="cam-name" className="text-xs font-bold text-slate-700">Camera Name</label>
-                  <input required id="cam-name" name="name" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm" placeholder="e.g. Tokyo Harbour Bridge Live Cam" />
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="cam-asset" className="text-xs font-bold text-slate-700">Associated Infrastructure Facility</label>
-                  <select required id="cam-asset" name="assetId" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm">
-                    <option value="">Select an asset facility...</option>
-                    {assetsData?.assets?.map((asset: any) => (
-                      <option key={asset.id} value={asset.id}>{asset.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="cam-type" className="text-xs font-bold text-slate-700">Camera Hardware Type</label>
-                  <select required id="cam-type" name="cameraType" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm">
-                    <option value="360° DOME PTZ">360° Dome PTZ Panorama</option>
-                    <option value="PTZ 4K Structural">PTZ 4K Structural</option>
-                    <option value="Optical Strain HD">Optical Strain HD</option>
-                    <option value="THERMAL INFRARED">Thermal Infrared</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="cam-rtsp" className="text-xs font-bold text-slate-700">Stream URL</label>
-                  <input required id="cam-rtsp" name="rtspUrl" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm font-mono" placeholder="https://..." />
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="cam-ip" className="text-xs font-bold text-slate-700">IP Address</label>
-                  <input id="cam-ip" name="ipAddress" className="flex h-11 w-full rounded-xl border border-[rgba(255,255,255,0.80)] bg-transparent px-4 text-sm font-mono" placeholder="192.168.10.100" />
-                </div>
-                <div className="flex justify-end gap-3 pt-4">
-                  <Dialog.Close asChild>
-                    <button type="button" className="px-5 py-2.5 text-sm font-bold text-slate-800/80 hover:bg-slate-100 rounded-xl">Cancel</button>
-                  </Dialog.Close>
-                  <button disabled={isCreating} type="submit" className="px-6 py-2.5 text-sm font-bold bg-[rgba(127,184,176,0.85)] hover:bg-indigo-700 text-slate-800 rounded-xl shadow-lg shadow-indigo-500/20">
-                    {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register Camera'}
-                  </button>
-                </div>
-              </form>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+        <button
+          onClick={() => {
+            setCameraToEdit(null);
+            setShowCreate(true);
+          }}
+          className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-slate-900/20 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Register Camera
+        </button>
       </div>
+
+      {/* Camera Management Modal (Create & Edit) */}
+      <CameraManagementModal
+        isOpen={showCreate || !!cameraToEdit}
+        onClose={() => {
+          setShowCreate(false);
+          setCameraToEdit(null);
+        }}
+        cameraToEdit={cameraToEdit}
+      />
 
       {/* Camera Video Matrix Grid */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24">
-          <Loader2 className="w-10 h-10 text-[#7FB8B0] animate-spin mb-4" />
-          <p className="text-slate-800/70 font-medium">Connecting to surveillance streams...</p>
-        </div>
-      ) : data?.cameras?.length === 0 ? (
-        <div className="bg-slate-950/70 backdrop-blur-2xl rounded-2xl border border-white/10 p-16 text-center shadow-xl">
-          <Video className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">No active camera streams</h3>
-          <p className="text-slate-400 max-w-md mx-auto text-sm">Add your first surveillance feed to view real-time optical streams.</p>
+        <div className="flex items-center justify-center p-24">
+          <Loader2 className="w-12 h-12 text-slate-800 animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {data?.cameras?.map((camera: any) => {
-            const { url: hlsUrl, isDemoStream } = getCameraHlsStream(camera);
-            const posterImg = getCameraPoster(camera);
-            const is360 = camera.name?.includes('360') || camera.cameraType?.includes('360');
-            
+            const is360 = camera.cameraType.includes('360') || camera.cameraType.includes('DOME') || camera.cameraType.includes('PTZ');
+            const hasCustomStream = Boolean(camera.config?.streamUrl || (camera.rtspUrl && !camera.rtspUrl.includes('demo')));
+
             return (
               <div
                 key={camera.id}
-                className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] overflow-hidden shadow-xl hover:shadow-[0_0_40px_rgba(16,185,129,0.15)] transition-all duration-300 group flex flex-col"
+                className="bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col group/card hover:-translate-y-1"
               >
-                {/* Video Stream Player Canvas */}
-                <div
+                {/* Visual Camera Feed Display */}
+                <div 
                   onClick={() => {
                     setActiveStreamCamera(camera);
                     resetPTZ();
                   }}
-                  className="h-72 bg-black relative overflow-hidden cursor-pointer group/feed"
+                  className="relative aspect-video bg-black overflow-hidden cursor-pointer group/feed"
                 >
-                  <HlsVideoPlayer
-                    src={hlsUrl}
-                    poster={posterImg}
-                    className="w-full h-full object-cover pointer-events-none group-hover/feed:scale-105 transition-transform duration-500 border-0 opacity-80"
+                  <img
+                    src={getCameraPoster(camera)}
+                    alt={camera.name}
+                    className="w-full h-full object-cover group-hover/feed:scale-105 transition-transform duration-700 opacity-90"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=800&q=80';
+                    }}
                   />
 
-                  {/* RTSP Real-Time Live Overlay - Roboflow Tracker in Grid */}
-                  {aiOverlay && (
-                    <div className="absolute inset-0 pointer-events-none z-10">
-                      <LiveRoboflowTracker isPlaying={true} />
-                    </div>
-                  )}
-
-                  {/* UI Overlay */}
-                  <div className="absolute inset-0 p-4 flex flex-col justify-between pointer-events-none z-20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-black/60 backdrop-blur-md">
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                        <span className="text-[10px] font-bold text-white tracking-wider">LIVE &middot; 2s delay</span>
-                      </div>
-                      {isDemoStream && (
-                        <div className="flex items-center gap-1 px-2 py-1 rounded bg-amber-500/80 backdrop-blur-md">
-                          <span className="text-[9px] font-bold text-black tracking-wider">DEMO STREAM</span>
-                        </div>
+                  {/* Badges on Video */}
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-black/60 backdrop-blur-md text-white border border-white/20 flex items-center gap-1.5 shadow-lg">
+                        <span className={`w-2 h-2 rounded-full ${camera.status === 'ONLINE' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                        {camera.status || 'ONLINE'}
+                      </span>
+                      {hasCustomStream ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-cyan-500/80 text-white border border-cyan-400/40 backdrop-blur-md shadow">
+                          CUSTOM FEED
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/80 text-slate-950 border border-amber-400/40 backdrop-blur-md shadow">
+                          DEMO STREAM
+                        </span>
                       )}
                     </div>
 
@@ -450,7 +408,7 @@ export const CamerasListPage = () => {
                         {format(new Date(liveClock.getTime() + (camera.id * 1000 * 60 * 3)), 'HH:mm:ss')} UTC
                       </span>
                       {aiOverlay && (
-                        <span className="px-2 py-1 rounded bg-black/60 backdrop-blur-md text-emerald-400 tracking-wide">
+                        <span className="px-2 py-1 rounded bg-black/60 backdrop-blur-md text-emerald-400 tracking-wide ml-1">
                           AI: Active
                         </span>
                       )}
@@ -465,22 +423,28 @@ export const CamerasListPage = () => {
 
                 {/* Card Content & Action Bar */}
                 <div className="p-6 flex-1 flex flex-col justify-between z-10 border-t border-slate-200">
-                  <div className="mb-5">
-                    <h3 className="font-extrabold text-xl text-slate-900">
-                      {camera.name.replace('Cam 01', '').trim()}
-                    </h3>
-                    <p className="text-base text-slate-600 font-medium mt-1">
-                      {camera.name.toLowerCase().includes('tokyo') ? 'Assembly Floor' : camera.name.toLowerCase().includes('venice') ? 'Logistics Hub' : 'Fulfillment Line'}
+                  <div className="mb-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-extrabold text-xl text-slate-900 tracking-tight">
+                        {camera.name}
+                      </h3>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                        ID #{camera.id}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-600 font-medium mt-1 flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-cyan-600" />
+                      {camera.asset?.name || 'Unassigned Facility'}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm mt-auto pb-5">
-                    <span className="text-slate-600 font-medium flex items-center gap-2">
-                      <CameraIcon className="w-5 h-5 text-slate-400" /> Type: <strong className="text-slate-900">{is360 ? '360° PTZ' : 'Fixed Mount'}</strong>
+                  <div className="flex items-center gap-4 text-xs mt-auto pb-4 text-slate-600 font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <CameraIcon className="w-4 h-4 text-slate-400" /> Type: <strong className="text-slate-900">{camera.cameraType || (is360 ? '360° PTZ' : 'Fixed Mount')}</strong>
                     </span>
                     <span className="text-slate-300">|</span>
-                    <span className="text-slate-600 font-medium">
-                      Resolution: <strong className="text-slate-900">{camera.cameraType.includes('4K') ? '4K UHD' : '1080p HD'}</strong>
+                    <span>
+                      IP: <strong className="text-slate-900 font-mono">{camera.ipAddress || 'DHCP'}</strong>
                     </span>
                   </div>
 
@@ -490,22 +454,33 @@ export const CamerasListPage = () => {
                         setActiveStreamCamera(camera);
                         resetPTZ();
                       }}
-                      className="px-5 py-2.5 rounded-xl text-sm font-bold bg-slate-800 text-white hover:bg-slate-700 hover:shadow-lg transition-all flex items-center gap-2"
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 hover:shadow-md transition-all flex items-center gap-1.5"
                     >
-                      <Eye className="w-4 h-4" />
-                      Open Live View
+                      <Eye className="w-3.5 h-3.5" />
+                      Live View
                     </button>
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Remove "${camera.name}" camera?\n\nThis will remove the camera from the monitoring dashboard.`)) {
-                          handleDeleteCamera(camera.id);
-                        }
-                      }}
-                      className="px-3 py-2 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
-                      title="Remove Camera"
-                    >
-                      Remove
-                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCameraToEdit(camera)}
+                        className="px-3 py-2 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition-colors flex items-center gap-1 font-bold text-xs border border-slate-200"
+                        title="Edit Camera Configuration"
+                      >
+                        <Settings className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remove "${camera.name}" camera?\n\nThis will remove the camera from the monitoring dashboard.`)) {
+                            handleDeleteCamera(camera.id);
+                          }
+                        }}
+                        className="p-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors flex items-center justify-center font-bold text-xs"
+                        title="Remove Camera"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
