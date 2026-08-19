@@ -4,10 +4,15 @@ import { io } from 'socket.io-client';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import { apiClient } from '@/lib/api';
 import { KeepOutZoneEditor, KeepOutZoneConfig } from '../components/KeepOutZoneEditor';
+import { useCameras, useUpdateCamera } from '@/features/cameras/api/useCameras';
 
-const socket = io(window.location.origin, { path: '/socket.io' });
+const socket = io(window.location.origin, { path: '/socket.io', transports: ['websocket'] });
 
 export function WarehouseDashboardPage() {
+  const { data: camerasData } = useCameras({ skip: 0, take: 10 });
+  const { mutateAsync: updateCamera, isPending: isSavingZone } = useUpdateCamera();
+  const activeCamera = camerasData?.cameras?.[0];
+
   const [stats, setStats] = useState({
     activeAMRs: 0,
     zoneViolations: 0,
@@ -28,6 +33,29 @@ export function WarehouseDashboardPage() {
     severity: 'CRITICAL',
   });
 
+  // Sync initial keepOutZone from persisted database camera config
+  useEffect(() => {
+    if (activeCamera?.config && (activeCamera.config as any).keepOutZone) {
+      setKeepOutZone((activeCamera.config as any).keepOutZone);
+    }
+  }, [activeCamera]);
+
+  const handleSaveZone = async (newZone: KeepOutZoneConfig) => {
+    setKeepOutZone(newZone);
+    if (activeCamera) {
+      const existingConfig = (activeCamera.config as Record<string, any>) || {};
+      await updateCamera({
+        id: activeCamera.id,
+        data: {
+          config: {
+            ...existingConfig,
+            keepOutZone: newZone,
+          },
+        },
+      });
+    }
+  };
+
   useEffect(() => {
     socket.on('cv-detections', (data) => {
       if (data && data.stats) {
@@ -44,6 +72,9 @@ export function WarehouseDashboardPage() {
       }
       if (data && data.frameSource) {
         setFrameSource(data.frameSource);
+      }
+      if (data && data.keepOutZone) {
+        setKeepOutZone(data.keepOutZone);
       }
     });
 
@@ -117,7 +148,9 @@ export function WarehouseDashboardPage() {
         isOpen={isZoneEditorOpen}
         onClose={() => setIsZoneEditorOpen(false)}
         initialZone={keepOutZone}
-        onSaveZone={setKeepOutZone}
+        onSaveZone={handleSaveZone}
+        isSaving={isSavingZone}
+        cameraName={activeCamera?.name || 'Warehouse North Bay PTZ'}
       />
 
       {/* KPI Cards */}

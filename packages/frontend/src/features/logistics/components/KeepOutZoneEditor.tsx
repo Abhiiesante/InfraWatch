@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShieldAlert, X, Check, Sliders, AlertTriangle, Move } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, X, Check, Sliders, AlertTriangle, Move, Loader2 } from 'lucide-react';
 
 export interface KeepOutZoneConfig {
   xMin: number; // 0-100%
@@ -14,7 +14,8 @@ interface KeepOutZoneEditorProps {
   isOpen: boolean;
   onClose: () => void;
   initialZone?: KeepOutZoneConfig;
-  onSaveZone: (zone: KeepOutZoneConfig) => void;
+  onSaveZone: (zone: KeepOutZoneConfig) => Promise<void> | void;
+  isSaving?: boolean;
   cameraName?: string;
   referenceImage?: string;
 }
@@ -31,15 +32,22 @@ export const KeepOutZoneEditor: React.FC<KeepOutZoneEditorProps> = ({
     severity: 'CRITICAL',
   },
   onSaveZone,
+  isSaving = false,
   cameraName = 'Warehouse North Bay PTZ',
   referenceImage = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200',
 }) => {
   const [zone, setZone] = useState<KeepOutZoneConfig>(initialZone);
 
+  useEffect(() => {
+    if (initialZone) {
+      setZone(initialZone);
+    }
+  }, [initialZone, isOpen]);
+
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    onSaveZone(zone);
+  const handleSave = async () => {
+    await onSaveZone(zone);
     onClose();
   };
 
@@ -56,7 +64,7 @@ export const KeepOutZoneEditor: React.FC<KeepOutZoneEditorProps> = ({
             <div>
               <h2 className="text-xl font-bold tracking-tight">Keep-Out Zone Spatial Editor</h2>
               <p className="text-xs text-slate-400">
-                Define restricted safety boundaries for {cameraName} (30s alert cooldown enforced)
+                Define restricted safety boundaries for {cameraName} (persisted to database & CV daemon)
               </p>
             </div>
           </div>
@@ -178,10 +186,11 @@ export const KeepOutZoneEditor: React.FC<KeepOutZoneEditorProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2"
+            disabled={isSaving}
+            className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
           >
-            <Check className="w-4 h-4" />
-            <span>Apply Keep-Out Zone</span>
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            <span>{isSaving ? 'Saving to Database...' : 'Save & Apply Zone'}</span>
           </button>
         </div>
       </div>

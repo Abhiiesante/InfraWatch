@@ -199,6 +199,44 @@ export const CameraManagementModal: React.FC<CameraManagementModalProps> = ({
               placeholder="rtsp://username:password@192.168.1.100:554/live/ch0"
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors font-mono"
             />
+
+            {/* Quick Stream Preset Templates for Non-Wi-Fi & Remote CCTVs */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Quick Stream Presets (Remote Sites, 4G SIM, Wired PoE / Coaxial NVRs):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setRtspUrl('rtsp://admin:admin@remote-domain-or-ip:554/live/ch0')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-cyan-300 font-mono border border-slate-700 transition-colors"
+                >
+                  🌐 WAN / DDNS Remote
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRtspUrl('rtsp://admin:12345@192.168.1.100:554/Streaming/Channels/101')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-emerald-300 font-mono border border-slate-700 transition-colors"
+                >
+                  🔌 Hikvision / Prama NVR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRtspUrl('rtsp://admin:admin@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-amber-300 font-mono border border-slate-700 transition-colors"
+                >
+                  🔌 Dahua / CP Plus NVR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRtspUrl('https://stream-gateway.infra.org/live/camera-1.m3u8')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-purple-300 font-mono border border-slate-700 transition-colors"
+                >
+                  🛰️ 4G/5G HLS Cloud Push
+                </button>
+              </div>
+            </div>
+
             <p className="text-[11px] text-slate-500 mt-1">
               Passwords are redacted automatically before transmission to analytical Lakehouse layers.
             </p>

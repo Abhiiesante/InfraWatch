@@ -46,7 +46,20 @@ export const useUpdateCamera = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<{ name: string; cameraType: string; rtspUrl: string; ipAddress: string; status: string }> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<{
+        name: string;
+        cameraType: string;
+        rtspUrl: string;
+        ipAddress: string;
+        config: Record<string, unknown>;
+        status: string;
+      }>;
+    }) => {
       const response = await apiClient.put(`/cameras/${id}`, data);
       return response.data;
     },

@@ -109,42 +109,40 @@ export function DashboardPage() {
         {/* AI Vision Video Card (Spans 1 col, 2 rows) */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 glass-panel relative overflow-hidden group cursor-pointer"
-          onClick={() => window.location.href = '/anomalies'}
+          className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 glass-panel relative overflow-hidden group cursor-pointer border border-slate-700/40 bg-slate-950"
+          onClick={() => window.location.href = '/cameras'}
         >
-          {/* Working CCTV Panning Video Animation */}
-          <style>{`
-            @keyframes pan-cctv {
-              0% { background-position: 0% 50%; transform: scale(1.1); }
-              50% { background-position: 100% 50%; transform: scale(1.1); }
-              100% { background-position: 0% 50%; transform: scale(1.1); }
-            }
-          `}</style>
-          <div 
-            className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
-            style={{ 
-              backgroundImage: `url(${INFRA_IMAGES.bridge?.[0] || INFRA_IMAGES.general[0]})`, 
-              backgroundSize: '150% auto', 
-              animation: 'pan-cctv 20s ease-in-out infinite',
-              filter: 'grayscale(100%) contrast(1.2) brightness(0.9)'
-            }}
+          {/* Real Video Stream */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
           />
-          {/* Scanner Line Overlay */}
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')] opacity-40 mix-blend-overlay pointer-events-none" />
+          
+          {/* Subtle gradient scrim */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
           
           <div className="absolute inset-0 p-6 flex flex-col justify-between pointer-events-none z-10">
             <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm bg-white/80 border border-white text-slate-800 backdrop-blur-md">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm bg-black/60 border border-white/20 text-cyan-400 backdrop-blur-md">
                 <Video className="w-5 h-5" />
               </div>
-              <span className="px-2 py-1 text-[9px] font-bold uppercase rounded bg-slate-800 text-white flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                LIVE CCTV
+              <span className="px-2.5 py-1 text-[9px] font-mono font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 backdrop-blur-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                ACTIVE CCTV FEED
               </span>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider mb-1 text-white drop-shadow-md">Live Feed</p>
-              <h3 className="text-xl font-extrabold leading-tight text-white drop-shadow-md">Computer Vision<br/>Anomaly Detection</h3>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/50">
+                  ROBOFLOW INFERENCE
+                </span>
+              </div>
+              <h3 className="text-xl font-extrabold leading-tight text-white drop-shadow-md">Computer Vision<br/>Hazard Detection</h3>
+              <p className="text-[11px] font-medium text-slate-300 mt-1 drop-shadow">Click to launch multi-camera grid</p>
             </div>
           </div>
         </motion.div>

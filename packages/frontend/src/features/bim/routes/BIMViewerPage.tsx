@@ -11,24 +11,49 @@ interface BIMEdge {
   a: number; b: number;
 }
 
-function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, assetId: number = 0, modelName: string = ''): { nodes: BIMNode[]; edges: BIMEdge[] } {
+interface BIMHotspotNode {
+  x: number;
+  y: number;
+  z: number;
+  label: string;
+  valueMPa: number;
+  stressLevel: string;
+}
+
+function generateStructure(
+  _modelIdx: number,
+  baseStressVal: number = 0.5,
+  assetId: number = 0,
+  modelName: string = '',
+  bimType: string = '',
+  rawHotspots: any[] = []
+): { nodes: BIMNode[]; edges: BIMEdge[]; hotspotNodes: BIMHotspotNode[] } {
   const nodes: BIMNode[] = [];
   const edges: BIMEdge[] = [];
+  const hotspotNodes: BIMHotspotNode[] = [];
 
   const pseudoRandom = (seed: number) => (Math.sin(seed * 12.9898 + assetId) * 43758.5453) % 1;
   const getStress = (seed: number) => Math.max(0, Math.min(1, baseStressVal * (0.8 + Math.abs(pseudoRandom(seed)) * 0.4)));
 
-  const isTokamak = modelName.includes('ITER') || modelName.includes('Tokamak') || modelName.includes('Fusion') || assetId === 999;
+  const nameUpper = (modelName || '').toUpperCase();
+  const typeUpper = (bimType || '').toUpperCase();
+
+  const isTokamak = typeUpper.includes('REACTOR') || typeUpper.includes('TOKAMAK') || nameUpper.includes('ITER') || nameUpper.includes('TOKAMAK') || nameUpper.includes('FUSION') || assetId === 999;
+  const isCERN = typeUpper.includes('COLLIDER') || nameUpper.includes('CERN') || nameUpper.includes('HADRON') || nameUpper.includes('ATLAS');
+  const isArchBridge = typeUpper.includes('ARCH') || nameUpper.includes('CHENAB') || nameUpper.includes('RAILWAY ARCH');
+  const isCableBridge = typeUpper.includes('BRIDGE') || nameUpper.includes('BANDRA') || nameUpper.includes('SEA LINK') || nameUpper.includes('AKASHI') || nameUpper.includes('PEARL');
+  const isDam = typeUpper.includes('DAM') || nameUpper.includes('THREE GORGES') || nameUpper.includes('YANGTZE') || nameUpper.includes('HOOVER');
+  const isTunnel = typeUpper.includes('TUNNEL') || nameUpper.includes('GOTTHARD');
+  const isWind = typeUpper.includes('WIND') || nameUpper.includes('HORNSEA') || nameUpper.includes('TURBINE');
+  const isSolar = typeUpper.includes('SOLAR') || nameUpper.includes('BHADLA') || nameUpper.includes('PHOTOVOLTAIC');
+  const isWarehouse = typeUpper.includes('WAREHOUSE') || typeUpper.includes('LOGISTICS') || nameUpper.includes('WAREHOUSE') || nameUpper.includes('HUB');
 
   if (isTokamak) {
-    // =========================================================================
-    // ULTRA-COMPLEX TOKAMAK SUPERCONDUCTING FUSION REACTOR CORE & BIO-SHIELD
-    // =========================================================================
     // 1. Toroidal Vacuum Chamber Vessel (Torus Core)
-    const phiSteps = 24;   // Toroidal angular sectors
-    const thetaSteps = 12; // Poloidal ring cross-section nodes
-    const R0 = 1.3;        // Major radius
-    const r0 = 0.52;       // Minor radius
+    const phiSteps = 24;
+    const thetaSteps = 12;
+    const R0 = 1.3;
+    const r0 = 0.52;
 
     const torusOffset = nodes.length;
     for (let i = 0; i < phiSteps; i++) {
@@ -45,13 +70,11 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         const z = (R0 + r0 * cosTheta) * sinPhi;
         const y = r0 * sinTheta;
 
-        // Higher thermal stress facing plasma core
         const wallStress = Math.min(1.0, getStress(i * 100 + j) + (cosTheta < -0.2 ? 0.35 : 0.05));
         nodes.push({ x, y, z, stress: wallStress });
       }
     }
 
-    // Connect Toroidal Vacuum Vessel Mesh
     for (let i = 0; i < phiSteps; i++) {
       const nextI = (i + 1) % phiSteps;
       for (let j = 0; j < thetaSteps; j++) {
@@ -63,7 +86,7 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         edges.push({ a: idx, b: idxPoloidal });
         edges.push({ a: idx, b: idxToroidal });
         if (i % 2 === 0) {
-          edges.push({ a: idx, b: torusOffset + nextI * thetaSteps + nextJ }); // Diagonal shear brace
+          edges.push({ a: idx, b: torusOffset + nextI * thetaSteps + nextJ });
         }
       }
     }
@@ -156,19 +179,19 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
       edges.push({ a: base + 1, b: innerTorusIdx });
     }
 
-    return { nodes, edges };
+    // Hotspot positioning for Tokamak
+    hotspotNodes.push({
+      x: 0.0,
+      y: 0.4,
+      z: 1.3,
+      label: rawHotspots[0]?.elementId || 'D-Coil #04 Cryostat Feeder',
+      valueMPa: rawHotspots[0]?.valueMPa || 140.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+
+    return { nodes, edges, hotspotNodes };
   }
 
-  const nameUpper = modelName.toUpperCase();
-  const isCERN = nameUpper.includes('CERN') || nameUpper.includes('HADRON') || nameUpper.includes('ATLAS');
-  const isChenab = nameUpper.includes('CHENAB') || nameUpper.includes('RAILWAY ARCH');
-  const isBandra = nameUpper.includes('BANDRA') || nameUpper.includes('SEA LINK') || nameUpper.includes('WORLI');
-  const isThreeGorges = nameUpper.includes('THREE GORGES') || nameUpper.includes('YANGTZE');
-  const isGotthard = nameUpper.includes('GOTTHARD') || nameUpper.includes('TUNNEL');
-  const isAkashi = nameUpper.includes('AKASHI') || nameUpper.includes('PEARL BRIDGE');
-  const isHoover = nameUpper.includes('HOOVER') || nameUpper.includes('LAKE MEAD');
-  const isHornsea = nameUpper.includes('HORNSEA') || nameUpper.includes('OFFSHORE WIND');
-  const isBhadla = nameUpper.includes('BHADLA') || nameUpper.includes('SOLAR');
 
   if (isCERN) {
     // CERN LHC Particle Accelerator Ring & ATLAS Detector Octagonal Magnets
@@ -202,10 +225,58 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
       edges.push({ a: base, b: nextBase });
       edges.push({ a: base + 1, b: nextBase + 1 });
     }
-    return { nodes, edges };
+    hotspotNodes.push({
+      x: 0.8,
+      y: 0.0,
+      z: 0.8,
+      label: rawHotspots[0]?.elementId || 'ATLAS Toroid Octant #04',
+      valueMPa: rawHotspots[0]?.valueMPa || 132.5,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+    return { nodes, edges, hotspotNodes };
   }
 
-  if (isChenab) {
+  if (isWarehouse) {
+    // 3D Warehouse Bay Storage Racks Grid & AMR Aisles
+    const racks = 4;
+    const bays = 6;
+    const levels = 3;
+    const rW = 2.4, rD = 1.6, rH = 1.0;
+
+    for (let r = 0; r < racks; r++) {
+      const z = (r / (racks - 1) - 0.5) * rD;
+      for (let b = 0; b < bays; b++) {
+        const x = (b / (bays - 1) - 0.5) * rW;
+        const colBase = nodes.length;
+        for (let l = 0; l <= levels; l++) {
+          const y = (l / levels - 0.5) * rH;
+          nodes.push({ x, y, z: z - 0.15, stress: getStress(r * 20 + b * 5 + l) });
+          nodes.push({ x, y, z: z + 0.15, stress: getStress(r * 20 + b * 5 + l + 1) });
+        }
+        for (let l = 0; l <= levels; l++) {
+          const base = colBase + l * 2;
+          edges.push({ a: base, b: base + 1 });
+          if (l < levels) {
+            edges.push({ a: base, b: base + 2 });
+            edges.push({ a: base + 1, b: base + 3 });
+          }
+        }
+      }
+    }
+
+    hotspotNodes.push({
+      x: 0.4,
+      y: 0.1,
+      z: 0.2,
+      label: rawHotspots[0]?.elementId || 'Rack Bay C-04 Load Beam',
+      valueMPa: rawHotspots[0]?.valueMPa || 88.5,
+      stressLevel: rawHotspots[0]?.stressLevel || 'ELEVATED',
+    });
+
+    return { nodes, edges, hotspotNodes };
+  }
+
+  if (isArchBridge) {
     // Chenab Railway Arch Bridge - Parabolic Steel Arch & Spandrel Piers
     const spans = 16, w = 2.8;
     const archOffset = nodes.length;
@@ -221,23 +292,31 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
     }
     for (let i = 0; i <= spans; i++) {
       const b = archOffset + i * 4;
-      edges.push({ a: b, b: b + 1 }); // Arch cross
-      edges.push({ a: b + 2, b: b + 3 }); // Deck cross
-      edges.push({ a: b, b: b + 2 }); // Spandrel column L
-      edges.push({ a: b + 1, b: b + 3 }); // Spandrel column R
+      edges.push({ a: b, b: b + 1 });
+      edges.push({ a: b + 2, b: b + 3 });
+      edges.push({ a: b, b: b + 2 });
+      edges.push({ a: b + 1, b: b + 3 });
       if (i < spans) {
         const nb = b + 4;
-        edges.push({ a: b, b: nb }); // Arch rib L
-        edges.push({ a: b + 1, b: nb + 1 }); // Arch rib R
-        edges.push({ a: b + 2, b: nb + 2 }); // Deck girder L
-        edges.push({ a: b + 3, b: nb + 3 }); // Deck girder R
-        edges.push({ a: b, b: nb + 2 }); // Diagonal brace
+        edges.push({ a: b, b: nb });
+        edges.push({ a: b + 1, b: nb + 1 });
+        edges.push({ a: b + 2, b: nb + 2 });
+        edges.push({ a: b + 3, b: nb + 3 });
+        edges.push({ a: b, b: nb + 2 });
       }
     }
-    return { nodes, edges };
+    hotspotNodes.push({
+      x: 0.0,
+      y: 0.4,
+      z: 0.3,
+      label: rawHotspots[0]?.elementId || 'Arch Crown Apex Girder',
+      valueMPa: rawHotspots[0]?.valueMPa || 140.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'CRITICAL',
+    });
+    return { nodes, edges, hotspotNodes };
   }
 
-  if (isBandra) {
+  if (isCableBridge) {
     // Bandra-Worli Sea Link - Twin Diamond Cable-Stayed Pylons & Fan Cables
     const pylons = [-0.6, 0.6];
     pylons.forEach(px => {
@@ -251,7 +330,6 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
       edges.push({ a: pylonOffset + 1, b: pylonOffset + 2 });
       edges.push({ a: pylonOffset + 2, b: pylonOffset + 3 });
 
-      // Stay Cables
       const cableSegs = 6;
       for (let c = -cableSegs; c <= cableSegs; c++) {
         if (c === 0) continue;
@@ -261,18 +339,26 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         edges.push({ a: pylonOffset + 3, b: deckIdx });
       }
     });
-    return { nodes, edges };
+    hotspotNodes.push({
+      x: -0.6,
+      y: -0.8,
+      z: 0.4,
+      label: rawHotspots[0]?.elementId || 'Anchor Pier #2',
+      valueMPa: rawHotspots[0]?.valueMPa || 140.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'CRITICAL',
+    });
+    return { nodes, edges, hotspotNodes };
   }
 
-  if (isThreeGorges) {
-    // Three Gorges Hydroelectric Dam - Concrete Gravity Wall & Penstock Channels
+  if (isDam) {
+    // Hydroelectric Dam - Concrete Gravity Wall & Penstock Channels
     const damBays = 12, damH = 1.6, damW = 2.6;
     for (let b = 0; b <= damBays; b++) {
       const x = (b / damBays - 0.5) * damW;
-      nodes.push({ x, y: -damH / 2, z: -0.6, stress: 0.3 }); // Base heel
-      nodes.push({ x, y: -damH / 2, z: 0.6, stress: 0.3 }); // Base toe
-      nodes.push({ x, y: damH / 2, z: -0.2, stress: 0.5 }); // Crest upstream
-      nodes.push({ x, y: damH / 2, z: 0.2, stress: 0.5 }); // Crest downstream
+      nodes.push({ x, y: -damH / 2, z: -0.6, stress: 0.3 });
+      nodes.push({ x, y: -damH / 2, z: 0.6, stress: 0.3 });
+      nodes.push({ x, y: damH / 2, z: -0.2, stress: 0.5 });
+      nodes.push({ x, y: damH / 2, z: 0.2, stress: 0.5 });
     }
     for (let b = 0; b <= damBays; b++) {
       const base = b * 4;
@@ -286,15 +372,22 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         edges.push({ a: base + 1, b: next + 1 });
         edges.push({ a: base + 2, b: next + 2 });
         edges.push({ a: base + 3, b: next + 3 });
-        // Penstock Pipe Lines
         edges.push({ a: base + 2, b: next + 1 });
       }
     }
-    return { nodes, edges };
+    hotspotNodes.push({
+      x: 0.3,
+      y: -0.4,
+      z: 0.6,
+      label: rawHotspots[0]?.elementId || 'Penstock Turbine Sluice #03',
+      valueMPa: rawHotspots[0]?.valueMPa || 124.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+    return { nodes, edges, hotspotNodes };
   }
 
-  if (isGotthard) {
-    // Gotthard Base Tunnel - Twin Parallel Horseshoe Tunnels & Cross Passages
+  if (isTunnel) {
+    // Tunnel - Twin Parallel Horseshoe Tunnels & Cross Passages
     const rings = 12, segs = 10, tunnelLen = 2.8;
     const tubeOffsets = [-0.65, 0.65];
     tubeOffsets.forEach(tx => {
@@ -319,82 +412,24 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         }
       }
     });
-    // Cross Passages
     for (let r = 2; r < rings; r += 3) {
       const idxL = r * segs;
       const idxR = (rings + 1) * segs + r * segs;
       edges.push({ a: idxL, b: idxR });
     }
-    return { nodes, edges };
-  }
-
-  if (isAkashi) {
-    // Akashi Kaikyo Suspension Bridge - Dual 298m Towers & Catenary Cables
-    const towers = [-1.0, 1.0];
-    towers.forEach(tx => {
-      const tBase = nodes.length;
-      nodes.push({ x: tx, y: -0.8, z: -0.3, stress: 0.3 });
-      nodes.push({ x: tx, y: -0.8, z: 0.3, stress: 0.3 });
-      nodes.push({ x: tx, y: 1.2, z: -0.3, stress: 0.7 });
-      nodes.push({ x: tx, y: 1.2, z: 0.3, stress: 0.7 });
-      edges.push({ a: tBase, b: tBase + 2 });
-      edges.push({ a: tBase + 1, b: tBase + 3 });
-      edges.push({ a: tBase + 2, b: tBase + 3 });
-      edges.push({ a: tBase, b: tBase + 3 });
-      edges.push({ a: tBase + 1, b: tBase + 2 });
+    hotspotNodes.push({
+      x: 0.65,
+      y: 0.1,
+      z: 0.0,
+      label: rawHotspots[0]?.elementId || 'Crown Vault Ring #18',
+      valueMPa: rawHotspots[0]?.valueMPa || 118.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'ELEVATED',
     });
-    // Main Catenary Cable & Suspenders
-    const cableSteps = 20;
-    const catOffset = nodes.length;
-    for (let i = 0; i <= cableSteps; i++) {
-      const t = i / cableSteps;
-      const x = (t - 0.5) * 2.8;
-      const sag = 0.7 * Math.cos((x / 1.4) * (Math.PI / 2));
-      const y = 1.2 - sag;
-      nodes.push({ x, y, z: -0.3, stress: 0.5 });
-      nodes.push({ x, y: 0.0, z: -0.3, stress: 0.4 }); // Deck suspender node
-      edges.push({ a: catOffset + i * 2, b: catOffset + i * 2 + 1 });
-      if (i < cableSteps) {
-        edges.push({ a: catOffset + i * 2, b: catOffset + (i + 1) * 2 });
-        edges.push({ a: catOffset + i * 2 + 1, b: catOffset + (i + 1) * 2 + 1 });
-      }
-    }
-    return { nodes, edges };
+    return { nodes, edges, hotspotNodes };
   }
 
-  if (isHoover) {
-    // Hoover Dam - Curved Arch-Gravity Dam & 4 Intake Towers
-    const archSegs = 14, archH = 1.5;
-    const damOffset = nodes.length;
-    for (let s = 0; s <= archSegs; s++) {
-      const a = (s / archSegs - 0.5) * (Math.PI * 0.7);
-      const r = 1.6;
-      const x = Math.sin(a) * r;
-      const z = Math.cos(a) * r - 1.2;
-      nodes.push({ x, y: -archH / 2, z: z - 0.3, stress: 0.3 });
-      nodes.push({ x, y: -archH / 2, z: z + 0.3, stress: 0.3 });
-      nodes.push({ x, y: archH / 2, z: z - 0.15, stress: 0.6 });
-      nodes.push({ x, y: archH / 2, z: z + 0.15, stress: 0.6 });
-    }
-    for (let s = 0; s <= archSegs; s++) {
-      const b = damOffset + s * 4;
-      edges.push({ a: b, b: b + 1 });
-      edges.push({ a: b + 2, b: b + 3 });
-      edges.push({ a: b, b: b + 2 });
-      edges.push({ a: b + 1, b: b + 3 });
-      if (s < archSegs) {
-        const nb = b + 4;
-        edges.push({ a: b, b: nb });
-        edges.push({ a: b + 1, b: nb + 1 });
-        edges.push({ a: b + 2, b: nb + 2 });
-        edges.push({ a: b + 3, b: nb + 3 });
-      }
-    }
-    return { nodes, edges };
-  }
-
-  if (isHornsea) {
-    // Hornsea Offshore Wind Farm - 4 Wind Turbines & Substation Platform
+  if (isWind) {
+    // Offshore Wind Farm - Turbines & Substation Platform
     const positions = [
       { x: -0.9, z: -0.6 },
       { x: 0.9, z: -0.6 },
@@ -403,10 +438,9 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
     ];
     positions.forEach((pos) => {
       const tBase = nodes.length;
-      nodes.push({ x: pos.x, y: -0.8, z: pos.z, stress: 0.2 }); // Monopile sea base
-      nodes.push({ x: pos.x, y: 0.8, z: pos.z, stress: 0.5 });  // Tower top nacelle
+      nodes.push({ x: pos.x, y: -0.8, z: pos.z, stress: 0.2 });
+      nodes.push({ x: pos.x, y: 0.8, z: pos.z, stress: 0.5 });
       edges.push({ a: tBase, b: tBase + 1 });
-      // 3 Blades
       for (let b = 0; b < 3; b++) {
         const angle = (b / 3) * Math.PI * 2;
         const bx = pos.x + Math.cos(angle) * 0.5;
@@ -416,22 +450,28 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         edges.push({ a: tBase + 1, b: bladeIdx });
       }
     });
-    return { nodes, edges };
+    hotspotNodes.push({
+      x: 0.9,
+      y: 0.8,
+      z: -0.6,
+      label: rawHotspots[0]?.elementId || 'Nacelle Yaw Bearing #02',
+      valueMPa: rawHotspots[0]?.valueMPa || 112.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+    return { nodes, edges, hotspotNodes };
   }
 
-  if (isBhadla) {
-    // Bhadla Solar Park - 4x4 Tracking PV Solar Panel Matrix Array
+  if (isSolar) {
+    // Solar Park - Tracking PV Solar Panel Array
     const rows = 4, cols = 4;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const px = (c / (cols - 1) - 0.5) * 2.2;
         const pz = (r / (rows - 1) - 0.5) * 1.8;
         const panelBase = nodes.length;
-        // Panel pedestal post
         nodes.push({ x: px, y: -0.5, z: pz, stress: 0.2 });
         nodes.push({ x: px, y: 0.0, z: pz, stress: 0.4 });
         edges.push({ a: panelBase, b: panelBase + 1 });
-        // Tilted Panel corners
         nodes.push({ x: px - 0.2, y: 0.15, z: pz - 0.15, stress: 0.3 });
         nodes.push({ x: px + 0.2, y: 0.15, z: pz - 0.15, stress: 0.3 });
         nodes.push({ x: px - 0.2, y: -0.15, z: pz + 0.15, stress: 0.3 });
@@ -444,7 +484,15 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
         edges.push({ a: panelBase + 1, b: panelBase + 3 });
       }
     }
-    return { nodes, edges };
+    hotspotNodes.push({
+      x: 0.5,
+      y: 0.0,
+      z: 0.4,
+      label: rawHotspots[0]?.elementId || 'PV Inverter Bus Junction D-04',
+      valueMPa: rawHotspots[0]?.valueMPa || 76.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'NOMINAL',
+    });
+    return { nodes, edges, hotspotNodes };
   }
 
   // Fallback high-span truss
@@ -468,7 +516,15 @@ function generateStructure(_modelIdx: number, baseStressVal: number = 0.5, asset
       edges.push({ a: base + 2, b: next + 2 });
     }
   }
-  return { nodes, edges };
+  hotspotNodes.push({
+    x: 0.0,
+    y: 0.7,
+    z: 0.0,
+    label: rawHotspots[0]?.elementId || 'Midspan Tension Gusset',
+    valueMPa: rawHotspots[0]?.valueMPa || 140.0,
+    stressLevel: rawHotspots[0]?.stressLevel || 'CRITICAL',
+  });
+  return { nodes, edges, hotspotNodes };
 }
 
 function stressColor(stress: number, heatmap: boolean): string {
@@ -479,16 +535,13 @@ function stressColor(stress: number, heatmap: boolean): string {
   return `rgba(239, 68, 68, ${0.7 + stress * 0.3})`;
 }
 
-function project(node: BIMNode, rx: number, ry: number, zoom: number, cx: number, cy: number, exploded: boolean) {
+function project(node: { x: number; y: number; z: number }, rx: number, ry: number, zoom: number, cx: number, cy: number, exploded: boolean) {
   let { x, y, z } = node;
   if (exploded) { x *= 1.4; y *= 1.4; z *= 1.4; }
-  // Rotate Y
   const cosY = Math.cos(ry), sinY = Math.sin(ry);
   const x1 = x * cosY - z * sinY, z1 = x * sinY + z * cosY;
-  // Rotate X
   const cosX = Math.cos(rx), sinX = Math.sin(rx);
   const y1 = y * cosX - z1 * sinX, z2 = y * sinX + z1 * cosX;
-  // Perspective
   const perspective = 4;
   const scale = (perspective / (perspective + z2 + 2)) * zoom * 200;
   return { sx: cx + x1 * scale, sy: cy - y1 * scale, depth: z2 };
@@ -514,12 +567,11 @@ export const BIMViewerPage = () => {
   const heatmapRef = useRef(heatmapOverlay);
   const explodedRef = useRef(explodedView);
 
-  // Live stress jitter
   const [liveStress, setLiveStress] = useState(142.8);
   const [liveElements, setLiveElements] = useState(14280);
 
   const [modelNames, setModelNames] = useState<any[]>([
-    { id: 1, name: 'Primary Infrastructure Structure', elements: 14280, stress: 142.8, hotspot: 'Anchor Pier #2 (140.0 MPa)', rating: 'NOMINAL' },
+    { id: 1, name: 'Primary Infrastructure Structure', elements: 14280, stress: 142.8, hotspot: 'Anchor Pier #2 (140.0 MPa)', rating: 'NOMINAL', hotspots: [] },
   ]);
 
   useEffect(() => {
@@ -543,6 +595,7 @@ export const BIMViewerPage = () => {
             cryostatVacuumPa: m.cryostatVacuumPa,
             activeCoils: m.activeCoils,
             totalCoils: m.totalCoils,
+            hotspots: m.hotspots || [],
           }));
           setModelNames(apiModels);
         }
@@ -565,9 +618,9 @@ export const BIMViewerPage = () => {
     stress: 100,
     hotspot: 'N/A',
     rating: 'NOMINAL',
+    hotspots: [],
   };
 
-  // Sync refs
   useEffect(() => { autoRotRef.current = autoRotate; }, [autoRotate]);
   useEffect(() => { rotYRef.current = rotY; }, [rotY]);
   useEffect(() => { rotXRef.current = rotX; }, [rotX]);
@@ -577,13 +630,35 @@ export const BIMViewerPage = () => {
 
   const [stressStats, setStressStats] = useState({ normal: 0, elevated: 0, high: 0, critical: 0, total: 0 });
 
-  // Regenerate structure deterministically when active model data changes
   useEffect(() => {
     if (activeModel) {
-      structureRef.current = generateStructure(selectedModelIdx, activeModel.stress / 200, activeModel.id, activeModel.name);
+      structureRef.current = generateStructure(
+        selectedModelIdx,
+        activeModel.stress / 200,
+        activeModel.id,
+        activeModel.name,
+        activeModel.bimType,
+        activeModel.hotspots
+      );
       setLiveStress(activeModel.stress);
       setLiveElements(activeModel.elements);
     }
+  }, [activeModel, selectedModelIdx]);
+
+  useEffect(() => {
+    if (!activeModel || !structureRef.current?.nodes) return;
+    
+    let n = 0, e = 0, h = 0, c = 0;
+    structureRef.current.nodes.forEach((node) => {
+      const liveVal = node.stress;
+      if (liveVal < 0.3) n++;
+      else if (liveVal < 0.6) e++;
+      else if (liveVal < 0.8) h++;
+      else c++;
+    });
+
+    const total = structureRef.current.nodes.length || 1;
+    setStressStats({ normal: n, elevated: e, high: h, critical: c, total });
   }, [activeModel, selectedModelIdx]);
 
   // Stable real-time node stress breakdown analytics
@@ -680,6 +755,58 @@ export const BIMViewerPage = () => {
       }
     });
 
+    // Draw 3D Hotspot Callouts directly on the canvas at real structural coordinates
+    const { hotspotNodes = [] } = structureRef.current;
+    hotspotNodes.forEach((hs) => {
+      const hp = project(hs, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, explodedRef.current);
+      if (hp.depth < 10) {
+        const pulse = Math.sin(Date.now() * 0.006) * 3;
+        const isCritical = hs.valueMPa > 120 || hs.stressLevel === 'CRITICAL';
+        const pinColor = isCritical ? '#ef4444' : '#f59e0b';
+
+        // 1. Pulsing Outer Ring
+        ctx.strokeStyle = pinColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(hp.sx, hp.sy, 9 + pulse, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 2. Glowing Core Marker
+        ctx.fillStyle = pinColor;
+        ctx.beginPath();
+        ctx.arc(hp.sx, hp.sy, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Diagonal Callout Leader Line
+        const labelX = hp.sx + 35;
+        const labelY = hp.sy - 25;
+        ctx.strokeStyle = pinColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(hp.sx, hp.sy);
+        ctx.lineTo(hp.sx + 15, hp.sy - 12);
+        ctx.lineTo(labelX, labelY);
+        ctx.stroke();
+
+        // 4. Callout Label Pill
+        const tagText = `🔥 ${hs.label}: ${hs.valueMPa} MPa`;
+        ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+        const tagW = ctx.measureText(tagText).width + 16;
+        const tagH = 20;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.strokeStyle = pinColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(labelX, labelY - tagH / 2, tagW, tagH, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(tagText, labelX + 8, labelY + 3.5);
+      }
+    });
+
     // HUD overlay — axes
     const axLen = 30;
     const axOrg = { x: W - 60, y: H - 50 };
@@ -689,7 +816,7 @@ export const BIMViewerPage = () => {
       { dx: 0, dy: 0, dz: 1, color: '#3b82f6', label: 'Z' },
     ];
     axes.forEach(ax => {
-      const p = project({ x: ax.dx * 0.3, y: ax.dy * 0.3, z: ax.dz * 0.3, stress: 0 }, rotXRef.current, rotYRef.current, 1, 0, 0, false);
+      const p = project({ x: ax.dx * 0.3, y: ax.dy * 0.3, z: ax.dz * 0.3 }, rotXRef.current, rotYRef.current, 1, 0, 0, false);
       ctx.strokeStyle = ax.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -754,11 +881,11 @@ export const BIMViewerPage = () => {
               3D BIM CAD Digital Twin Visualizer
             </h1>
             <span className="bg-cyan-100 text-cyan-700 border border-cyan-300 text-[10px] font-extrabold px-3 py-1 rounded-full flex items-center gap-1.5">
-              <Box className="w-3.5 h-3.5" /> IFC4 WebGL Mesh
+              <Box className="w-3.5 h-3.5" /> Parametric CAD Topology (IFC4)
             </span>
           </div>
           <p className="text-slate-800/70 mt-1.5 text-base font-medium">
-            Interactive 3D structural wireframe with live stress heatmaps. Drag to orbit, scroll to zoom.
+            3D structural wireframe with real DB sensor telemetry and spatial hotspot anchors. Drag to orbit, scroll to zoom.
           </p>
         </div>
 

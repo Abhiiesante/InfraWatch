@@ -31,7 +31,7 @@ export class CVDaemon {
   private violationCooldowns = new Map<string, number>();
 
   // Live in-memory frame buffer cache for WebRTC/browser-streamed cameras
-  private frameBuffers = new Map<number, { buffer: Buffer; timestamp: number }>();
+  private frameBuffers = new Map<string | number, { buffer: Buffer; timestamp: number }>();
 
   // Simulated box state (only used when no real inference is available)
   private simulatedBoxes = [
@@ -41,17 +41,26 @@ export class CVDaemon {
   ];
 
   attachSocket(server: HttpServer) {
-    this.io = new SocketServer(server, { cors: { origin: '*' } });
+    this.io = new SocketServer(server, {
+      cors: { origin: '*', methods: ['GET', 'POST'] },
+      transports: ['websocket', 'polling'],
+      allowEIO3: true,
+    });
     this.io.on('connection', (socket) => {
       logger.info(`🔌 CV Socket Client connected: ${socket.id}`);
 
-      // Allow frontend WebRTC transmitters to push live camera frames directly into daemon buffer
-      socket.on('cv:push-frame', ({ cameraId, base64Image }: { cameraId: number; base64Image: string }) => {
+      // Allow frontend WebRTC transmitters & local webcams to push live camera frames directly into daemon buffer
+      socket.on('cv:push-frame', ({ cameraId, base64Image }: { cameraId: string | number; base64Image: string }) => {
         if (!cameraId || !base64Image) return;
         try {
           const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
           const buffer = Buffer.from(cleanBase64, 'base64');
-          this.frameBuffers.set(Number(cameraId), { buffer, timestamp: Date.now() });
+          this.frameBuffers.set(cameraId, { buffer, timestamp: Date.now() });
+          // Also set numeric equivalent if parsable
+          const numId = Number(cameraId);
+          if (!isNaN(numId)) {
+            this.frameBuffers.set(numId, { buffer, timestamp: Date.now() });
+          }
         } catch (err) {
           logger.warn(`[CVDaemon] Failed to parse pushed frame for camera ${cameraId}: ${err}`);
         }
@@ -66,8 +75,12 @@ export class CVDaemon {
   /**
    * Register a frame directly from HTTP/WebRTC routes
    */
-  registerLiveFrame(cameraId: number, frameBuffer: Buffer) {
+  registerLiveFrame(cameraId: string | number, frameBuffer: Buffer) {
     this.frameBuffers.set(cameraId, { buffer: frameBuffer, timestamp: Date.now() });
+    const numId = Number(cameraId);
+    if (!isNaN(numId)) {
+      this.frameBuffers.set(numId, { buffer: frameBuffer, timestamp: Date.now() });
+    }
   }
 
   start(defaultIntervalMs = 1000) {
@@ -197,14 +210,29 @@ export class CVDaemon {
         let zoneViolationsCount = 0;
         let activeAmrsCount = 0;
 
+        const cameraConfig = (camera.config as any) || {};
+        const keepOutZone = cameraConfig.keepOutZone || {
+          xMin: 0,
+          xMax: 100,
+          yMin: 50,
+          yMax: 100,
+          zoneName: 'Restricted Automated Safety Zone',
+          severity: 'CRITICAL',
+        };
+
         const boxes = (result.predictions || []).map((pred: any, idx: number) => {
-          const cls = pred.class.toLowerCase();
+          const cls = (pred.class || '').toLowerCase();
           const isPerson = cls === 'person' || cls === 'worker';
-          const isForklift = cls === 'forklift' || cls === 'amr' || cls === 'vehicle';
+          const isForklift = cls === 'forklift' || cls === 'amr' || cls === 'vehicle' || cls === 'car' || cls === 'truck';
           
-          // Spatial Rule: Keep-Out Zone is the bottom 50% of the frame (y > 50%)
+          // Spatial Rule: Read configured keepOutZone bounds (persisted in camera.config)
+          const xCenter = (pred.x / imgW) * 100;
           const yCenter = (pred.y / imgH) * 100;
-          const isViolation = isPerson && yCenter > 50;
+          const inZone = xCenter >= (keepOutZone.xMin ?? 0) &&
+                         xCenter <= (keepOutZone.xMax ?? 100) &&
+                         yCenter >= (keepOutZone.yMin ?? 50) &&
+                         yCenter <= (keepOutZone.yMax ?? 100);
+          const isViolation = isPerson && inZone;
           
           if (isViolation) zoneViolationsCount++;
           if (isForklift) activeAmrsCount++;
@@ -216,8 +244,8 @@ export class CVDaemon {
 
           return {
             id: `rf_${camera.id}_${idx}`,
-            label: pred.class.toUpperCase(),
-            conf: Math.round(pred.confidence * 100),
+            label: (pred.class || 'OBJECT').toUpperCase(),
+            conf: Math.round((pred.confidence || 0) * 100),
             x: +((pred.x - pred.width / 2) / imgW * 100).toFixed(1),
             y: +((pred.y - pred.height / 2) / imgH * 100).toFixed(1),
             w: +(pred.width / imgW * 100).toFixed(1),
@@ -227,11 +255,13 @@ export class CVDaemon {
           };
         });
 
-        // Emit real payload with LIVE status
+        // Emit real payload with LIVE status and configured zone parameters
         if (this.io) {
           this.io.emit('cv-detections', {
             frameSource: 'live' as FrameSource,
             cameraId: camera.id,
+            cameraName: camera.name,
+            keepOutZone,
             boxes,
             stats: {
                zoneViolations: zoneViolationsCount,
@@ -247,12 +277,18 @@ export class CVDaemon {
 
         if (zoneViolationsCount > 0 && (now - lastAlertTime > 30000)) {
            this.violationCooldowns.set(cooldownKey, now);
-           logger.warn(`[CVDaemon] Camera ${camera.id}: Spatial rule violated! Triggering Anomaly (Cooldown: 30s).`);
+           logger.warn(`[CVDaemon] Camera ${camera.id}: Spatial rule violated in "${keepOutZone.zoneName}"! Triggering Anomaly.`);
            
            const violations = (result.predictions || []).filter((pred: any) => {
-             const cls = pred.class.toLowerCase();
-             const yCenter = (pred.y / imgH) * 100;
-             return (cls === 'person' || cls === 'worker') && yCenter > 50;
+             const cls = (pred.class || '').toLowerCase();
+             const isP = cls === 'person' || cls === 'worker';
+             const xc = (pred.x / imgW) * 100;
+             const yc = (pred.y / imgH) * 100;
+             return isP &&
+                    xc >= (keepOutZone.xMin ?? 0) &&
+                    xc <= (keepOutZone.xMax ?? 100) &&
+                    yc >= (keepOutZone.yMin ?? 50) &&
+                    yc <= (keepOutZone.yMax ?? 100);
            });
 
            if (violations.length > 0) {
@@ -293,6 +329,67 @@ export class CVDaemon {
           }).catch(err => logger.error(`[CVDaemon] Databricks sync failed for camera ${camera.id}: ${err}`));
         }
       }));
+
+      // Process standalone wireless phone / webcam transmitter frames in frameBuffers
+      for (const [key, cached] of this.frameBuffers.entries()) {
+        if (Date.now() - cached.timestamp < 5000) {
+          const isDbCam = cameras.some(c => String(c.id) === String(key));
+          if (!isDbCam) {
+            try {
+              const frameBase64 = cached.buffer.toString('base64');
+              const response = await fetch(
+                `https://detect.roboflow.com/${this.roboflowModelId}?api_key=${this.roboflowApiKey}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: frameBase64,
+                  signal: AbortSignal.timeout(5000),
+                }
+              );
+              if (response.ok) {
+                const result = await response.json() as any;
+                const imgW = result.image?.width || 1;
+                const imgH = result.image?.height || 1;
+                const boxes = (result.predictions || []).map((pred: any, idx: number) => {
+                  const cls = (pred.class || '').toLowerCase();
+                  const isPerson = cls === 'person' || cls === 'worker';
+                  const isVehicle = cls === 'car' || cls === 'forklift' || cls === 'truck' || cls === 'vehicle';
+                  let color = '#10B981';
+                  if (isPerson) color = '#F59E0B';
+                  else if (isVehicle) color = '#06B6D4';
+
+                  return {
+                    id: `rf_wireless_${key}_${idx}`,
+                    label: (pred.class || 'OBJECT').toUpperCase(),
+                    conf: Math.round((pred.confidence || 0) * 100),
+                    x: +((pred.x - pred.width / 2) / imgW * 100).toFixed(1),
+                    y: +((pred.y - pred.height / 2) / imgH * 100).toFixed(1),
+                    w: +(pred.width / imgW * 100).toFixed(1),
+                    h: +(pred.height / imgH * 100).toFixed(1),
+                    color,
+                    isViolation: false,
+                  };
+                });
+
+                if (this.io) {
+                  this.io.emit('cv-detections', {
+                    frameSource: 'live' as FrameSource,
+                    cameraId: key,
+                    cameraName: `Wireless Mobile CCTV (Device ${key})`,
+                    boxes,
+                    stats: {
+                      zoneViolations: 0,
+                      activeAMRs: boxes.filter((b: any) => b.label.includes('VEHICLE') || b.label.includes('CAR')).length,
+                    },
+                  });
+                }
+              }
+            } catch (err) {
+              logger.debug(`[CVDaemon] Standalone wireless inference failed for key ${key}: ${err}`);
+            }
+          }
+        }
+      }
 
     } catch (error) {
       logger.error(`[CVDaemon] Real inference cycle failed: ${error}`);
