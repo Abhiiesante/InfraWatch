@@ -5,7 +5,7 @@ import fs from 'fs';
 import prisma from '@/lib/prisma.js';
 import { authMiddleware } from '@/middleware/auth.js';
 import { StorageFactory } from '@/services/storage/storage.adapter.js';
-import { VideoPipelineOrchestrator } from '@/services/agents/video-pipeline.orchestrator.js';
+import { VideoPipelineQueue } from '@/services/queues/video-pipeline.queue.js';
 import logger from '@/utils/logger.js';
 
 const router = Router();
@@ -46,7 +46,7 @@ const upload = multer({
 
 /**
  * @route POST /api/video-analysis/upload
- * @desc Upload inspection video to staging, persist via StorageAdapter, and trigger pipeline.
+ * @desc Upload inspection video to staging, persist via StorageAdapter, and queue pipeline.
  */
 router.post('/upload', upload.single('video'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -97,15 +97,18 @@ router.post('/upload', upload.single('video'), async (req: Request, res: Respons
       },
     });
 
-    // 3. Fire asynchronous agent pipeline in background using storageKey
-    VideoPipelineOrchestrator.runPipeline(video.id, tenantId, persistResult.storageKey, {
+    // 3. Enqueue job into BullMQ / bounded worker queue
+    const queueResult = await VideoPipelineQueue.addJob({
+      videoId: video.id,
+      tenantId,
+      storageKey: persistResult.storageKey,
       targetFrameBudget: budget,
-    }).catch((err) => {
-      logger.error(`[VideoAnalysisRoute] Background pipeline failed for video #${video.id}: ${err}`);
     });
 
     res.status(201).json({
       message: 'Video uploaded and analysis pipeline queued successfully',
+      jobId: queueResult.jobId,
+      queueMode: queueResult.mode,
       video: {
         ...video,
         fileSizeBytes: video.fileSizeBytes ? video.fileSizeBytes.toString() : null,
@@ -250,14 +253,20 @@ router.post('/:id/reanalyze', async (req: Request, res: Response, next: NextFunc
       data: { status: 'PENDING', summary: null, targetFrameBudget: budget },
     });
 
-    // Re-trigger pipeline
-    VideoPipelineOrchestrator.runPipeline(id, tenantId, storageKey, {
+    // Re-trigger pipeline via queue
+    const queueResult = await VideoPipelineQueue.addJob({
+      videoId: id,
+      tenantId,
+      storageKey,
       targetFrameBudget: budget,
-    }).catch((err) => {
-      logger.error(`[VideoAnalysisRoute] Re-analysis failed for video #${id}: ${err}`);
     });
 
-    res.json({ message: 'Video re-analysis queued successfully', videoId: id });
+    res.json({
+      message: 'Video re-analysis queued successfully',
+      videoId: id,
+      jobId: queueResult.jobId,
+      queueMode: queueResult.mode,
+    });
   } catch (error) {
     next(error);
   }

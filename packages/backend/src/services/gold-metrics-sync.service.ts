@@ -258,4 +258,75 @@ export class GoldMetricsSyncService {
 
     return { aggregated };
   }
+
+  /**
+   * Emits completed video inspection metadata and localized defect findings
+   * directly to the Bronze Lakehouse Volume for ML dataset accumulation.
+   */
+  static async emitVideoInspectionToBronze(videoId: number, tenantId: number): Promise<boolean> {
+    try {
+      const video = await prisma.inspectionVideo.findFirst({
+        where: { id: videoId, tenantId },
+        include: {
+          asset: { select: { id: true, name: true, assetType: { select: { name: true } } } },
+          findings: true,
+        },
+      });
+
+      if (!video) {
+        logger.warn(`[GoldSync] Inspection video #${videoId} not found for bronze emission.`);
+        return false;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const videoEventsDir = path.join(
+        process.cwd(), '..', 'data-platform', 'Volumes', 'workspace', 'default', 'infrawatch_raw', 'video_events', today
+      );
+
+      await fs.mkdir(videoEventsDir, { recursive: true });
+
+      const payload = {
+        _ingestion_event_time: new Date().toISOString(),
+        _source_schema: 'video_inspection_v1',
+        video_id: video.id,
+        tenant_id: video.tenantId,
+        asset_id: video.assetId,
+        asset_name: video.asset?.name,
+        asset_type: video.asset?.assetType?.name,
+        file_name: video.fileName,
+        storage_key: video.storageKey,
+        duration_seconds: video.durationSeconds ? Number(video.durationSeconds) : null,
+        frame_count: video.frameCount,
+        target_frame_budget: video.targetFrameBudget,
+        sampling_rate_fps: video.samplingRateFps ? Number(video.samplingRateFps) : null,
+        source_type: video.sourceType,
+        status: video.status,
+        summary: video.summary,
+        findings_count: video.findings.length,
+        findings: video.findings.map((f) => ({
+          finding_id: f.id,
+          defect_type: f.defectType,
+          confidence: Number(f.confidence),
+          severity: f.severity,
+          frame_index: f.frameIndex,
+          frame_timestamp: Number(f.frameTimestamp),
+          bbox: f.bbox,
+          triage_notes: f.triageNotes,
+          status: f.status,
+          created_at: f.createdAt.toISOString(),
+        })),
+        created_at: video.createdAt.toISOString(),
+      };
+
+      const targetPath = path.join(videoEventsDir, `video_${video.id}_findings.json`);
+      await fs.writeFile(targetPath, JSON.stringify(payload, null, 2), 'utf-8');
+
+      logger.info(`💾 [GoldSync] Emitted Video Inspection #${video.id} dataset (${video.findings.length} findings) to Bronze Lakehouse: ${targetPath}`);
+      return true;
+    } catch (err: any) {
+      logger.error(`[GoldSync] Failed to emit video inspection to Bronze Lakehouse: ${err.message}`);
+      return false;
+    }
+  }
 }
+

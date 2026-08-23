@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { organizationApi, assetApi, incidentApi, apiClient } from '@/lib/api';
-import { ShieldCheck, Building2, AlertTriangle, CloudSun, Wind, Droplets, Gauge, Cpu, Video, Activity } from 'lucide-react';
+import { ShieldCheck, Building2, AlertTriangle, CloudSun, Wind, Droplets, Gauge, Cpu, Video, Activity, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { RealtimeTelemetryChart } from '@/components/charts/RealtimeTelemetryChart';
 import { useCountUp } from '@/lib/useCountUp';
@@ -109,42 +109,36 @@ export function DashboardPage() {
         {/* Video Inspection Intelligence Card (Spans 1 col, 2 rows) */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 glass-panel relative overflow-hidden group cursor-pointer border border-cyan-500/30 bg-gradient-to-b from-slate-900/95 to-slate-950/95 shadow-xl hover:border-cyan-400/60 transition-all duration-300"
+          className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 bg-white border border-slate-200 rounded-2xl shadow-xs hover:shadow-md hover:border-slate-300 transition-all p-6 flex flex-col justify-between cursor-pointer group"
           onClick={() => window.location.href = '/cameras'}
         >
-          {/* Subtle glowing animated backdrop */}
-          <div className="absolute -right-12 -top-12 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl group-hover:bg-cyan-500/20 transition-all duration-500" />
-          <div className="absolute -left-12 -bottom-12 w-36 h-36 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all duration-500" />
-          
-          <div className="relative p-6 h-full flex flex-col justify-between z-10">
-            <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 border border-cyan-400/40 text-cyan-300 group-hover:scale-110 transition-transform">
-                <Video className="w-5 h-5 text-cyan-400" />
-              </div>
-              <span className="px-2.5 py-1 text-[9px] font-mono font-bold uppercase rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 backdrop-blur-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                AGENTIC AI
+          <div className="flex justify-between items-start">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-xs bg-teal-50 border border-teal-200 text-teal-700 group-hover:scale-105 transition-transform">
+              <Video className="w-5 h-5 text-teal-600" />
+            </div>
+            <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase rounded-full bg-teal-50 text-teal-800 border border-teal-200 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-600 animate-pulse"></span>
+              AGENTIC AI
+            </span>
+          </div>
+
+          <div className="my-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                ROBOFLOW + GEMINI
               </span>
             </div>
+            <h3 className="text-xl font-extrabold leading-tight text-slate-900 group-hover:text-teal-700 transition-colors">
+              Video Inspection<br/>Intelligence
+            </h3>
+            <p className="text-xs font-normal text-slate-600 mt-2 leading-relaxed">
+              Ingest drone flyovers & field footage for automated defect localization and gated engineering triage.
+            </p>
+          </div>
 
-            <div className="my-4">
-              <div className="flex items-center gap-1.5 mb-2">
-                <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/50">
-                  ROBOFLOW + GEMINI
-                </span>
-              </div>
-              <h3 className="text-xl font-extrabold leading-tight text-white group-hover:text-cyan-200 transition-colors">
-                Video Inspection<br/>Intelligence
-              </h3>
-              <p className="text-xs font-medium text-slate-400 mt-2 leading-relaxed">
-                Ingest drone flyovers & field footage for automated defect localization and gated engineering triage.
-              </p>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-semibold text-cyan-400 group-hover:text-cyan-300">
-              <span>Launch Video Hub</span>
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
-            </div>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-teal-700 group-hover:text-teal-800">
+            <span>Launch Video Hub</span>
+            <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </div>
         </motion.div>
 

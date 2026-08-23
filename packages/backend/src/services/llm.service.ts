@@ -110,16 +110,48 @@ class GeminiProvider implements LLMProvider {
     logger.debug(`[LLM:Gemini] Generating completion using ${this.model}...`);
     const url = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(this.buildPayload(prompt, options)),
-    });
+    let response: Response | null = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    let lastError: any = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error(`[LLM:Gemini] API Error: ${response.status} - ${errorText}`);
-      throw new Error(`Gemini API Error: ${response.statusText}`);
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.buildPayload(prompt, options)),
+        });
+
+        if (response.ok) {
+          break;
+        }
+
+        if (response.status === 429 || response.status >= 500) {
+          const errorText = await response.text();
+          lastError = new Error(`Gemini API Error: ${response.status} - ${errorText}`);
+          logger.warn(`⚠️ [LLM:Gemini] Attempt ${attempts}/${maxAttempts} failed (${lastError.message}). Retrying...`);
+          if (attempts < maxAttempts) {
+            const delayMs = Math.pow(2, attempts) * 1000;
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
+        }
+      } catch (err: any) {
+        lastError = err;
+        logger.warn(`⚠️ [LLM:Gemini] Network error on attempt ${attempts}/${maxAttempts}: ${err.message}`);
+        if (attempts < maxAttempts) {
+          const delayMs = Math.pow(2, attempts) * 1000;
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw lastError || new Error(`Gemini API failed after ${maxAttempts} attempts.`);
     }
 
     const data: any = await response.json();

@@ -6,6 +6,7 @@ import { telemetryDaemon } from './services/telemetry-daemon.js';
 import { cvDaemon } from './services/cv-daemon.js';
 import { GoldMetricsSyncService } from './services/gold-metrics-sync.service.js';
 import { VideoRetentionService } from './services/video-retention.service.js';
+import { VideoRecoveryService } from './services/video-recovery.service.js';
 
 const app = createApp();
 
@@ -16,6 +17,9 @@ const server = app.listen(env.PORT, () => {
 
   // Raw Video Retention Worker: Audits and enforces storage lifecycle policy
   VideoRetentionService.start();
+
+  // Crash Recovery & Stuck Pipeline Sweep Daemon: Auto-recovers interrupted video jobs
+  VideoRecoveryService.start();
 
   // Gold Metrics Sync: run immediately, then every 60 seconds
   GoldMetricsSyncService.syncAnomalyDetectionsToGold()

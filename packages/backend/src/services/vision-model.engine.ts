@@ -53,15 +53,50 @@ async function callRoboflowInference(
   const endpoint = `https://detect.roboflow.com/${modelId}?api_key=${apiKey}`;
   logger.info(`[VisionModelEngine] Invoking Roboflow Inference API (${modelId})...`);
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: base64String,
-  });
+  let response: Response | null = null;
+  let attempts = 0;
+  const maxAttempts = 3;
+  let lastError: any = null;
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Roboflow Inference API error: ${response.status} ${errText}`);
+  while (attempts < maxAttempts) {
+    attempts++;
+    try {
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: base64String,
+      });
+
+      if (response.ok) {
+        break;
+      }
+
+      // Retry on 429 (rate-limited) or 5xx server errors
+      if (response.status === 429 || response.status >= 500) {
+        const errText = await response.text();
+        lastError = new Error(`Roboflow API returned status ${response.status}: ${errText}`);
+        logger.warn(`⚠️ [VisionModelEngine] Attempt ${attempts}/${maxAttempts} failed (${lastError.message}). Retrying...`);
+        if (attempts < maxAttempts) {
+          const delayMs = Math.pow(2, attempts) * 1000;
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+      } else {
+        // Non-retryable 4xx client error
+        const errText = await response.text();
+        throw new Error(`Roboflow Inference API client error: ${response.status} ${errText}`);
+      }
+    } catch (err: any) {
+      lastError = err;
+      logger.warn(`⚠️ [VisionModelEngine] Network/HTTP error on attempt ${attempts}/${maxAttempts}: ${err.message}`);
+      if (attempts < maxAttempts) {
+        const delayMs = Math.pow(2, attempts) * 1000;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw lastError || new Error(`Roboflow Inference API failed after ${maxAttempts} attempts.`);
   }
 
   const result = (await response.json()) as any;

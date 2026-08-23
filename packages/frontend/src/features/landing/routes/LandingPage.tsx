@@ -1,16 +1,13 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { INFRA_IMAGES } from '@/lib/infraImages';
 import { Building2, Activity, BrainCircuit, ArrowRight, Radio, Cpu, Shield } from 'lucide-react';
-import { useBackgroundRotation } from '@/lib/useBackgroundRotation';
 
 export function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 1.06]);
-  const { currentIndex } = useBackgroundRotation(INFRA_IMAGES.general, 6000);
 
   return (
     <div ref={containerRef} className="relative bg-[#0B0D10] text-white overflow-x-hidden min-h-[280vh]">
@@ -20,17 +17,9 @@ export function LandingPage() {
         className="sticky top-0 h-screen w-full flex flex-col items-center justify-center overflow-hidden"
         style={{ opacity: heroOpacity, scale: heroScale }}
       >
-        {/* Rotating BG */}
-        <div className="absolute inset-0 z-0">
-          {INFRA_IMAGES.general.map((img, i) => (
-            <div key={img} className="absolute inset-0" style={{
-              backgroundImage: `url('${img}')`, backgroundSize: 'cover', backgroundPosition: 'center',
-              opacity: i === currentIndex ? 1 : 0, filter: 'brightness(0.55) saturate(1.2)',
-              transform: `scale(${i === currentIndex ? 1.04 : 1})`,
-              transition: 'opacity 1.8s ease, transform 10s ease-out',
-            }} />
-          ))}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,13,16,0.5) 0%, rgba(11,13,16,0.2) 40%, rgba(11,13,16,0.85) 100%)' }} />
+        {/* Clean Static Hero Background */}
+        <div className="absolute inset-0 z-0 bg-[#0B0D10]">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#111827] via-[#0B0D10] to-[#0B0D10]" />
         </div>
 
         {/* Hero content */}

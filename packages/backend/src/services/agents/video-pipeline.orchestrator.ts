@@ -4,6 +4,7 @@ import { VideoIngestionAgent } from './video-ingestion.agent.js';
 import { VisionAnalysisAgent } from './vision-analysis.agent.js';
 import { TriageAgent } from './triage.agent.js';
 import { ReportAgent } from './report.agent.js';
+import { GoldMetricsSyncService } from '../gold-metrics-sync.service.js';
 import logger from '@/utils/logger.js';
 
 export interface PipelineProgressEvent {
@@ -123,6 +124,11 @@ export class VideoPipelineOrchestrator {
       });
 
       const reportResult = await ReportAgent.generateVideoInspectionReport(videoId, tenantId);
+
+      // EMIT TO DATA PLATFORM: Bronze Lakehouse Volume for continuous model dataset accumulation
+      await GoldMetricsSyncService.emitVideoInspectionToBronze(videoId, tenantId).catch((bronzeErr) => {
+        logger.warn(`[VideoPipelineOrchestrator] Non-fatal Bronze emission error: ${bronzeErr}`);
+      });
 
       // COMPLETED
       this.emitProgress({
