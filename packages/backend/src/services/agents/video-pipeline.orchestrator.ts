@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma.js';
+import { StorageFactory } from '../storage/storage.adapter.js';
 import { VideoIngestionAgent } from './video-ingestion.agent.js';
 import { VisionAnalysisAgent } from './vision-analysis.agent.js';
 import { TriageAgent } from './triage.agent.js';
@@ -32,10 +33,12 @@ export class VideoPipelineOrchestrator {
   static async runPipeline(
     videoId: number,
     tenantId: number,
-    videoFilePath: string,
+    storageKeyOrPath: string,
     options: { targetFrameBudget?: number } = {}
   ): Promise<{ success: boolean; error?: string }> {
     logger.info(`🚀 [VideoPipelineOrchestrator] Starting video inspection pipeline for video #${videoId}...`);
+
+    let cleanupTempFile: (() => Promise<void> | void) | null = null;
 
     try {
       const video = await prisma.inspectionVideo.findFirst({
@@ -45,6 +48,12 @@ export class VideoPipelineOrchestrator {
       if (!video) {
         throw new Error(`Video #${videoId} not found for tenant #${tenantId}`);
       }
+
+      // 0. Resolve local path via StorageAdapter
+      const storageKey = video.storageKey || storageKeyOrPath;
+      const adapter = StorageFactory.getAdapterForStorageKey(storageKey);
+      const { localPath, cleanup } = await adapter.resolveLocalPath(storageKey);
+      cleanupTempFile = cleanup;
 
       // STAGE 1: INGESTION AGENT (Frame extraction with dynamic frame budgeting)
       this.emitProgress({
@@ -57,9 +66,15 @@ export class VideoPipelineOrchestrator {
       const ingestionResult = await VideoIngestionAgent.ingestVideo(
         videoId,
         tenantId,
-        videoFilePath,
+        localPath,
         { targetFrameBudget: options.targetFrameBudget || Number(video.targetFrameBudget) || 45 }
       );
+
+      // Clean up temporary downloaded file if from remote storage
+      if (cleanupTempFile) {
+        await cleanupTempFile();
+        cleanupTempFile = null;
+      }
 
       // STAGE 2: VISION ANALYSIS AGENT (Per-frame Roboflow defect detection & spatial deduplication)
       this.emitProgress({
@@ -142,6 +157,14 @@ export class VideoPipelineOrchestrator {
       });
 
       return { success: false, error: err.message };
+    } finally {
+      if (cleanupTempFile) {
+        try {
+          await cleanupTempFile();
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 }

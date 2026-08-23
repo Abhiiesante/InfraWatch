@@ -4,26 +4,27 @@ import path from 'path';
 import fs from 'fs';
 import prisma from '@/lib/prisma.js';
 import { authMiddleware } from '@/middleware/auth.js';
+import { StorageFactory } from '@/services/storage/storage.adapter.js';
 import { VideoPipelineOrchestrator } from '@/services/agents/video-pipeline.orchestrator.js';
 import logger from '@/utils/logger.js';
 
 const router = Router();
 router.use(authMiddleware);
 
-// Configure multer storage for video uploads
-const uploadsDir = path.resolve('uploads', 'videos');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Configure multer storage for short-lived staging folder
+const stagingDir = path.resolve('uploads', 'staging');
+if (!fs.existsSync(stagingDir)) {
+  fs.mkdirSync(stagingDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, uploadsDir);
+    cb(null, stagingDir);
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = path.extname(file.originalname).toLowerCase() || '.mp4';
-    cb(null, `inspection-${uniqueSuffix}${ext}`);
+    cb(null, `staging-${uniqueSuffix}${ext}`);
   },
 });
 
@@ -45,7 +46,7 @@ const upload = multer({
 
 /**
  * @route POST /api/video-analysis/upload
- * @desc Upload inspection video and trigger the 4-agent analysis pipeline asynchronously.
+ * @desc Upload inspection video to staging, persist via StorageAdapter, and trigger pipeline.
  */
 router.post('/upload', upload.single('video'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -68,10 +69,15 @@ router.post('/upload', upload.single('video'), async (req: Request, res: Respons
     const parsedInspectionId = inspectionId ? parseInt(inspectionId, 10) : undefined;
     const budget = targetFrameBudget ? parseInt(targetFrameBudget, 10) : 45;
 
-    const fileUrl = `/uploads/videos/${req.file.filename}`;
-    const fileSizeBytes = BigInt(req.file.size);
+    // 1. Persist staged file to final backend via StorageAdapter
+    const storageAdapter = StorageFactory.getAdapter();
+    const persistResult = await storageAdapter.persist(
+      req.file.path,
+      req.file.originalname,
+      req.file.mimetype
+    );
 
-    // Create database record
+    // 2. Create database record
     const video = await prisma.inspectionVideo.create({
       data: {
         tenantId,
@@ -79,8 +85,9 @@ router.post('/upload', upload.single('video'), async (req: Request, res: Respons
         inspectionId: !isNaN(parsedInspectionId as any) ? parsedInspectionId : null,
         uploadedById: userId,
         fileName: req.file.originalname,
-        fileUrl,
-        fileSizeBytes,
+        fileUrl: persistResult.fileUrl,
+        fileSizeBytes: BigInt(persistResult.fileSizeBytes),
+        storageKey: persistResult.storageKey,
         sourceType: sourceType || 'UPLOAD',
         status: 'PENDING',
         targetFrameBudget: budget,
@@ -90,9 +97,8 @@ router.post('/upload', upload.single('video'), async (req: Request, res: Respons
       },
     });
 
-    // Fire asynchronous agent pipeline in background
-    const videoFilePath = req.file.path;
-    VideoPipelineOrchestrator.runPipeline(video.id, tenantId, videoFilePath, {
+    // 3. Fire asynchronous agent pipeline in background using storageKey
+    VideoPipelineOrchestrator.runPipeline(video.id, tenantId, persistResult.storageKey, {
       targetFrameBudget: budget,
     }).catch((err) => {
       logger.error(`[VideoAnalysisRoute] Background pipeline failed for video #${video.id}: ${err}`);
@@ -212,7 +218,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction): Prom
 
 /**
  * @route POST /api/video-analysis/:id/reanalyze
- * @desc Re-run the analysis pipeline on an existing uploaded video.
+ * @desc Re-run the analysis pipeline on an existing uploaded video using its storageKey.
  */
 router.post('/:id/reanalyze', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -229,15 +235,12 @@ router.post('/:id/reanalyze', async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    // Resolve local file path
-    const localFileName = path.basename(video.fileUrl);
-    const videoFilePath = path.resolve('uploads', 'videos', localFileName);
-
-    if (!fs.existsSync(videoFilePath)) {
-      res.status(400).json({ error: 'Underlying video file is no longer available on disk' });
+    if (video.rawVideoDeleted) {
+      res.status(400).json({ error: 'Raw video footage has been purged per retention lifecycle policy' });
       return;
     }
 
+    const storageKey = video.storageKey || `local:${video.fileUrl.replace(/^\/uploads\//, '')}`;
     const budget = targetFrameBudget ? parseInt(targetFrameBudget, 10) : Number(video.targetFrameBudget) || 45;
 
     // Reset status and remove previous findings
@@ -248,13 +251,47 @@ router.post('/:id/reanalyze', async (req: Request, res: Response, next: NextFunc
     });
 
     // Re-trigger pipeline
-    VideoPipelineOrchestrator.runPipeline(id, tenantId, videoFilePath, {
+    VideoPipelineOrchestrator.runPipeline(id, tenantId, storageKey, {
       targetFrameBudget: budget,
     }).catch((err) => {
       logger.error(`[VideoAnalysisRoute] Re-analysis failed for video #${id}: ${err}`);
     });
 
     res.json({ message: 'Video re-analysis queued successfully', videoId: id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route DELETE /api/video-analysis/:id
+ * @desc Delete inspection video record and purge stored video file via StorageAdapter.
+ */
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const tenantId = req.tenantId!;
+    const id = parseInt(req.params.id, 10);
+
+    const video = await prisma.inspectionVideo.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!video) {
+      res.status(404).json({ error: 'Inspection video not found' });
+      return;
+    }
+
+    // Purge file from storage backend if present
+    if (video.storageKey) {
+      const adapter = StorageFactory.getAdapterForStorageKey(video.storageKey);
+      await adapter.delete(video.storageKey).catch((err) => {
+        logger.warn(`[VideoAnalysisRoute] Storage deletion warning for ${video.storageKey}: ${err}`);
+      });
+    }
+
+    await prisma.inspectionVideo.delete({ where: { id } });
+
+    res.json({ message: 'Inspection video and storage assets deleted successfully' });
   } catch (error) {
     next(error);
   }

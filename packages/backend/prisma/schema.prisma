@@ -270,13 +270,15 @@ model InspectionVideo {
   durationSeconds Decimal? @db.Decimal(10, 2)
   sourceType      String   @default("UPLOAD") @db.VarChar(50) // UPLOAD, DRONE, PHONE_CAPTURE
   status          String   @default("PENDING") @db.VarChar(50) // PENDING, EXTRACTING, ANALYZING, COMPLETED, FAILED
-  frameCount      Int      @default(0)
-  samplingRateFps Decimal  @default(1.0) @db.Decimal(5, 2)
-  targetFrameBudget Int    @default(45)
-  analysisConfig  Json?    @db.JsonB
-  summary         String?  @db.Text
-  createdAt       DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  frameCount        Int      @default(0)
+  samplingRateFps   Decimal  @default(1.0) @db.Decimal(5, 2)
+  targetFrameBudget Int      @default(45)
+  storageKey        String?  @db.VarChar(500) // e.g. "local:videos/inspection-123.mp4" or "supabase:inspection-videos/inspection-123.mp4"
+  rawVideoDeleted   Boolean  @default(false)
+  rawVideoDeletedAt DateTime? @db.Timestamptz(6)
+  summary           String?  @db.Text
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
 
   // Relations
   organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
