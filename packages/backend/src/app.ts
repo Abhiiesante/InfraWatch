@@ -1,3 +1,4 @@
+import path from 'path';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -22,6 +23,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import reportRoutes from './routes/report.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import mlRoutes from './routes/ml.routes.js';
 import anomalyRoutes from './routes/anomaly.routes.js';
 import predictionRoutes from './routes/prediction.routes.js';
 import telemetryRoutes from './routes/telemetry.routes.js';
@@ -31,8 +33,8 @@ import scadaRoutes from './routes/scada-dispatch.routes.js';
 import bimRoutes from './routes/bim.routes.js';
 import droneRoutes from './routes/drone.routes.js';
 import complianceRoutes from './routes/compliance.routes.js';
-import mlRoutes from './routes/ml.routes.js';
 import copilotRoutes from './routes/copilot.routes.js';
+import videoAnalysisRoutes from './routes/video-analysis.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -72,6 +74,9 @@ export const createApp = (): Express => {
     });
   });
 
+  // Static files for uploaded videos and extracted finding frames
+  app.use('/uploads', express.static(path.resolve('uploads')));
+
   // API Routes
   app.use('/api/auth', authRoutes);
   app.use('/api/organizations', orgRoutes);
@@ -96,6 +101,7 @@ export const createApp = (): Express => {
   app.use('/api/v4', droneRoutes);
   app.use('/api/v4', complianceRoutes);
   app.use('/api/copilot', copilotRoutes);
+  app.use('/api/video-analysis', videoAnalysisRoutes);
 
   // 404 handler
   app.use((_req: Request, res: Response) => {

@@ -54,6 +54,10 @@ model Organization {
   logisticsFleets   LogisticsFleet[]
   cvSafetyMetrics   CVSafetyMetricGold[]
 
+  // Video Inspection Intelligence (Agentic AI)
+  inspectionVideos  InspectionVideo[]
+  videoFindings     VideoFinding[]
+
   @@map("organizations")
 }
 
@@ -88,6 +92,7 @@ model User {
   assignedWorkOrders WorkOrder[] @relation("WorkOrderAssignedTo")
   aiReviews          AIReview[] @relation("UserAIReviews")
   modelFeedbacks     ModelFeedback[] @relation("UserModelFeedbacks")
+  uploadedVideos     InspectionVideo[] @relation("UserUploadedVideos")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -154,6 +159,7 @@ model Asset {
   aiPredictions     AIPrediction[] @relation("AssetAIPredictions")
   aiEvents          AIEvent[] @relation("AssetAIEvents")
   facilityZones     FacilityZone[]
+  inspectionVideos  InspectionVideo[]
 
   @@index([tenantId])
   @@index([assetTypeId])
@@ -216,6 +222,7 @@ model Inspection {
   inspectionImages InspectionImage[]
   prediction  AssetPrediction? @relation(fields: [predictionId], references: [id], onDelete: SetNull)
   droneMissions DroneMission[]
+  inspectionVideos InspectionVideo[]
 
   @@index([tenantId])
   @@index([assetId])
@@ -245,6 +252,77 @@ model InspectionImage {
   @@index([inspectionId])
   @@index([cameraId])
   @@map("inspection_images")
+}
+
+// ============================================================================
+// INSPECTION_VIDEO (Video-Based Inspection Intelligence)
+// ============================================================================
+
+model InspectionVideo {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  inspectionId    Int?
+  assetId         Int
+  uploadedById    Int
+  fileName        String   @db.VarChar(500)
+  fileUrl         String   @db.Text
+  fileSizeBytes   BigInt?
+  durationSeconds Decimal? @db.Decimal(10, 2)
+  sourceType      String   @default("UPLOAD") @db.VarChar(50) // UPLOAD, DRONE, PHONE_CAPTURE
+  status          String   @default("PENDING") @db.VarChar(50) // PENDING, EXTRACTING, ANALYZING, COMPLETED, FAILED
+  frameCount      Int      @default(0)
+  samplingRateFps Decimal  @default(1.0) @db.Decimal(5, 2)
+  targetFrameBudget Int    @default(45)
+  analysisConfig  Json?    @db.JsonB
+  summary         String?  @db.Text
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relations
+  organization Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inspection   Inspection?  @relation(fields: [inspectionId], references: [id], onDelete: SetNull)
+  asset        Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  uploadedBy   User         @relation("UserUploadedVideos", fields: [uploadedById], references: [id], onDelete: Restrict)
+  findings     VideoFinding[]
+
+  @@index([tenantId])
+  @@index([assetId])
+  @@index([inspectionId])
+  @@index([status])
+  @@map("inspection_videos")
+}
+
+// ============================================================================
+// VIDEO_FINDING (Defect Detections Mapped to Video Frames)
+// ============================================================================
+
+model VideoFinding {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int
+  videoId           Int
+  frameIndex        Int
+  frameTimestamp    Decimal  @db.Decimal(10, 3) // seconds into video
+  frameImageUrl     String?  @db.Text
+  defectType        String   @db.VarChar(255)
+  confidence        Decimal  @db.Decimal(5, 2)
+  severity          String   @default("MEDIUM") @db.VarChar(50) // CRITICAL, HIGH, MEDIUM, LOW
+  bbox              Json     @db.JsonB // [x, y, w, h] in % or px
+  rawPrediction     Json?    @db.JsonB
+  triageNotes       String?  @db.Text
+  status            String   @default("PENDING_REVIEW") @db.VarChar(50) // PENDING_REVIEW, CONFIRMED, DISMISSED
+  aiEventId         Int?     @unique
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  organization Organization    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  video        InspectionVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  aiEvent      AIEvent?        @relation(fields: [aiEventId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([videoId])
+  @@index([status])
+  @@index([severity])
+  @@map("video_findings")
 }
 
 // ============================================================================
@@ -808,6 +886,7 @@ model AIEvent {
   modelVersion    AIModelVersion? @relation(fields: [modelVersionId], references: [id], onDelete: SetNull)
   incident        Incident?    @relation("IncidentAIEvent", fields: [incidentId], references: [id], onDelete: SetNull)
   reviews         AIReview[]
+  videoFinding    VideoFinding?
 
   @@index([tenantId])
   @@index([assetId])

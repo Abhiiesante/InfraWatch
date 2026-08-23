@@ -45,7 +45,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         { name: 'Incidents', href: '/incidents', icon: AlertTriangle },
         { name: 'Inspections', href: '/inspections', icon: ClipboardCheck },
         { name: 'Work Orders', href: '/work-orders', icon: FileText },
-        { name: 'Cameras', href: '/cameras', icon: Video },
+        { name: 'Video Intelligence', href: '/cameras', icon: Video },
       ]
     },
     { 

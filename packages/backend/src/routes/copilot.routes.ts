@@ -150,4 +150,57 @@ router.post('/inspection/:id/analyze', authMiddleware, async (req: Request, res:
   }
 });
 
+/**
+ * @route POST /api/copilot/site-analyst
+ * @desc Stream grounded conversational answers about video inspection intelligence and asset findings.
+ */
+router.post('/site-analyst', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tenantId = req.tenantId!;
+    const { query, assetId } = req.body;
+
+    if (!query || typeof query !== 'string') {
+      res.status(400).json({ error: 'Query string is required' });
+      return;
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const isSimulated = LLMService.isSimulated();
+    res.write(`event: metadata\ndata: ${JSON.stringify({ simulated: isSimulated, reason: isSimulated ? 'GEMINI_API_KEY not configured' : undefined })}\n\n`);
+
+    const { SiteAnalystAgent } = await import('@/services/agents/site-analyst.agent.js');
+
+    const onChunk = (chunk: string) => {
+      res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+      if ((res as any).flush) {
+        (res as any).flush();
+      }
+    };
+
+    await SiteAnalystAgent.streamQuery(
+      tenantId,
+      query,
+      onChunk,
+      assetId ? parseInt(assetId, 10) : undefined
+    );
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (err: any) {
+    logger.error('[Copilot:SiteAnalyst] Error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Site Analyst stream failed' });
+    } else {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`);
+      res.end();
+    }
+  }
+});
+
 export default router;
+

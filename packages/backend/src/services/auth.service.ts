@@ -101,9 +101,6 @@ export class AuthService {
   }
 
   async login(input: LoginInput): Promise<AuthResponse> {
-    const isDemoEmail = input.email?.endsWith('@demo.local') || input.email === 'admin@infrawatch.dev';
-    const isDemoPassword = input.password === 'Demo@Password123';
-
     try {
       // Find user with 2-second timeout to prevent TCP hanging on remote Supabase pooler
       const userPromise = prisma.user.findFirst({

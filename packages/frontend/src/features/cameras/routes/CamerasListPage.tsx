@@ -1,1007 +1,751 @@
-import { useState, useEffect, useRef } from 'react';
-import { useCameras, useCreateCamera, useDeleteCamera } from '../api/useCameras';
-import { useAssets } from '@/features/assets/api/useAssets';
-import { apiClient } from '@/lib/api';
+import React, { useState, useRef } from 'react';
 import {
-  Video, Plus, Loader2, X, Wifi, Trash2, Eye, Play, Pause, Maximize2, Radio,
-  Shield, Move, ZoomIn, ZoomOut, Flame, RotateCcw, Compass, Camera as CameraIcon,
-  Globe, Settings, Smartphone, Sparkles, Copy, Check, Radar, Scan, Search,
-  RefreshCw, CheckCircle2, ShieldCheck, Server, Key, Network, Download,
-  Layers, Grid3X3, Grid2X2, Square, Activity, Sliders, AlertTriangle
+  Video,
+  Upload,
+  Play,
+  Pause,
+  Clock,
+  Sparkles,
+  ShieldAlert,
+  CheckCircle2,
+  AlertTriangle,
+  FileText,
+  RotateCcw,
+  Bot,
+  Layers,
+  ChevronRight,
+  Eye,
+  Sliders,
+  Filter,
+  Plus,
+  Tv,
+  Check,
+  X,
+  RefreshCw,
+  Film,
+  Cpu,
 } from 'lucide-react';
+import { useAssets } from '@/features/assets/api/useAssets';
+import {
+  useVideoAnalyses,
+  useVideoAnalysisDetail,
+  useUploadVideo,
+  useReanalyzeVideo,
+  InspectionVideo,
+  VideoFinding,
+} from '../api/useVideoAnalysis';
+import { useCameras, useCreateCamera } from '../api/useCameras';
 import { CameraManagementModal } from '../components/CameraManagementModal';
-import { format } from 'date-fns';
-import Hls from 'hls.js';
-import { io } from 'socket.io-client';
+import { SiteAnalystPanel } from '@/features/ai/components/SiteAnalystPanel';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const socket = io(window.location.origin, { path: '/socket.io', transports: ['websocket'] });
+export const CamerasListPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'videos' | 'devices'>('videos');
+  const [selectedVideoId, setSelectedVideoId] = useState<number | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isAnalystOpen, setIsAnalystOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
-interface DetectionBox {
-  id: string | number;
-  label: string;
-  conf: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  color: string;
-}
+  // Video Upload Form State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>('');
+  const [sourceType, setSourceType] = useState<string>('DRONE');
+  const [targetBudget, setTargetBudget] = useState<number>(45);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-// ============================================================================
-// REAL-TIME ROBOFLOW COMPUTER VISION BOUNDING BOX OVERLAY
-// ============================================================================
-const LiveRoboflowTracker = ({
-  isPlaying,
-  minConfidence = 30
-}: {
-  isPlaying: boolean;
-  minConfidence?: number;
-}) => {
-  const [boxes, setBoxes] = useState<DetectionBox[]>([]);
-  const [modelId, setModelId] = useState<string>('coco/3');
+  // Queries
+  const { data: videoData, isLoading: isVideosLoading } = useVideoAnalyses();
+  const { data: assetData } = useAssets({ take: 100 });
+  const { data: cameraData, isLoading: isCamerasLoading } = useCameras();
+  const { data: selectedVideo, isLoading: isDetailLoading } = useVideoAnalysisDetail(selectedVideoId);
 
-  useEffect(() => {
-    if (!isPlaying) return;
+  // Mutations
+  const { mutateAsync: uploadVideo, isPending: isUploading } = useUploadVideo();
+  const { mutateAsync: reanalyzeVideo, isPending: isReanalyzing } = useReanalyzeVideo();
 
-    const handleDetections = (data: any) => {
-      if (data && typeof data === 'object' && 'boxes' in data) {
-        setBoxes(data.boxes || []);
-        if (data.model) setModelId(data.model);
-      } else if (Array.isArray(data)) {
-        setBoxes(data);
-      }
-    };
+  // Video Player Ref
+  const videoPlayerRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
-    socket.on('cv-detections', handleDetections);
-    return () => {
-      socket.off('cv-detections', handleDetections);
-    };
-  }, [isPlaying]);
+  const videos = videoData?.videos || [];
+  const assets = assetData?.assets || [];
+  const cameras = cameraData?.cameras || [];
 
-  if (!isPlaying) return null;
+  // Summary Metrics
+  const totalVideos = videos.length;
+  const completedVideos = videos.filter((v) => v.status === 'COMPLETED').length;
+  const totalFindings = videos.reduce((sum, v) => sum + (v.findings?.length || 0), 0);
+  const totalFrames = videos.reduce((sum, v) => sum + (v.frameCount || 0), 0);
 
-  const filteredBoxes = boxes.filter(b => (b.conf || 80) >= minConfidence);
-
-  return (
-    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-      {/* Top AI Telemetry Ribbon */}
-      <div className="absolute top-2 left-2 z-30 bg-slate-950/80 backdrop-blur-md border border-cyan-500/30 text-cyan-300 text-[10px] font-mono font-bold px-2.5 py-1 rounded shadow-lg flex items-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-        <span>MODEL: {modelId.toUpperCase()}</span>
-        <span className="text-slate-500">|</span>
-        <span className="text-emerald-400">OBJECTS: {filteredBoxes.length}</span>
-      </div>
-
-      {filteredBoxes.map((box, idx) => (
-        <div
-          key={box.id || idx}
-          className="absolute border-[2px] transition-all duration-100 ease-out"
-          style={{
-            left: `${box.x}%`,
-            top: `${box.y}%`,
-            width: `${box.w}%`,
-            height: `${box.h}%`,
-            borderColor: box.color || '#00F2FE',
-            boxShadow: `0 0 8px ${box.color || '#00F2FE'}60`,
-          }}
-        >
-          {/* Label Badge */}
-          <div
-            className="absolute -top-5 left-[-2px] text-slate-950 text-[11px] font-black px-1.5 py-0.5 whitespace-nowrap tracking-wide shadow-md uppercase"
-            style={{ backgroundColor: box.color || '#00F2FE' }}
-          >
-            {box.label} {box.conf}%
-          </div>
-
-          {/* Precision Crosshairs */}
-          <div className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2" style={{ borderColor: box.color || '#00F2FE' }} />
-          <div className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2" style={{ borderColor: box.color || '#00F2FE' }} />
-          <div className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2" style={{ borderColor: box.color || '#00F2FE' }} />
-          <div className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2" style={{ borderColor: box.color || '#00F2FE' }} />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ============================================================================
-// ENTERPRISE HLS / RTSP / MP4 VIDEO PLAYER
-// ============================================================================
-const VideoStreamPlayer = ({
-  src,
-  className,
-  style,
-  poster,
-  onVideoRef
-}: {
-  src: string;
-  className?: string;
-  style?: React.CSSProperties;
-  poster?: string;
-  onVideoRef?: (el: HTMLVideoElement | null) => void;
-}) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (onVideoRef) onVideoRef(video);
-
-    video.defaultMuted = true;
-    video.muted = true;
-
-    if (src.endsWith('.m3u8')) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 60,
-        });
-        hls.loadSource(src);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(() => {});
-        });
-        return () => hls.destroy();
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = src;
-        video.play().catch(() => {});
-      }
-    } else {
-      video.src = src;
-      video.load();
-      video.play().catch(() => {
-        video.muted = true;
-        video.play().catch(() => {});
-      });
-    }
-  }, [src]);
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      loop
-      muted
-      playsInline
-      poster={poster}
-      className={className}
-      style={style}
-    />
-  );
-};
-
-// ============================================================================
-// MAIN CAMERAS & CCTV SURVEILLANCE SUITE
-// ============================================================================
-export const CamerasListPage = () => {
-  const [showCreate, setShowCreate] = useState(false);
-  const [cameraToEdit, setCameraToEdit] = useState<any | null>(null);
-  const [activeStreamCamera, setActiveStreamCamera] = useState<any | null>(null);
-  const [viewMode, setViewMode] = useState<'single' | 'grid2x2' | 'grid3x3' | 'fleet'>('fleet');
-  const [thermalFilter, setThermalFilter] = useState(false);
-  const [aiOverlay, setAiOverlay] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [useWebcam, setUseWebcam] = useState(false);
-  const [liveClock, setLiveClock] = useState(new Date());
-  const [minConfidence, setMinConfidence] = useState(40);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-
-  // PTZ State
-  const [zoom, setZoom] = useState(1.0);
-  const [panX, setPanX] = useState(0);
-  const [panY, setPanY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number; startPanX: number; startPanY: number } | null>(null);
-
-  // DOM Refs
-  const activeVideoElementRef = useRef<HTMLVideoElement | null>(null);
-  const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
-  const webcamStreamRef = useRef<MediaStream | null>(null);
-  const hiddenCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-
-  // Wireless Mobile Camera Modal State
-  const [showWirelessModal, setShowWirelessModal] = useState(false);
-  const [wirelessPin, setWirelessPin] = useState('');
-  const [isPairingWireless, setIsPairingWireless] = useState(false);
-  const [wirelessError, setWirelessError] = useState('');
-
-  // Radar Scanner State
-  const [showRadarModal, setShowRadarModal] = useState(false);
-  const [isScanningNetwork, setIsScanningNetwork] = useState(false);
-  const [scanResults, setScanResults] = useState<any[]>([]);
-  const [customSubnetInput, setCustomSubnetInput] = useState('');
-  const [isAutoProvisioning, setIsAutoProvisioning] = useState(false);
-  const [autoProvisionSuccessMsg, setAutoProvisionSuccessMsg] = useState('');
-
-  const { data, isLoading, refetch: refetchCameras } = useCameras({ skip: 0, take: 50 });
-  const { data: assetsData } = useAssets({ skip: 0, take: 100 });
-  const { mutateAsync: deleteCamera } = useDeleteCamera();
-
-  // Clock tick
-  useEffect(() => {
-    const timer = setInterval(() => setLiveClock(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Recording timer
-  useEffect(() => {
-    let recTimer: any;
-    if (isRecording) {
-      recTimer = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
-    } else {
-      setRecordingSeconds(0);
-    }
-    return () => clearInterval(recTimer);
-  }, [isRecording]);
-
-  // Handle local webcam activation
-  useEffect(() => {
-    if (useWebcam) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-        .then((stream) => {
-          webcamStreamRef.current = stream;
-          if (webcamVideoRef.current) {
-            webcamVideoRef.current.srcObject = stream;
-            webcamVideoRef.current.muted = true;
-            webcamVideoRef.current.play().catch(() => {});
-          }
-        })
-        .catch((err) => {
-          console.warn('Webcam access unavailable:', err);
-          setUseWebcam(false);
-        });
-    } else {
-      if (webcamStreamRef.current) {
-        webcamStreamRef.current.getTracks().forEach(track => track.stop());
-        webcamStreamRef.current = null;
-      }
-    }
-    return () => {
-      if (webcamStreamRef.current) {
-        webcamStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [useWebcam]);
-
-  // Resolve authentic stream URL for camera
-  const getCameraStreamUrl = (camera: any): string => {
-    if (camera.config?.streamUrl) return camera.config.streamUrl;
-    if (camera.rtspUrl && (camera.rtspUrl.startsWith('rtsp://') || camera.rtspUrl.startsWith('rtsps://'))) {
-      const baseUrl = (import.meta as any).env.VITE_API_URL || '/api';
-      return `${baseUrl}/cameras/${camera.id}/live-stream`;
-    }
-    return 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8';
-  };
-
-  // 1-Click High-Res Frame Snapshot
-  const handleCaptureSnapshot = () => {
-    const video = activeVideoElementRef.current || webcamVideoRef.current;
-    if (!video) return;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1920;
-    canvas.height = video.videoHeight || 1080;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Render security timestamp watermark
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-    ctx.fillRect(20, canvas.height - 70, 600, 50);
-    ctx.font = 'bold 20px monospace';
-    ctx.fillStyle = '#22d3ee';
-    const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS') + ' UTC';
-    const camInfo = `${activeStreamCamera?.name || 'CCTV-STREAM'} [ID #${activeStreamCamera?.id || 1}]`;
-    ctx.fillText(`${camInfo} | ${timestamp}`, 35, canvas.height - 38);
-
-    const dataUrl = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `InfraWatch_Snapshot_${activeStreamCamera?.name || 'Camera'}_${Date.now()}.png`;
-    a.click();
-  };
-
-  // 1-Click Video Recording
-  const handleToggleRecording = () => {
-    if (isRecording) {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
-      setIsRecording(false);
-    } else {
-      const video = activeVideoElementRef.current || webcamVideoRef.current;
-      if (!video) return;
-
-      try {
-        let stream: MediaStream;
-        if (useWebcam && webcamStreamRef.current) {
-          stream = webcamStreamRef.current;
-        } else if ((video as any).captureStream) {
-          stream = (video as any).captureStream(30);
-        } else if ((video as any).mozCaptureStream) {
-          stream = (video as any).mozCaptureStream(30);
-        } else {
-          alert('Stream recording is supported on Chrome, Edge, and Firefox.');
-          return;
-        }
-
-        recordedChunksRef.current = [];
-        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) recordedChunksRef.current.push(e.data);
-        };
-
-        recorder.onstop = () => {
-          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `InfraWatch_Clip_${activeStreamCamera?.name || 'Camera'}_${Date.now()}.webm`;
-          a.click();
-          URL.revokeObjectURL(url);
-        };
-
-        recorder.start(1000);
-        mediaRecorderRef.current = recorder;
-        setIsRecording(true);
-      } catch (err) {
-        console.error('Recording initialization failed:', err);
-      }
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
     }
   };
 
-  // PTZ Control Presets
-  const applyPtzPreset = (panXVal: number, panYVal: number, zoomVal: number) => {
-    setPanX(panXVal);
-    setPanY(panYVal);
-    setZoom(zoomVal);
-  };
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !selectedAssetId) return;
 
-  const resetPTZ = () => {
-    setZoom(1.0);
-    setPanX(0);
-    setPanY(0);
-  };
+    const formData = new FormData();
+    formData.append('video', selectedFile);
+    formData.append('assetId', selectedAssetId);
+    formData.append('sourceType', sourceType);
+    formData.append('targetFrameBudget', String(targetBudget));
 
-  // Drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, y: e.clientY, startPanX: panX, startPanY: panY };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !dragStartRef.current) return;
-    const deltaX = (e.clientX - dragStartRef.current.x) * 0.15;
-    const deltaY = (e.clientY - dragStartRef.current.y) * 0.15;
-    setPanX(Math.max(-40, Math.min(40, dragStartRef.current.startPanX + deltaX)));
-    setPanY(Math.max(-30, Math.min(30, dragStartRef.current.startPanY - deltaY)));
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    dragStartRef.current = null;
-  };
-
-  // Auto-Provisioning Call
-  const handleAutoProvisionAll = async () => {
-    setIsAutoProvisioning(true);
-    setAutoProvisionSuccessMsg('');
     try {
-      const res = await apiClient.post('/cameras/auto-provision');
-      if (res.data?.success) {
-        setAutoProvisionSuccessMsg(res.data.message || 'All local CCTV cameras auto-provisioned!');
-        refetchCameras();
-        if (res.data.cameras?.length > 0) {
-          const first = res.data.cameras[0];
-          setActiveStreamCamera(first);
-          resetPTZ();
-        }
-      }
+      await uploadVideo(formData);
+      setIsUploadOpen(false);
+      setSelectedFile(null);
+      setSelectedAssetId('');
     } catch (err: any) {
-      console.error('Auto provision failed:', err);
-    } finally {
-      setIsAutoProvisioning(false);
+      alert(`Upload failed: ${err.message || 'Error occurred'}`);
     }
   };
 
-  // Network Scan
-  const triggerNetworkScan = async (subnet?: string) => {
-    setIsScanningNetwork(true);
-    try {
-      const url = subnet ? `/cameras/scan-network?targetSubnet=${encodeURIComponent(subnet)}` : '/cameras/scan-network';
-      const res = await apiClient.get(url);
-      if (res.data?.devices) {
-        setScanResults(res.data.devices);
-      }
-    } catch (err) {
-      console.error('Network scan failed:', err);
-    } finally {
-      setIsScanningNetwork(false);
+  const seekToTimestamp = (seconds: number) => {
+    if (videoPlayerRef.current) {
+      videoPlayerRef.current.currentTime = seconds;
+      videoPlayerRef.current.play();
+      setIsPlaying(true);
     }
   };
 
-  const handleDeleteCamera = async (id: number) => {
-    if (window.confirm('Are you sure you want to remove this camera?')) {
-      try {
-        await deleteCamera(id);
-        refetchCameras();
-      } catch (error) {
-        console.error('Failed to delete camera:', error);
-      }
+  const getSeverityBadge = (severity: string) => {
+    switch (severity?.toUpperCase()) {
+      case 'CRITICAL':
+        return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+      case 'HIGH':
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      case 'MEDIUM':
+        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+      default:
+        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
     }
   };
 
-  const broadcastUrl = typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:5173/cam-broadcast`
-    : 'http://localhost:5173/cam-broadcast';
-
-  const camerasList = data?.cameras || [];
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            ANALYZED
+          </span>
+        );
+      case 'ANALYZING':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 animate-pulse">
+            <RefreshCw className="w-3 h-3 animate-spin text-cyan-400" />
+            ROBOFLOW VISION
+          </span>
+        );
+      case 'EXTRACTING':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 animate-pulse">
+            <Layers className="w-3 h-3 animate-spin text-amber-400" />
+            SAMPLING FRAMES
+          </span>
+        );
+      case 'FAILED':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5">
+            <X className="w-3 h-3 text-rose-400" />
+            FAILED
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-slate-700 text-slate-300 border border-slate-600 flex items-center gap-1.5">
+            <Clock className="w-3 h-3" />
+            QUEUED
+          </span>
+        );
+    }
+  };
 
   return (
-    <div className="p-6 md:p-8 max-w-[1700px] mx-auto space-y-8 w-full animate-in fade-in pb-24 text-slate-100">
-      <canvas ref={hiddenCanvasRef} className="hidden" />
+    <div className="w-full pb-16 pt-4 space-y-6 text-slate-100 font-sans">
+      {/* ─── COMMAND CENTER HEADER ─── */}
+      <div className="glass-panel p-6 rounded-3xl relative overflow-hidden border border-slate-700/60 bg-gradient-to-b from-slate-900/90 to-slate-950/90 shadow-2xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3" /> Visual Inspection Intelligence
+              </span>
+              <span className="text-[11px] font-mono text-slate-400">Agentic Vision Pipeline v4.0</span>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+              Inspection Video Intelligence Hub
+            </h1>
+            <p className="text-sm mt-1 text-slate-400 max-w-2xl">
+              Upload drone flyovers, field walkthroughs, and inspection recordings for automated frame extraction,
+              Roboflow computer vision defect localization, and engineering-gated triage reports.
+            </p>
+          </div>
 
-      {/* Top Command Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-slate-900/80 backdrop-blur-xl border border-slate-800 p-6 rounded-3xl shadow-2xl">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-                CCTV Surveillance & Optical Matrix
-                <span className="text-xs px-2.5 py-0.5 rounded-full font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                  VMS V2.4
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400 font-medium">
-                Live multi-channel optical monitoring, Roboflow AI inference & PTZ telemetry
-              </p>
-            </div>
+          {/* Action Bar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsAnalystOpen(true)}
+              className="px-4 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-cyan-500/40 text-cyan-300 text-sm font-semibold shadow-lg flex items-center gap-2 transition-all hover:scale-105"
+            >
+              <Bot className="w-4 h-4 text-cyan-400 animate-pulse" />
+              Ask Site Analyst
+            </button>
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-sm font-bold shadow-lg shadow-cyan-500/25 flex items-center gap-2 transition-all hover:scale-105"
+            >
+              <Upload className="w-4 h-4" />
+              Upload Footage
+            </button>
           </div>
         </div>
 
-        {/* View Mode Matrix Selector & Action Buttons */}
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Matrix View Toggles */}
-          <div className="bg-slate-950 p-1.5 rounded-2xl border border-slate-800 flex items-center gap-1 shadow-inner">
-            <button
-              onClick={() => setViewMode('fleet')}
-              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                viewMode === 'fleet' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Fleet Overview"
-            >
-              <Layers className="w-4 h-4" />
-              <span className="hidden sm:inline">Fleet</span>
-            </button>
-            <button
-              onClick={() => setViewMode('grid2x2')}
-              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                viewMode === 'grid2x2' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-              title="2x2 Quad Matrix"
-            >
-              <Grid2X2 className="w-4 h-4" />
-              <span className="hidden sm:inline">2x2 Quad</span>
-            </button>
-            <button
-              onClick={() => setViewMode('grid3x3')}
-              className={`p-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                viewMode === 'grid3x3' ? 'bg-cyan-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-              title="3x3 Surveillance Matrix"
-            >
-              <Grid3X3 className="w-4 h-4" />
-              <span className="hidden sm:inline">3x3 Matrix</span>
-            </button>
+        {/* Top Intelligence Metrics Ribbon */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
+          <div className="p-3.5 rounded-2xl bg-slate-800/40 border border-slate-700/40">
+            <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <Film className="w-3.5 h-3.5 text-cyan-400" /> Monitored Videos
+            </span>
+            <div className="text-2xl font-extrabold text-white mt-1">
+              {totalVideos} <span className="text-xs font-normal text-slate-400 font-mono">({completedVideos} done)</span>
+            </div>
           </div>
 
-          {/* 1-Click Auto-Provision Button */}
-          <button
-            onClick={handleAutoProvisionAll}
-            disabled={isAutoProvisioning}
-            className="px-4 py-2.5 rounded-2xl text-xs font-black bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 disabled:opacity-50"
-          >
-            {isAutoProvisioning ? <Loader2 className="w-4 h-4 animate-spin text-slate-950" /> : <Sparkles className="w-4 h-4" />}
-            <span>Auto-Connect All</span>
-          </button>
+          <div className="p-3.5 rounded-2xl bg-slate-800/40 border border-slate-700/40">
+            <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-purple-400" /> Extracted Frames
+            </span>
+            <div className="text-2xl font-extrabold text-white mt-1 font-mono">
+              {totalFrames} <span className="text-xs font-normal text-slate-400">budgeted</span>
+            </div>
+          </div>
 
-          {/* Network Radar Scanner */}
-          <button
-            onClick={() => {
-              setShowRadarModal(true);
-              triggerNetworkScan();
-            }}
-            className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center gap-2"
-          >
-            <Radar className="w-4 h-4 text-cyan-400" />
-            <span className="hidden sm:inline">Radar Scanner</span>
-          </button>
+          <div className="p-3.5 rounded-2xl bg-slate-800/40 border border-slate-700/40">
+            <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-400" /> Detected Defect Findings
+            </span>
+            <div className="text-2xl font-extrabold text-white mt-1">
+              {totalFindings} <span className="text-xs font-normal text-amber-400 font-mono">triaged</span>
+            </div>
+          </div>
 
-          {/* Register Camera */}
-          <button
-            onClick={() => setShowCreate(true)}
-            className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition-all flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4 text-emerald-400" />
-            <span>Add Camera</span>
-          </button>
+          <div className="p-3.5 rounded-2xl bg-slate-800/40 border border-slate-700/40">
+            <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-emerald-400" /> Model Pipeline
+            </span>
+            <div className="text-sm font-bold text-emerald-300 mt-2 font-mono flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Roboflow + Gemini
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Auto Provision Alert Feedback */}
-      {autoProvisionSuccessMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>{autoProvisionSuccessMsg}</span>
-          </div>
-          <button onClick={() => setAutoProvisionSuccessMsg('')} className="text-emerald-400 hover:text-white">
-            <X className="w-4 h-4" />
+      {/* ─── TAB NAVIGATION ─── */}
+      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'videos'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Film className="w-4 h-4" />
+            Inspection Footage Analyses ({videos.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('devices')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'devices'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Tv className="w-4 h-4" />
+            Registered CCTV Camera Fleet ({cameras.length})
           </button>
         </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* MULTI-VIEW SECURITY MATRIX MODES (2x2 / 3x3) */}
-      {/* ========================================================================= */}
-      {viewMode === 'grid2x2' || viewMode === 'grid3x3' ? (
-        <div className={`grid gap-4 ${viewMode === 'grid2x2' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-          {camerasList.slice(0, viewMode === 'grid2x2' ? 4 : 9).map((camera: any, idx: number) => {
-            const streamUrl = getCameraStreamUrl(camera);
+        {activeTab === 'devices' && (
+          <button
+            onClick={() => setIsCameraModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-cyan-300 flex items-center gap-1.5 transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" /> Register Camera Device
+          </button>
+        )}
+      </div>
 
-            return (
-              <div
-                key={camera.id}
-                onClick={() => {
-                  setActiveStreamCamera(camera);
-                  resetPTZ();
-                }}
-                className="group relative bg-slate-900 border border-slate-800 hover:border-cyan-500/60 rounded-3xl overflow-hidden shadow-xl aspect-video cursor-pointer transition-all duration-300 flex flex-col justify-between"
-              >
-                {/* Live Stream Viewport */}
-                <div className="absolute inset-0 bg-black">
-                  <VideoStreamPlayer
-                    src={streamUrl}
-                    className="w-full h-full object-cover"
-                  />
-                  {aiOverlay && <LiveRoboflowTracker isPlaying={true} minConfidence={minConfidence} />}
-                </div>
-
-                {/* Top Info Bar */}
-                <div className="relative z-20 p-3 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent text-white pointer-events-none">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-xs font-black tracking-tight">{camera.name}</span>
-                  </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 border border-white/20">
-                    CH-0{idx + 1}
-                  </span>
-                </div>
-
-                {/* Bottom Telemetry HUD */}
-                <div className="relative z-20 p-3 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent text-[10px] font-mono text-slate-300 pointer-events-none">
-                  <span>{camera.ipAddress || 'DHCP'}</span>
-                  <span className="text-cyan-400">1080p • 30 FPS</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {/* ========================================================================= */}
-      {/* FLEET OVERVIEW GRID (Cards with Full Metadata & Controls) */}
-      {/* ========================================================================= */}
-      {viewMode === 'fleet' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading ? (
-            <div className="col-span-full flex items-center justify-center p-24">
-              <Loader2 className="w-10 h-10 text-cyan-400 animate-spin" />
+      {/* ─── TAB 1: INSPECTION FOOTAGE ANALYSES ─── */}
+      {activeTab === 'videos' && (
+        <div className="space-y-4">
+          {isVideosLoading ? (
+            <div className="glass-panel p-12 text-center text-slate-400 rounded-3xl flex flex-col items-center justify-center gap-3">
+              <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin" />
+              <p className="font-medium text-sm">Loading inspection video records...</p>
             </div>
-          ) : camerasList.length === 0 ? (
-            <div className="col-span-full p-16 text-center bg-slate-900/60 border border-slate-800 rounded-3xl space-y-4">
-              <CameraIcon className="w-12 h-12 text-slate-600 mx-auto" />
-              <h3 className="text-lg font-bold text-white">No Surveillance Cameras Registered</h3>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Click "Add Camera" or "Auto-Connect All" to scan the local network and stream live CCTV video.
-              </p>
+          ) : videos.length === 0 ? (
+            <div className="glass-panel p-12 text-center text-slate-400 rounded-3xl border border-dashed border-slate-700 flex flex-col items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-3xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-inner">
+                <Upload className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">No Inspection Footage Analyzed Yet</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-md">
+                  Upload a drone video flyover, structural walkthrough clip, or field camera capture to initiate automated
+                  frame extraction and Roboflow defect intelligence.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="px-5 py-2.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/20 flex items-center gap-2 transition-transform hover:scale-105"
+              >
+                <Upload className="w-4 h-4" /> Upload First Inspection Video
+              </button>
             </div>
           ) : (
-            camerasList.map((camera: any) => {
-              const streamUrl = getCameraStreamUrl(camera);
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {videos.map((video) => {
+                const findingsCount = video.findings?.length || 0;
+                const criticalCount = video.findings?.filter((f) => f.severity === 'CRITICAL').length || 0;
+                const highCount = video.findings?.filter((f) => f.severity === 'HIGH').length || 0;
 
-              return (
-                <div
-                  key={camera.id}
-                  className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 hover:border-slate-700 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1"
-                >
-                  {/* Visual Stream Window */}
+                return (
                   <div
-                    onClick={() => {
-                      setActiveStreamCamera(camera);
-                      resetPTZ();
-                    }}
-                    className="relative aspect-video bg-black overflow-hidden cursor-pointer"
+                    key={video.id}
+                    className="glass-panel p-5 rounded-3xl border border-slate-800 hover:border-cyan-500/40 bg-slate-900/60 hover:bg-slate-900/90 transition-all duration-300 flex flex-col justify-between group shadow-xl"
                   >
-                    <VideoStreamPlayer
-                      src={streamUrl}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
-                    />
-
-                    {/* Status Badges */}
-                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-black/70 backdrop-blur-md text-white border border-white/20 flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${camera.status === 'ONLINE' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-                        {camera.status || 'ONLINE'}
-                      </span>
-                      <span className="px-2 py-1 rounded bg-black/70 font-mono text-[10px] text-cyan-300 border border-white/10">
-                        {format(liveClock, 'HH:mm:ss')} UTC
-                      </span>
-                    </div>
-
-                    {/* Hover Play Button */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <div className="p-3 rounded-full bg-cyan-500 text-slate-950 shadow-xl">
-                        <Play className="w-6 h-6 fill-current" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Metadata */}
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                     <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-extrabold text-base text-white tracking-tight">
-                          {camera.name}
-                        </h3>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">
-                          ID #{camera.id}
-                        </span>
+                      {/* Video Top Header */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                            #{video.id}
+                          </span>
+                          <span className="text-xs font-semibold text-cyan-300 truncate">
+                            {video.asset?.name || `Asset #${video.assetId}`}
+                          </span>
+                        </div>
+                        {getStatusBadge(video.status)}
                       </div>
-                      <p className="text-xs text-slate-400 font-medium mt-1 flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                        {camera.asset?.name || 'Primary Facility Asset'}
+
+                      {/* Video Thumbnail / Mock Scrim */}
+                      <div
+                        onClick={() => setSelectedVideoId(video.id)}
+                        className="relative w-full h-40 rounded-2xl bg-slate-950 overflow-hidden border border-slate-800 cursor-pointer group/thumb flex items-center justify-center mb-4"
+                      >
+                        <video
+                          src={video.fileUrl}
+                          className="w-full h-full object-cover opacity-60 group-hover/thumb:scale-105 group-hover/thumb:opacity-90 transition-all duration-500"
+                          muted
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
+                        <div className="w-12 h-12 rounded-2xl bg-slate-900/80 border border-white/20 text-white flex items-center justify-center backdrop-blur-md shadow-2xl group-hover/thumb:scale-110 transition-transform">
+                          <Play className="w-5 h-5 ml-0.5 text-cyan-400" />
+                        </div>
+                        <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[11px] font-mono text-slate-300">
+                          <span className="bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                            ⏱️ {video.durationSeconds ? `${video.durationSeconds}s` : 'Processing'}
+                          </span>
+                          <span className="bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                            🎞️ {video.frameCount} frames
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Video Metadata */}
+                      <h4 className="font-bold text-white text-sm truncate mb-1" title={video.fileName}>
+                        {video.fileName}
+                      </h4>
+                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                        {video.summary || 'Awaiting agentic pipeline completion...'}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-400 font-mono pt-2 border-t border-slate-800">
-                      <span>Type: <strong className="text-slate-200">{camera.cameraType || 'FIXED'}</strong></span>
-                      <span>•</span>
-                      <span>IP: <strong className="text-cyan-300">{camera.ipAddress || 'DHCP'}</strong></span>
-                    </div>
-
-                    {/* Action Bar */}
-                    <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-                      <button
-                        onClick={() => {
-                          setActiveStreamCamera(camera);
-                          resetPTZ();
-                        }}
-                        className="px-4 py-2 rounded-xl text-xs font-black bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition-all flex items-center gap-1.5"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        Launch Stream
-                      </button>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setCameraToEdit(camera)}
-                          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                          title="Edit Camera"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCamera(camera.id)}
-                          className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
-                          title="Remove Camera"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    {/* Findings Breakdown & Action Footer */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        {findingsCount > 0 ? (
+                          <>
+                            <span className="text-xs font-extrabold text-white font-mono">{findingsCount}</span>
+                            <span className="text-[11px] text-slate-400">findings:</span>
+                            {criticalCount > 0 && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                {criticalCount} Crit
+                              </span>
+                            )}
+                            {highCount > 0 && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                {highCount} High
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Nominal scan
+                          </span>
+                        )}
                       </div>
+
+                      <button
+                        onClick={() => setSelectedVideoId(video.id)}
+                        className="px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center gap-1 transition-all"
+                      >
+                        Inspect <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* ENTERPRISE PTZ & LIVE AI INSPECTION MODAL */}
-      {/* ========================================================================= */}
-      {activeStreamCamera && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-6xl rounded-3xl overflow-hidden shadow-2xl flex flex-col text-slate-100">
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-cyan-400 animate-ping" />
-                <div>
-                  <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                    {activeStreamCamera.name}
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      {useWebcam ? 'LOCAL HARDWARE WEBCAM' : 'RTSP / HLS LIVE STREAM'}
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">
-                    {activeStreamCamera.rtspUrl || activeStreamCamera.ipAddress} • {activeStreamCamera.asset?.name || 'Infrastructure Facility'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setActiveStreamCamera(null);
-                  setUseWebcam(false);
-                }}
-                className="p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Video Viewport Canvas */}
-            <div
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              className={`relative bg-black flex items-center justify-center overflow-hidden aspect-video select-none ${
-                isDragging ? 'cursor-grabbing' : 'cursor-grab'
-              }`}
-            >
-              <div className="w-full h-full absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-none">
-                {useWebcam ? (
-                  <video
-                    ref={webcamVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{
-                      transform: `scale(${zoom}) translate(${panX}%, ${panY}%)`,
-                    }}
-                    className={`w-full h-full object-cover transition-transform duration-75 ${
-                      thermalFilter ? 'invert hue-rotate-180 contrast-200 brightness-110' : ''
-                    }`}
-                  />
-                ) : (
-                  <VideoStreamPlayer
-                    src={getCameraStreamUrl(activeStreamCamera)}
-                    onVideoRef={(el) => { activeVideoElementRef.current = el; }}
-                    style={{
-                      width: '140%',
-                      height: '140%',
-                      transform: `scale(${zoom}) translate(${panX}%, ${panY}%)`,
-                    }}
-                    className={`w-full h-full object-cover transition-transform duration-75 ${
-                      thermalFilter ? 'invert hue-rotate-180 contrast-200 brightness-110' : ''
-                    }`}
-                  />
-                )}
-              </div>
-
-              {/* AI Bounding Box Tracker Overlay */}
-              <div
-                className="absolute w-full h-full pointer-events-none z-20"
-                style={{
-                  width: '140%',
-                  height: '140%',
-                  transform: `scale(${zoom}) translate(${panX}%, ${panY}%)`,
-                }}
-              >
-                {aiOverlay && <LiveRoboflowTracker isPlaying={isPlaying} minConfidence={minConfidence} />}
-              </div>
-
-              {/* Top HUD Display */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-xs font-mono font-bold pointer-events-none z-30">
-                <div className="bg-slate-950/80 text-emerald-400 px-3.5 py-1.5 rounded-full border border-emerald-500/40 backdrop-blur-md flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${isPlaying ? 'bg-rose-500 animate-ping' : 'bg-amber-400'}`} />
-                  <span>{isPlaying ? 'LIVE ⏺ 30.0 FPS' : 'PAUSED'}</span>
-                  {isRecording && (
-                    <span className="text-rose-400 font-black ml-2 animate-pulse">
-                      REC [{recordingSeconds}s]
-                    </span>
-                  )}
-                </div>
-
-                <div className="bg-slate-950/80 text-slate-200 px-4 py-1.5 rounded-full border border-slate-700 backdrop-blur-md flex items-center gap-3">
-                  <span className="text-cyan-400 flex items-center gap-1.5">
-                    <Compass className="w-4 h-4 text-cyan-400" />
-                    PAN: {panX.toFixed(0)}° • TILT: {panY.toFixed(0)}° • ZOOM: {zoom.toFixed(1)}x
+      {/* ─── TAB 2: REGISTERED CCTV CAMERA FLEET ─── */}
+      {activeTab === 'devices' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {cameras.map((camera) => (
+              <div key={camera.id} className="glass-panel p-5 rounded-3xl border border-slate-800 bg-slate-900/60">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    <h4 className="font-bold text-white text-sm">{camera.name}</h4>
+                  </div>
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+                    {camera.cameraType}
                   </span>
-                  <span className="text-slate-500">|</span>
-                  <span>{format(liveClock, 'yyyy-MM-dd HH:mm:ss')}</span>
+                </div>
+                <div className="text-xs text-slate-400 font-mono space-y-1 mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                  <p className="truncate">RTSP: {camera.rtspUrl}</p>
+                  <p>IP: {camera.ipAddress || 'DHCP'}</p>
+                </div>
+                <div className="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800">
+                  <span>Registered Device</span>
+                  <span className="text-emerald-400 font-semibold">{camera.status}</span>
                 </div>
               </div>
-
-              {/* Pan Prompt */}
-              <div className="absolute bottom-4 left-4 bg-slate-950/80 text-slate-300 text-[11px] font-semibold px-3 py-1 rounded-full border border-slate-700 backdrop-blur-sm pointer-events-none flex items-center gap-1.5 z-30">
-                <Move className="w-3 h-3 text-cyan-400" /> Click & Drag viewport to pan & tilt PTZ optical lens
-              </div>
-            </div>
-
-            {/* Modal Controls Bar */}
-            <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              {/* Playback & View Controls */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                    isPlaying ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-emerald-500 text-slate-950 font-black'
-                  }`}
-                >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  {isPlaying ? 'Pause' : 'Resume'}
-                </button>
-
-                <button
-                  onClick={() => setUseWebcam(!useWebcam)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                    useWebcam ? 'bg-cyan-500 text-slate-950 font-black shadow-lg' : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
-                  }`}
-                >
-                  <CameraIcon className="w-4 h-4" /> {useWebcam ? 'Webcam Active' : 'Use PC Webcam'}
-                </button>
-
-                <button
-                  onClick={() => setThermalFilter(!thermalFilter)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                    thermalFilter ? 'bg-orange-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
-                  }`}
-                >
-                  <Flame className="w-4 h-4" /> Thermal
-                </button>
-
-                <button
-                  onClick={() => setAiOverlay(!aiOverlay)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                    aiOverlay ? 'bg-cyan-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
-                  }`}
-                >
-                  <Shield className="w-4 h-4" /> AI Overlays
-                </button>
-
-                <button
-                  onClick={handleCaptureSnapshot}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-all"
-                  title="Capture Snapshot"
-                >
-                  <Download className="w-4 h-4 text-cyan-400" /> Snapshot
-                </button>
-
-                <button
-                  onClick={handleToggleRecording}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all ${
-                    isRecording ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700'
-                  }`}
-                  title="Toggle Video Recording"
-                >
-                  <Radio className="w-4 h-4" /> {isRecording ? `Recording (${recordingSeconds}s)` : 'Record Clip'}
-                </button>
-              </div>
-
-              {/* PTZ Presets & Zoom Pad */}
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Preset Position Buttons */}
-                <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 px-2 uppercase">Presets:</span>
-                  <button onClick={() => applyPtzPreset(-20, 10, 1.4)} className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors">North Gate</button>
-                  <button onClick={() => applyPtzPreset(0, 0, 1.0)} className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors">Center</button>
-                  <button onClick={() => applyPtzPreset(20, -10, 1.8)} className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 font-bold transition-colors">Perimeter</button>
-                </div>
-
-                {/* Zoom Buttons */}
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setZoom(z => Math.min(3.0, z + 0.25))} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700">
-                    <ZoomIn className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setZoom(z => Math.max(1.0, z - 0.25))} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700">
-                    <ZoomOut className="w-4 h-4" />
-                  </button>
-                  {(zoom !== 1.0 || panX !== 0 || panY !== 0) && (
-                    <button onClick={resetPTZ} className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white rounded-xl border border-rose-500/30 transition-colors">
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Network Radar Scanner Modal */}
-      {showRadarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      {/* ─── MODAL 1: UPLOAD FOOTAGE ─── */}
+      {isUploadOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in pt-20 pb-8">
+          <div className="relative w-full max-w-xl bg-slate-900 border border-cyan-500/30 rounded-3xl shadow-2xl p-6 space-y-5 max-h-[85vh] overflow-y-auto my-auto text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-                  <Radar className="w-6 h-6 animate-spin" style={{ animationDuration: '6s' }} />
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-white">Local Network CCTV Radar</h2>
-                  <p className="text-xs text-slate-400">Deep ARP, ONVIF (Port 3702) & RTSP (Port 554/8554) Scanner</p>
+                  <h3 className="text-lg font-extrabold text-white">Ingest Inspection Footage</h3>
+                  <p className="text-xs text-slate-400">Upload video for automated 4-agent defect extraction</p>
                 </div>
               </div>
-              <button onClick={() => setShowRadarModal(false)} className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800">
+              <button
+                onClick={() => setIsUploadOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Subnet Input */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={customSubnetInput}
-                onChange={(e) => setCustomSubnetInput(e.target.value)}
-                placeholder="Scan custom subnet (e.g. 192.168.1)"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
-              />
-              <button
-                onClick={() => triggerNetworkScan(customSubnetInput)}
-                disabled={isScanningNetwork}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50"
-              >
-                {isScanningNetwork ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                Scan
-              </button>
+            <form onSubmit={handleUploadSubmit} className="space-y-4">
+              {/* File Dropzone */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Video Recording File (.mp4, .mov, .avi, .mkv)
+                </label>
+                <label className="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-slate-950/50 group">
+                  <input type="file" accept="video/*" onChange={handleFileChange} className="hidden" />
+                  <Upload className="w-8 h-8 text-slate-400 group-hover:text-cyan-400 mb-2 transition-colors" />
+                  <span className="text-sm font-semibold text-white">
+                    {selectedFile ? selectedFile.name : 'Click or drag video file here'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 mt-1">
+                    {selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Supports up to 500 MB per file'}
+                  </span>
+                </label>
+              </div>
+
+              {/* Asset Selector */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Target Infrastructure Asset *
+                </label>
+                <select
+                  value={selectedAssetId}
+                  onChange={(e) => setSelectedAssetId(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="">Select an asset...</option>
+                  {assets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      {asset.name} ({asset.assetType?.name || 'General'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Source Type */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Capture Source
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'DRONE', label: '🛰️ Drone Flyover' },
+                    { id: 'WALKTHROUGH', label: '🚶 Walkthrough' },
+                    { id: 'UPLOAD', label: '📹 Fixed Scan' },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSourceType(s.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-center ${
+                        sourceType === s.id
+                          ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-sm'
+                          : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Frame Budget Settings */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-cyan-400" /> Target Frame Budget:
+                  </span>
+                  <span className="text-xs font-mono font-extrabold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
+                    {targetBudget} frames
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Dynamic sampling extracts a bounded frame budget regardless of video length, ensuring predictable inference
+                  latency and zero wasted API quotas.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  {[
+                    { budget: 20, label: '⚡ Fast (20)' },
+                    { budget: 45, label: '🎯 Standard (45)' },
+                    { budget: 90, label: '🔍 High-Res (90)' },
+                  ].map((b) => (
+                    <button
+                      key={b.budget}
+                      type="button"
+                      onClick={() => setTargetBudget(b.budget)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all ${
+                        targetBudget === b.budget
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                          : 'bg-slate-800 border-slate-700 text-slate-400'
+                      }`}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsUploadOpen(false)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedFile || !selectedAssetId || isUploading}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Ingesting & Queueing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" /> Start Pipeline
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL 2: INTERACTIVE VIDEO INSPECTOR & TIMELINE ─── */}
+      {selectedVideoId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md animate-fade-in pt-16 pb-6">
+          <div className="relative w-full max-w-6xl bg-slate-900 border border-cyan-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh]">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
+              <div className="flex items-center gap-3 truncate">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <Play className="w-5 h-5" />
+                </div>
+                <div className="truncate">
+                  <h3 className="font-extrabold text-white text-base truncate">
+                    {selectedVideo?.fileName || 'Video Inspection Timeline'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Asset: <span className="text-cyan-300 font-semibold">{selectedVideo?.asset?.name}</span> •{' '}
+                    {selectedVideo?.frameCount} Sampled Frames • {selectedVideo?.findings?.length || 0} Detected Findings
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    selectedVideo && reanalyzeVideo({ id: selectedVideo.id, targetFrameBudget: 45 })
+                  }
+                  disabled={isReanalyzing}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-1.5 transition-all"
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 ${isReanalyzing ? 'animate-spin' : ''}`} />
+                  Re-Analyze
+                </button>
+                <button
+                  onClick={() => setSelectedVideoId(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Results List */}
-            <div className="max-h-72 overflow-y-auto space-y-2">
-              {isScanningNetwork ? (
-                <div className="py-12 text-center text-xs text-slate-400 space-y-2">
-                  <Loader2 className="w-6 h-6 animate-spin text-cyan-400 mx-auto" />
-                  <p>Broadcasting ONVIF probes and scanning RTSP endpoints...</p>
-                </div>
-              ) : scanResults.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-400">
-                  No active CCTV endpoints answered on this subnet. Try another subnet range above.
-                </div>
-              ) : (
-                scanResults.map((dev: any, i: number) => (
-                  <div key={i} className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-xs text-white">{dev.name}</h4>
-                      <p className="text-[11px] font-mono text-cyan-300">{dev.ip}:{dev.port} • {dev.brand || 'IP CCTV'}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowRadarModal(false);
-                        setShowCreate(true);
-                      }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500 hover:text-slate-950 transition-colors"
-                    >
-                      Configure
-                    </button>
+            {/* Main Inspection Split Grid */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+              {/* Left Column: Synchronized Video Player */}
+              <div className="lg:col-span-7 p-4 sm:p-6 bg-slate-950 flex flex-col justify-between overflow-y-auto">
+                <div className="space-y-4">
+                  <div className="relative w-full aspect-video rounded-2xl bg-black overflow-hidden border border-slate-800 shadow-2xl">
+                    <video
+                      ref={videoPlayerRef}
+                      src={selectedVideo?.fileUrl}
+                      controls
+                      playsInline
+                      className="w-full h-full object-contain"
+                      onTimeUpdate={(e) => setCurrentTime((e.target as HTMLVideoElement).currentTime)}
+                    />
                   </div>
-                ))
-              )}
+
+                  {/* Executive Report Summary Banner */}
+                  {selectedVideo?.summary && (
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                      <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                        <FileText className="w-4 h-4" /> Synthesized Inspection Intelligence
+                      </div>
+                      <div className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto font-sans">
+                        {selectedVideo.summary}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Finding Timeline & Frames */}
+              <div className="lg:col-span-5 p-4 sm:p-6 bg-slate-900/90 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col h-full overflow-hidden">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                  <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-cyan-400" /> Defect Timeline Findings ({selectedVideo?.findings?.length || 0})
+                  </h4>
+                  <span className="text-[10px] font-mono text-slate-400">Click to seek video</span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                  {selectedVideo?.findings && selectedVideo.findings.length > 0 ? (
+                    selectedVideo.findings.map((finding) => (
+                      <div
+                        key={finding.id}
+                        onClick={() => seekToTimestamp(finding.frameTimestamp)}
+                        className="p-3.5 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/70 hover:border-cyan-500/50 cursor-pointer transition-all space-y-2 group shadow-md"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800/50">
+                              ⏱️ {finding.frameTimestamp}s
+                            </span>
+                            <span className="text-xs font-bold text-white">{finding.defectType}</span>
+                          </div>
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border ${getSeverityBadge(
+                              finding.severity
+                            )}`}
+                          >
+                            {finding.severity}
+                          </span>
+                        </div>
+
+                        {/* Finding Frame Thumbnail */}
+                        {finding.frameImageUrl && (
+                          <div className="relative w-full h-28 rounded-xl bg-slate-950 overflow-hidden border border-slate-800">
+                            <img
+                              src={finding.frameImageUrl}
+                              alt={finding.defectType}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/70 text-[10px] font-mono font-bold text-cyan-300 border border-white/10 backdrop-blur-sm">
+                              {finding.confidence}% Conf
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Engineering Triage Notes */}
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          {finding.triageNotes || 'Visual feature detected and queued for inspector sign-off.'}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-700/40">
+                          <span>Review: {finding.status}</span>
+                          <span className="text-cyan-400 font-semibold group-hover:underline">Seek to frame →</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                      <p className="text-xs font-medium">No visual defects detected across sampled frames.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Camera Management Modal */}
-      <CameraManagementModal
-        isOpen={showCreate || !!cameraToEdit}
-        onClose={() => {
-          setShowCreate(false);
-          setCameraToEdit(null);
-        }}
-        cameraToEdit={cameraToEdit}
+      {/* ─── SITE ANALYST COPILOT MODAL ─── */}
+      <SiteAnalystPanel
+        isOpen={isAnalystOpen}
+        onClose={() => setIsAnalystOpen(false)}
       />
+
+      {/* ─── CAMERA REGISTRATION MODAL ─── */}
+      {isCameraModalOpen && (
+        <CameraManagementModal
+          isOpen={isCameraModalOpen}
+          onClose={() => setIsCameraModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

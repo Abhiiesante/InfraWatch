@@ -32,8 +32,6 @@ import { DroneFleetPage } from '@/features/drones/routes/DroneFleetPage';
 import { CompliancePage } from '@/features/compliance/routes/CompliancePage';
 import { WarehouseDashboardPage } from '@/features/logistics/routes/WarehouseDashboardPage';
 
-import { WebRtcCameraTransmitterPage } from '@/features/cameras/routes/WebRtcCameraTransmitterPage';
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -50,7 +48,6 @@ function App() {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/cam-broadcast" element={<WebRtcCameraTransmitterPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
           

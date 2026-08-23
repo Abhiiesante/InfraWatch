@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import { VideoPipelineOrchestrator } from './agents/video-pipeline.orchestrator.js';
 
 const execAsync = promisify(exec);
 const ffmpegPath = ffmpegInstaller.path;
@@ -46,6 +47,9 @@ export class CVDaemon {
       transports: ['websocket', 'polling'],
       allowEIO3: true,
     });
+
+    VideoPipelineOrchestrator.setSocketIO(this.io);
+
     this.io.on('connection', (socket) => {
       logger.info(`🔌 CV Socket Client connected: ${socket.id}`);
 
