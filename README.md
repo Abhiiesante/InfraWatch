@@ -122,49 +122,63 @@ Interactive 3D WebGL structural wireframes with real-time stress heatmaps and th
 
 ---
 
-### 5. Predictive Maintenance & RUL Forecasts (`/predictions`)
+### 5. GIS Geospatial Twin & Real Map Visualizer (`/gis`)
+Interactive OpenStreetMap geospatial viewer featuring multiple tile modes (`STANDARD`, `DARK`, `SATELLITE`) and live Open-Meteo satellite weather telemetry.
+
+![GIS Digital Twin & Real Map Visualizer](./docs/screenshots/gis-digital-twin.png)
+
+---
+
+### 6. Predictive Maintenance & RUL Forecasts (`/predictions`)
 14-day lookahead failure risk curves, Remaining Useful Life (RUL) projections, and automated service recommendations.
 
 ![Predictive Maintenance Engine](./docs/screenshots/predictive-maintenance.png)
 
 ---
 
-### 6. Warehouse Logistics & AMR Twin (`/warehouse`)
+### 7. Live IoT Telemetry & Sensor Engine (`/telemetry`)
+Real-time sub-second streaming telemetry, dynamic acoustic and vibrational frequency metrics, and automated threshold rule evaluators.
+
+![Live IoT Telemetry & Sensor Engine](./docs/screenshots/telemetry-iot.png)
+
+---
+
+### 8. Warehouse Logistics & AMR Twin (`/warehouse`)
 Spatial map overlay tracking personnel and AMR fleet movements relative to restricted keep-out zones.
 
 ![Warehouse Safety Tracking](./docs/screenshots/warehouse-logistics.png)
 
 ---
 
-### 7. Work Orders & SLA Dispatch Kanban (`/work-orders`)
+### 9. Work Orders & SLA Dispatch Kanban (`/work-orders`)
 Digital work order lifecycle board with countdown timers, severity priority flags, and assignment modals.
 
 ![Work Orders Kanban Board](./docs/screenshots/work-orders-kanban.png)
 
 ---
 
-### 8. Field Inspections & Mobile Execution (`/inspections`)
+### 10. Field Inspections & Mobile Execution (`/inspections`)
 Routine audit workflows with standardized verification checklists and photo evidence capture.
 
 ![Field Inspections Registry](./docs/screenshots/field-inspections.png)
 
 ---
 
-### 9. Automated Compliance Reports & AI Intelligence (`/reports`)
+### 11. Automated Compliance Reports & AI Intelligence (`/reports`)
 Automated regulatory compliance audit reporting with Gold CSV exports and AI synthesized executive narratives.
 
 ![Compliance Reports](./docs/screenshots/reports-compliance.png)
 
 ---
 
-### 10. Engineering Team & Personnel Directory (`/users`)
+### 12. Engineering Team & Personnel Directory (`/users`)
 Organization accounts, certified field inspector management, and RBAC permission tiers.
 
 ![Team Personnel Directory](./docs/screenshots/team-users.png)
 
 ---
 
-### 11. System & Organization Settings (`/settings`)
+### 13. System & Organization Settings (`/settings`)
 Multi-tenant organization branding, profile credentials, and notification thresholds.
 
 ![System Settings](./docs/screenshots/system-settings.png)
