@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { PrismaClient, Prisma } from '@prisma/client';
 import { requestContext } from './context.js';
 
@@ -60,13 +63,20 @@ const setupMiddleware = (client: PrismaClient) => {
   });
 };
 
+const createClient = () => {
+  const rawDbUrl = process.env.DATABASE_URL;
+  return new PrismaClient(
+    rawDbUrl ? { datasources: { db: { url: rawDbUrl } } } : undefined
+  );
+};
+
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
+  prisma = createClient();
   setupMiddleware(prisma);
 } else {
   const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = new PrismaClient();
+    globalForPrisma.prisma = createClient();
     setupMiddleware(globalForPrisma.prisma);
   }
   prisma = globalForPrisma.prisma;

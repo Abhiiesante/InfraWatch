@@ -78,3 +78,9 @@ packages/hadoop/
 Volumes/
 packages/data-platform/Volumes/
 **/Volumes/
+
+# Staging & Uploads
+uploads/
+packages/backend/uploads/
+**/uploads/
+

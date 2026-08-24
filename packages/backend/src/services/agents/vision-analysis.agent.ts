@@ -74,25 +74,38 @@ export class VisionAnalysisAgent {
 
     logger.info(`[VisionAnalysisAgent] Deduplicated to ${deduplicatedFindings.length} distinct video findings.`);
 
-    // Persist findings to database
+    // Persist findings to database with transient connection retry
     const savedFindings: any[] = [];
     for (const finding of deduplicatedFindings) {
-      const created = await prisma.videoFinding.create({
-        data: {
-          tenantId,
-          videoId,
-          frameIndex: finding.frameIndex,
-          frameTimestamp: finding.timestampSeconds,
-          frameImageUrl: finding.frameImageUrl,
-          defectType: finding.defectType,
-          confidence: finding.confidence,
-          severity: finding.severity,
-          bbox: finding.bbox,
-          rawPrediction: finding.rawPrediction,
-          status: 'PENDING_REVIEW',
-        },
-      });
-      savedFindings.push(created);
+      let created: any = null;
+      let attempts = 0;
+      while (!created && attempts < 3) {
+        attempts++;
+        try {
+          created = await prisma.videoFinding.create({
+            data: {
+              tenantId,
+              videoId,
+              frameIndex: finding.frameIndex,
+              frameTimestamp: finding.timestampSeconds,
+              frameImageUrl: finding.frameImageUrl,
+              defectType: finding.defectType,
+              confidence: finding.confidence,
+              severity: finding.severity,
+              bbox: finding.bbox,
+              rawPrediction: finding.rawPrediction,
+              status: 'PENDING_REVIEW',
+            },
+          });
+        } catch (dbErr: any) {
+          logger.warn(`⚠️ [VisionAnalysisAgent] DB persist attempt ${attempts}/3 failed: ${dbErr.message}`);
+          if (attempts >= 3) throw dbErr;
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+      if (created) {
+        savedFindings.push(created);
+      }
     }
 
     // Retention Cleanup: Remove extracted frame files that have NO positive findings to save disk space
