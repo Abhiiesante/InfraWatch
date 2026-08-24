@@ -79,13 +79,37 @@ export const authMiddleware = async (req: Request, _res: Response, next: NextFun
   }
 };
 
+let cachedDefaultTenantId: number | null = null;
+let cachedDefaultUserId: number | null = null;
+
 /**
- * Dev-only fallback: assigns the first organization and admin user
+ * Dev-only fallback: dynamically assigns the active organization and admin user
  * so the app can be browsed without valid auth tokens during development.
  */
-function applyDevFallback(req: Request, next: NextFunction) {
-  const tenantId = 1;
-  const userId = 1;
+async function applyDevFallback(req: Request, next: NextFunction) {
+  // 1. Honor explicit x-tenant-id header if provided
+  const headerTenantId = req.headers['x-tenant-id'];
+  let tenantId = headerTenantId ? parseInt(headerTenantId as string, 10) : NaN;
+
+  // 2. Discover default organization if cache empty
+  if (isNaN(tenantId)) {
+    if (!cachedDefaultTenantId) {
+      try {
+        const firstOrg = await prisma.organization.findFirst({
+          select: { id: true, users: { take: 1, select: { id: true } } },
+        });
+        if (firstOrg) {
+          cachedDefaultTenantId = firstOrg.id;
+          if (firstOrg.users[0]) cachedDefaultUserId = firstOrg.users[0].id;
+        }
+      } catch {
+        // ignore DB transient error
+      }
+    }
+    tenantId = cachedDefaultTenantId || 270;
+  }
+
+  const userId = cachedDefaultUserId || 1;
 
   req.tenantId = tenantId;
   req.userId = userId;

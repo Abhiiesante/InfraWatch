@@ -346,9 +346,11 @@ export const CamerasListPage: React.FC = () => {
                           className="relative w-full h-44 rounded-xl bg-slate-900 overflow-hidden border border-slate-200 cursor-pointer group/thumb flex items-center justify-center mb-4"
                         >
                           <video
-                            src={video.fileUrl}
+                            src={resolveMediaUrl(video.fileUrl)}
                             className="w-full h-full object-cover opacity-85 group-hover/thumb:scale-105 group-hover/thumb:opacity-95 transition-all duration-300"
                             muted
+                            playsInline
+                            preload="metadata"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
                           <div className="w-12 h-12 rounded-xl bg-white text-slate-900 flex items-center justify-center shadow-lg group-hover/thumb:scale-110 transition-transform">
@@ -644,10 +646,12 @@ export const CamerasListPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="relative w-full aspect-video rounded-xl bg-black overflow-hidden border border-slate-800 shadow-xl">
                     <video
+                      key={selectedVideo?.id || selectedVideo?.fileUrl}
                       ref={videoPlayerRef}
                       src={resolveMediaUrl(selectedVideo?.fileUrl)}
                       controls
                       playsInline
+                      preload="auto"
                       className="w-full h-full object-contain"
                     />
                   </div>
@@ -692,14 +696,12 @@ export const CamerasListPage: React.FC = () => {
 
                         {/* Finding Frame Thumbnail */}
                         {finding.frameImageUrl && (
-                          <div className="relative w-full h-28 rounded-lg bg-slate-900 overflow-hidden border border-slate-200">
+                          <div className="relative w-full h-32 rounded-lg bg-slate-800 overflow-hidden border border-slate-200">
                             <img
                               src={resolveMediaUrl(finding.frameImageUrl)}
                               alt={finding.defectType}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                              onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                              }}
+                              loading="lazy"
                             />
                             <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/70 text-xs font-mono font-bold text-white">
                               {finding.confidence}% Conf

@@ -39,8 +39,13 @@ import videoAnalysisRoutes from './routes/video-analysis.routes.js';
 export const createApp = (): Express => {
   const app = express();
 
-  // Security middleware
-  app.use(helmet());
+  // Security middleware with cross-origin media streaming enabled
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginEmbedderPolicy: false,
+    })
+  );
 
   // CORS
   app.use(
@@ -74,8 +79,19 @@ export const createApp = (): Express => {
     });
   });
 
-  // Static files for uploaded videos and extracted finding frames
-  app.use('/uploads', express.static(path.resolve('uploads')));
+  // Static files for uploaded videos and extracted finding frames with CORS & byte-range streaming
+  app.use(
+    '/uploads',
+    (_req: Request, res: Response, next) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      next();
+    },
+    express.static(path.resolve('uploads'), {
+      acceptRanges: true,
+      maxAge: '1d',
+    })
+  );
 
   // API Routes
   app.use('/api/auth', authRoutes);

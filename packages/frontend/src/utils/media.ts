@@ -1,24 +1,24 @@
 /**
- * Resolves media URLs (video files, extracted frame images, thumbnails) to their absolute accessible URLs.
+ * Resolves media URLs (video files, extracted frame images, thumbnails) to their accessible URLs.
  */
 export function resolveMediaUrl(url: string | null | undefined): string {
-  if (!url || typeof url !== 'string') return '';
-  
-  // If already absolute or base64 data URI, return as-is
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-    return url;
+  if (!url || typeof url !== 'string' || url.trim() === '') return '';
+
+  const trimmed = url.trim();
+
+  // If already absolute HTTP(S) or base64 data URI, return as-is
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    return trimmed;
   }
 
   // If starts with local storage key indicator like "local:videos/..."
-  if (url.startsWith('local:')) {
-    const stripped = url.replace(/^local:/, '');
+  if (trimmed.startsWith('local:')) {
+    const stripped = trimmed.replace(/^local:/, '');
     const cleanPath = stripped.startsWith('/') ? stripped : `/${stripped}`;
-    const backendBase = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-    return `${backendBase}/uploads${cleanPath}`;
+    return `/uploads${cleanPath}`;
   }
 
-  // Prepend backend host for relative server uploads
-  const backendBase = (import.meta as any).env.VITE_BACKEND_URL || 'http://localhost:3000';
-  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-  return `${backendBase}${cleanUrl}`;
+  // Ensure clean relative path for Vite proxy / static backend serving
+  const cleanUrl = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return cleanUrl;
 }
