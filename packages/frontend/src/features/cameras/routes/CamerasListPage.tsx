@@ -28,6 +28,8 @@ import {
 } from '../api/useVideoAnalysis';
 import { useCameras } from '../api/useCameras';
 import { CameraManagementModal } from '../components/CameraManagementModal';
+import { SynthesizedIntelligenceCard } from '../components/SynthesizedIntelligenceCard';
+import { resolveMediaUrl } from '@/utils/media';
 import { SiteAnalystPanel } from '@/features/ai/components/SiteAnalystPanel';
 
 export const CamerasListPage: React.FC = () => {
@@ -363,12 +365,12 @@ export const CamerasListPage: React.FC = () => {
                         </div>
 
                         {/* Video Metadata */}
-                        <h4 className="font-extrabold text-slate-900 text-base truncate mb-1" title={video.fileName}>
+                        <h4 className="font-extrabold text-slate-900 text-base truncate mb-1.5" title={video.fileName}>
                           {video.fileName}
                         </h4>
-                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-3 font-normal">
-                          {video.summary || 'Awaiting agentic pipeline completion...'}
-                        </p>
+                        <div className="mb-3">
+                          <SynthesizedIntelligenceCard summary={video.summary} compact />
+                        </div>
                       </div>
 
                       {/* Findings Breakdown & Action Footer */}
@@ -643,24 +645,15 @@ export const CamerasListPage: React.FC = () => {
                   <div className="relative w-full aspect-video rounded-xl bg-black overflow-hidden border border-slate-800 shadow-xl">
                     <video
                       ref={videoPlayerRef}
-                      src={selectedVideo?.fileUrl}
+                      src={resolveMediaUrl(selectedVideo?.fileUrl)}
                       controls
                       playsInline
                       className="w-full h-full object-contain"
                     />
                   </div>
 
-                  {/* Executive Report Summary Banner */}
-                  {selectedVideo?.summary && (
-                    <div className="p-4 rounded-xl bg-slate-800/90 border border-slate-700 space-y-2">
-                      <div className="flex items-center gap-2 text-teal-300 text-xs font-bold uppercase tracking-wider">
-                        <FileText className="w-4 h-4" /> Synthesized Inspection Intelligence
-                      </div>
-                      <div className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto font-sans">
-                        {selectedVideo.summary}
-                      </div>
-                    </div>
-                  )}
+                  {/* Synthesized Inspection Intelligence Card */}
+                  <SynthesizedIntelligenceCard summary={selectedVideo?.summary} />
                 </div>
               </div>
 
@@ -701,9 +694,12 @@ export const CamerasListPage: React.FC = () => {
                         {finding.frameImageUrl && (
                           <div className="relative w-full h-28 rounded-lg bg-slate-900 overflow-hidden border border-slate-200">
                             <img
-                              src={finding.frameImageUrl}
+                              src={resolveMediaUrl(finding.frameImageUrl)}
                               alt={finding.defectType}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
                             />
                             <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/70 text-xs font-mono font-bold text-white">
                               {finding.confidence}% Conf

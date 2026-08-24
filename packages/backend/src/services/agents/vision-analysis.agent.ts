@@ -2,6 +2,7 @@ import fs from 'fs';
 import prisma from '@/lib/prisma.js';
 import { VisionModelEngine } from '../vision-model.engine.js';
 import { ExtractedFrame } from './video-ingestion.agent.js';
+import { StorageFactory } from '../storage/storage.adapter.js';
 import logger from '@/utils/logger.js';
 
 export interface RawFindingItem {
@@ -74,9 +75,35 @@ export class VisionAnalysisAgent {
 
     logger.info(`[VisionAnalysisAgent] Deduplicated to ${deduplicatedFindings.length} distinct video findings.`);
 
+    // Persist positive finding frames via StorageAdapter for durable availability across container restarts
+    const storageAdapter = StorageFactory.getAdapter();
+    const persistedFrameUrls = new Map<number, string>();
+
+    for (const finding of deduplicatedFindings) {
+      if (!persistedFrameUrls.has(finding.frameIndex)) {
+        const frameObj = frames.find((f) => f.frameIndex === finding.frameIndex);
+        if (frameObj && fs.existsSync(frameObj.filePath)) {
+          try {
+            const persistRes = await storageAdapter.persist(
+              frameObj.filePath,
+              `video_${videoId}_frame_${finding.frameIndex}.jpg`,
+              'image/jpeg'
+            );
+            persistedFrameUrls.set(finding.frameIndex, persistRes.fileUrl);
+          } catch (persistErr: any) {
+            logger.warn(`[VisionAnalysisAgent] Non-fatal frame persistence error: ${persistErr.message}`);
+            persistedFrameUrls.set(finding.frameIndex, frameObj.relativeUrl);
+          }
+        } else if (frameObj) {
+          persistedFrameUrls.set(finding.frameIndex, frameObj.relativeUrl);
+        }
+      }
+    }
+
     // Persist findings to database with transient connection retry
     const savedFindings: any[] = [];
     for (const finding of deduplicatedFindings) {
+      const frameImageUrl = persistedFrameUrls.get(finding.frameIndex) || finding.frameImageUrl;
       let created: any = null;
       let attempts = 0;
       while (!created && attempts < 3) {
@@ -88,7 +115,7 @@ export class VisionAnalysisAgent {
               videoId,
               frameIndex: finding.frameIndex,
               frameTimestamp: finding.timestampSeconds,
-              frameImageUrl: finding.frameImageUrl,
+              frameImageUrl,
               defectType: finding.defectType,
               confidence: finding.confidence,
               severity: finding.severity,
