@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useIncidents } from '../api/useIncidents';
-import { AlertTriangle, Plus, MessageSquare, GripVertical, Loader2 } from 'lucide-react';
+import { AlertTriangle, Plus, GripVertical, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { CreateIncidentModal } from '../components/CreateIncidentModal';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -11,10 +11,10 @@ const COLUMNS = ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
 
 function getSeverityColor(severity: string) {
   switch (severity) {
-    case 'CRITICAL': return 'bg-rose-500/10 text-rose-600 border-rose-500/30';
-    case 'HIGH': return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
-    case 'MEDIUM': return 'bg-amber-500/10 text-amber-600 border-amber-500/30';
-    default: return 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30';
+    case 'CRITICAL': return 'bg-rose-50 text-rose-800 border-rose-200';
+    case 'HIGH': return 'bg-orange-50 text-orange-800 border-orange-200';
+    case 'MEDIUM': return 'bg-amber-50 text-amber-800 border-amber-200';
+    default: return 'bg-cyan-50 text-cyan-800 border-cyan-200';
   }
 }
 
@@ -98,20 +98,21 @@ export const IncidentsListPage = () => {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-8 w-full">
+    <div className="space-y-8 w-full animate-in fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-800">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <AlertTriangle className="w-8 h-8 text-rose-600" />
             Incident Kanban
           </h1>
-          <p className="mt-2 text-lg font-medium text-slate-500">
-            Drag and drop incidents across investigation stages.
+          <p className="text-slate-600 mt-1.5 text-base font-medium">
+            Drag and drop incidents across investigation & resolution stages.
           </p>
         </div>
         <CreateIncidentModal>
-          <button className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2">
-            <Plus className="w-5 h-5" />
+          <button className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/20 flex items-center gap-2 text-xs cursor-pointer">
+            <Plus className="w-4 h-4" />
             Report Incident
           </button>
         </CreateIncidentModal>
@@ -123,15 +124,16 @@ export const IncidentsListPage = () => {
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 h-[calc(100vh-220px)] min-h-[600px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 min-h-[600px]">
             {COLUMNS.map((columnId) => (
-              <div key={columnId} className="flex flex-col h-full bg-slate-100/50 rounded-2xl border border-slate-200/50 p-4">
+              <div key={columnId} className="flex flex-col h-full bg-white rounded-3xl border border-slate-200 p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-4 px-2">
-                  <h3 className="font-extrabold text-slate-700 tracking-wide text-sm">{columnId}</h3>
-                  <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <h3 className="font-extrabold text-slate-900 tracking-wide text-xs uppercase">{columnId}</h3>
+                  <span className="bg-slate-100 text-slate-700 text-xs font-black px-2.5 py-0.5 rounded-full border border-slate-200">
                     {boardData[columnId]?.length || 0}
                   </span>
                 </div>
+
                 
                 <Droppable droppableId={columnId}>
                   {(provided, snapshot) => (

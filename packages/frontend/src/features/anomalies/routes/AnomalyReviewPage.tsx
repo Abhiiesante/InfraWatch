@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAnomalies, useConfirmAnomaly, useDismissAnomaly } from '../api/useAnomalies';
-import { Sparkles, Eye, Clock, Video, Loader2, CheckCircle2, XCircle, ShieldAlert } from 'lucide-react';
+import { Sparkles, Eye, Clock, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { BoundingBoxOverlay } from '../components/BoundingBoxOverlay';
 

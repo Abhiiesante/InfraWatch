@@ -7,13 +7,13 @@ import { format } from 'date-fns';
 const getRoleBadge = (role: string) => {
   switch (role) {
     case 'ADMIN':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
+      return 'bg-purple-50 text-purple-800 border-purple-200';
     case 'MANAGER':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-blue-50 text-blue-800 border-blue-200';
     case 'INSPECTOR':
-      return 'bg-slate-800/10 text-emerald-800 border-emerald-200';
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200';
     default:
-      return 'bg-slate-100 text-slate-800 border-[rgba(255,255,255,0.80)]';
+      return 'bg-slate-50 text-slate-700 border-slate-200';
   }
 };
 
@@ -35,7 +35,7 @@ export const UserDetailPage = () => {
   }
 
   if (!user) {
-    return <div className="p-8 text-center text-slate-800/70">User not found</div>;
+    return <div className="p-8 text-center text-slate-600 font-bold">User not found</div>;
   }
 
   const handleRoleChange = async (newRole: string) => {
@@ -55,66 +55,64 @@ export const UserDetailPage = () => {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8 w-full animate-in fade-in">
-      <Link to="/users" className="inline-flex items-center text-sm font-bold text-slate-800/70 hover:text-primary transition-colors glass-panel/50 px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.80)]  backdrop-blur-sm w-fit">
+    <div className="space-y-6 w-full animate-in fade-in pb-12">
+      <Link to="/users" className="inline-flex items-center text-xs font-bold text-slate-700 hover:text-slate-900 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-xs transition-colors w-fit">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Team
       </Link>
 
       {/* Profile Card */}
-      <div className="glass rounded-2xl border border-white/20 p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-
-        <div className="flex flex-col md:flex-row items-start gap-8 relative z-10">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#7FB8B0] to-[#6DA9A0] flex items-center justify-center text-slate-800 font-extrabold text-4xl shadow-lg shadow-primary/25">
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start gap-8">
+          <div className="w-24 h-24 rounded-3xl bg-indigo-600 flex items-center justify-center text-white font-black text-4xl shadow-md shadow-indigo-600/20">
             {user.name?.charAt(0)?.toUpperCase()}
           </div>
           <div className="flex-1 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-extrabold text-[#3A4046]">{user.name}</h1>
-                <p className="text-slate-800/70 mt-1 flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">{user.name}</h1>
+                <p className="text-slate-600 mt-1 flex items-center gap-2 text-sm font-medium">
+                  <Mail className="w-4 h-4 text-slate-400" />
                   {user.email}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border  ${getRoleBadge(user.role)}`}>
-                  <Shield className="w-4 h-4 mr-1.5" />
+                <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-black border ${getRoleBadge(user.role)}`}>
+                  <Shield className="w-3.5 h-3.5 mr-1.5" />
                   {user.role}
                 </span>
-                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold border  ${
+                <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-black border ${
                   user.isActive !== false
-                    ? 'bg-slate-800/10 text-emerald-800 border-emerald-200'
-                    : 'bg-slate-100 text-slate-800/80 border-[rgba(255,255,255,0.80)]'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
                 }`}>
-                  <span className={`w-2 h-2 rounded-full mr-2 ${user.isActive !== false ? 'bg-slate-800 animate-pulse' : 'bg-slate-400'}`}></span>
+                  <span className={`w-2 h-2 rounded-full mr-2 ${user.isActive !== false ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
                   {user.isActive !== false ? 'Active' : 'Inactive'}
                 </span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="glass-panel/40 p-4 rounded-xl border border-white/20 ">
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-2 text-slate-400 mb-1">
                   <Phone className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Phone</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Phone</span>
                 </div>
-                <p className="font-bold text-[#3A4046]">{user.phone || 'Not provided'}</p>
+                <p className="font-extrabold text-slate-900 text-sm">{user.phone || 'Not provided'}</p>
               </div>
-              <div className="glass-panel/40 p-4 rounded-xl border border-white/20 ">
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-2 text-slate-400 mb-1">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Joined</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Joined</span>
                 </div>
-                <p className="font-bold text-[#3A4046]">{format(new Date(user.createdAt), 'MMM d, yyyy')}</p>
+                <p className="font-extrabold text-slate-900 text-sm">{format(new Date(user.createdAt), 'MMM d, yyyy')}</p>
               </div>
-              <div className="glass-panel/40 p-4 rounded-xl border border-white/20 ">
+              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-2 text-slate-400 mb-1">
                   <Clock className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Last Login</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Last Login</span>
                 </div>
-                <p className="font-bold text-[#3A4046]">{user.lastLoginAt ? format(new Date(user.lastLoginAt), 'MMM d, h:mm a') : 'Never'}</p>
+                <p className="font-extrabold text-slate-900 text-sm">{user.lastLoginAt ? format(new Date(user.lastLoginAt), 'MMM d, h:mm a') : 'Never'}</p>
               </div>
             </div>
           </div>
@@ -122,23 +120,23 @@ export const UserDetailPage = () => {
 
         {/* Admin Actions */}
         {isAdmin && user.id !== currentUser?.id && (
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center gap-4 relative z-10">
+          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <UserCog className="w-4 h-4 text-slate-800/70" />
-              <span className="text-sm font-bold text-slate-800/70">Change Role:</span>
+              <UserCog className="w-4 h-4 text-slate-500" />
+              <span className="text-xs font-bold text-slate-700">Change Role:</span>
             </div>
             {['INSPECTOR', 'MANAGER', 'ADMIN'].map((role) => (
               <button
                 key={role}
                 onClick={() => handleRoleChange(role)}
                 disabled={isUpdating || user.role === role}
-                className={`px-4 py-2 rounded-xl text-sm font-bold border  transition-all disabled:opacity-50 ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-50 cursor-pointer ${
                   user.role === role
-                    ? 'bg-primary text-slate-800 border-primary shadow-primary/25'
-                    : 'glass-panel/50 text-slate-700 border-[rgba(255,255,255,0.80)] hover:border-primary hover:text-primary'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : role}
+                {isUpdating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : role}
               </button>
             ))}
 
@@ -146,10 +144,10 @@ export const UserDetailPage = () => {
               <button
                 onClick={handleToggleActive}
                 disabled={isUpdating}
-                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer ${
                   user.isActive !== false
-                    ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
-                    : 'bg-emerald-50 text-emerald-600 hover:bg-slate-800/10 border border-emerald-200'
+                    ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
                 }`}
               >
                 {user.isActive !== false ? 'Deactivate User' : 'Reactivate User'}
@@ -161,3 +159,4 @@ export const UserDetailPage = () => {
     </div>
   );
 };
+

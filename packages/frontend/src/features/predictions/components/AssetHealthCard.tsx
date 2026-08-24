@@ -8,9 +8,9 @@ interface AssetHealthCardProps {
 
 export const AssetHealthCard = ({ score, assetName, assetType }: AssetHealthCardProps) => {
   const getScoreColor = (val: number) => {
-    if (val >= 80) return { stroke: '#10b981', text: 'text-slate-800', bg: 'bg-slate-800/10 border-emerald-500/30' };
-    if (val >= 55) return { stroke: '#f59e0b', text: 'text-slate-800', bg: 'bg-amber-500/10 border-amber-500/30' };
-    return { stroke: '#f43f5e', text: 'text-slate-800', bg: 'bg-rose-500/10 border-rose-500/30' };
+    if (val >= 80) return { stroke: '#10b981', text: 'text-emerald-700', bg: 'bg-white border-slate-200', badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+    if (val >= 55) return { stroke: '#f59e0b', text: 'text-amber-700', bg: 'bg-white border-slate-200', badgeBg: 'bg-amber-50 text-amber-800 border-amber-200' };
+    return { stroke: '#f43f5e', text: 'text-rose-700', bg: 'bg-white border-slate-200', badgeBg: 'bg-rose-50 text-rose-800 border-rose-200' };
   };
 
   const style = getScoreColor(score);
@@ -19,15 +19,15 @@ export const AssetHealthCard = ({ score, assetName, assetType }: AssetHealthCard
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
-    <div className={`p-5 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:shadow-lg ${style.bg} flex items-center justify-between`}>
-      <div className="space-y-1">
-        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">{assetType || 'Infrastructure'}</span>
-        <h4 className="font-extrabold text-lg text-[#3A4046]">{assetName}</h4>
-        <div className="flex items-center gap-1.5 text-xs font-bold mt-2">
+    <div className="p-6 rounded-3xl border bg-white border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between">
+      <div className="space-y-1.5 min-w-0 pr-3">
+        <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 block truncate">{assetType || 'Infrastructure'}</span>
+        <h4 className="font-extrabold text-base text-slate-900 truncate">{assetName}</h4>
+        <div className="flex items-center gap-1.5 text-xs font-bold pt-1">
           {score >= 80 ? (
-            <ShieldCheck className="w-4 h-4 text-slate-800" />
+            <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           ) : (
-            <AlertTriangle className={`w-4 h-4 ${style.text}`} />
+            <AlertTriangle className={`w-4 h-4 ${style.text} flex-shrink-0`} />
           )}
           <span className={style.text}>
             {score >= 80 ? 'Optimal Health' : score >= 55 ? 'Moderate Degradation' : 'High Failure Risk'}
@@ -36,9 +36,9 @@ export const AssetHealthCard = ({ score, assetName, assetType }: AssetHealthCard
       </div>
 
       {/* Circular Progress Gauge */}
-      <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0">
+      <div className="relative w-18 h-18 flex items-center justify-center flex-shrink-0">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 90 90">
-          <circle cx="45" cy="45" r={radius} stroke="currentColor" strokeWidth="7" fill="transparent" className="text-slate-200" />
+          <circle cx="45" cy="45" r={radius} stroke="currentColor" strokeWidth="7" fill="transparent" className="text-slate-100" />
           <circle
             cx="45"
             cy="45"
@@ -52,10 +52,11 @@ export const AssetHealthCard = ({ score, assetName, assetType }: AssetHealthCard
             className="transition-all duration-1000 ease-out"
           />
         </svg>
-        <span className={`absolute font-black text-xl ${style.text}`}>
+        <span className={`absolute font-black text-lg ${style.text}`}>
           {score}
         </span>
       </div>
     </div>
   );
 };
+

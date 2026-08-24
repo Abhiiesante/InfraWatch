@@ -6,7 +6,6 @@ import {
   Sparkles,
   ShieldAlert,
   CheckCircle2,
-  FileText,
   RotateCcw,
   Bot,
   Layers,
@@ -347,6 +346,7 @@ export const CamerasListPage: React.FC = () => {
                         >
                           <video
                             src={resolveMediaUrl(video.fileUrl)}
+                            poster={video.findings?.[0]?.frameImageUrl ? resolveMediaUrl(video.findings[0].frameImageUrl) : undefined}
                             className="w-full h-full object-cover opacity-85 group-hover/thumb:scale-105 group-hover/thumb:opacity-95 transition-all duration-300"
                             muted
                             playsInline
@@ -419,7 +419,7 @@ export const CamerasListPage: React.FC = () => {
         {activeTab === 'devices' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {cameras.map((camera) => (
+              {cameras.map((camera: any) => (
                 <div key={camera.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">

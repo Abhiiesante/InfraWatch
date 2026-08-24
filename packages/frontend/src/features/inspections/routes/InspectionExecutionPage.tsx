@@ -41,8 +41,8 @@ export const InspectionExecutionPage: React.FC = () => {
   const inspectionId = Number(id);
 
   const { data: inspection, isLoading } = useInspectionDetails(inspectionId);
-  const { mutateAsync: updateInspection, isPending: isUpdating } = useUpdateInspection();
-  const { mutateAsync: uploadImage, isPending: isUploading } = useUploadInspectionImage();
+  const { mutateAsync: updateInspection } = useUpdateInspection();
+  const { mutateAsync: uploadImage } = useUploadInspectionImage();
 
   const [checklist, setChecklist] = useState<ChecklistItem[]>(DEFAULT_CHECKLIST);
   const [notes, setNotes] = useState('');
@@ -122,27 +122,27 @@ export const InspectionExecutionPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-slate-500">
-        <Clock className="w-8 h-8 animate-spin text-cyan-600 mb-2" />
+        <Clock className="w-8 h-8 animate-spin text-indigo-600 mb-2" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 animate-fade-in">
-      {/* Mobile-optimized Header */}
-      <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3.5 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 animate-fade-in">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-xs">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center">
-          <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5 justify-center">
-            <ClipboardCheck className="w-4 h-4 text-cyan-400" />
+          <h1 className="text-sm font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5 justify-center">
+            <ClipboardCheck className="w-4 h-4 text-indigo-600" />
             Field Inspection Run #{inspectionId}
           </h1>
-          <p className="text-[11px] text-slate-400 font-medium truncate max-w-[200px] sm:max-w-xs">
+          <p className="text-[11px] text-slate-500 font-semibold truncate max-w-[200px] sm:max-w-xs">
             {inspection?.asset?.name || 'Target Asset'}
           </p>
         </div>
@@ -150,43 +150,43 @@ export const InspectionExecutionPage: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         
         {/* Success Banner */}
         {isSubmitted && (
-          <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center gap-3 animate-bounce">
-            <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-400" />
+          <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 shadow-sm">
+            <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-600" />
             <div>
-              <p className="font-bold text-sm">Inspection Completed Successfully!</p>
-              <p className="text-xs text-emerald-400/80">Asset maintenance record and lastInspectionAt updated. Redirecting...</p>
+              <p className="font-extrabold text-sm">Inspection Completed Successfully!</p>
+              <p className="text-xs text-emerald-700">Asset maintenance record and lastInspectionAt updated. Redirecting...</p>
             </div>
           </div>
         )}
 
         {/* Asset Context Card */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
+        <section className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-3">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">
+              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
                 Target Facility
               </span>
-              <h2 className="text-lg font-extrabold text-white mt-1.5 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-cyan-400" />
+              <h2 className="text-xl font-black text-slate-900 mt-1.5 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-indigo-600" />
                 {inspection?.asset?.name}
               </h2>
             </div>
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
               {inspection?.asset?.assetType?.name || 'Infrastructure'}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2 text-xs text-slate-400 border-t border-slate-800">
+          <div className="grid grid-cols-2 gap-3 pt-3 text-xs text-slate-600 border-t border-slate-100 font-medium">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <Calendar className="w-4 h-4 text-slate-400" />
               <span>Scheduled: {inspection?.scheduledDate ? new Date(inspection.scheduledDate).toLocaleDateString() : 'Today'}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate-500" />
+              <User className="w-4 h-4 text-slate-400" />
               <span>Inspector: {inspection?.inspector?.name || 'Field Operative'}</span>
             </div>
           </div>
@@ -194,13 +194,13 @@ export const InspectionExecutionPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Interactive Checklist */}
-          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+          <section className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 Standard Field Checklist
               </h3>
-              <span className="text-xs text-slate-500 font-mono">
+              <span className="text-xs text-slate-500 font-mono font-bold">
                 {checklist.filter(c => c.passed !== null).length}/{checklist.length} Verified
               </span>
             </div>
@@ -209,29 +209,29 @@ export const InspectionExecutionPage: React.FC = () => {
               {checklist.map((item) => (
                 <div
                   key={item.id}
-                  className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     item.passed === true
-                      ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-200'
+                      ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
                       : item.passed === false
-                      ? 'bg-rose-950/20 border-rose-800/40 text-rose-200'
-                      : 'bg-slate-800/50 border-slate-800 text-slate-300'
+                      ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                      : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 >
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-0.5">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-0.5">
                       {item.category}
                     </span>
-                    <p className="text-xs font-semibold leading-snug">{item.label}</p>
+                    <p className="text-xs font-bold leading-snug">{item.label}</p>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <button
                       type="button"
                       onClick={() => handleCheck(item.id, true)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
                         item.passed === true
-                          ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                       }`}
                     >
                       <Check className="w-3.5 h-3.5" /> Pass
@@ -240,10 +240,10 @@ export const InspectionExecutionPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleCheck(item.id, false)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
                         item.passed === false
-                          ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                       }`}
                     >
                       <X className="w-3.5 h-3.5" /> Defect
@@ -255,10 +255,10 @@ export const InspectionExecutionPage: React.FC = () => {
           </section>
 
           {/* Photo Capture & Attachments */}
-          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+          <section className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Camera className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                <Camera className="w-4 h-4 text-indigo-600" />
                 Field Photos & Evidence ({capturedPhotos.length})
               </h3>
             </div>
@@ -267,10 +267,10 @@ export const InspectionExecutionPage: React.FC = () => {
             {capturedPhotos.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {capturedPhotos.map((photo, idx) => (
-                  <div key={idx} className="relative group rounded-xl overflow-hidden aspect-video border border-slate-700 bg-black">
+                  <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-video border border-slate-200 bg-slate-100 shadow-xs">
                     <img src={photo.url} alt={photo.caption} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
-                      <p className="text-[10px] text-white font-medium truncate">{photo.caption}</p>
+                      <p className="text-[10px] text-white font-bold truncate">{photo.caption}</p>
                     </div>
                   </div>
                 ))}
@@ -280,8 +280,8 @@ export const InspectionExecutionPage: React.FC = () => {
             {/* Photo Input Controls */}
             <div className="space-y-3">
               <div className="flex gap-2">
-                <label className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white cursor-pointer transition-colors flex items-center justify-center gap-2">
-                  <Upload className="w-4 h-4 text-cyan-400" />
+                <label className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition-colors flex items-center justify-center gap-2">
+                  <Upload className="w-4 h-4 text-indigo-600" />
                   <span>Choose Photo / Device Camera</span>
                   <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} className="hidden" />
                 </label>
@@ -293,12 +293,12 @@ export const InspectionExecutionPage: React.FC = () => {
                   value={newPhotoUrl}
                   onChange={e => setNewPhotoUrl(e.target.value)}
                   placeholder="Or paste direct image URL (https://...)"
-                  className="flex-1 px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 font-medium"
                 />
                 <button
                   type="button"
                   onClick={handleAddPhoto}
-                  className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 text-xs font-bold hover:bg-cyan-400 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   Add
                 </button>
@@ -307,9 +307,9 @@ export const InspectionExecutionPage: React.FC = () => {
           </section>
 
           {/* Findings & Notes */}
-          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-indigo-400" />
+          <section className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-600" />
               Inspector Findings & Field Notes
             </h3>
             <textarea
@@ -317,22 +317,22 @@ export const InspectionExecutionPage: React.FC = () => {
               value={notes}
               onChange={e => setNotes(e.target.value)}
               placeholder="Enter detailed observations, sensor calibrations, structural remarks..."
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+              className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors resize-none font-medium"
             />
 
             {/* Overall Status Selection */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
                 Overall Inspection Outcome
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setOverallStatus('COMPLETED')}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     overallStatus === 'COMPLETED'
-                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   <CheckCircle2 className="w-4 h-4" /> Passed
@@ -341,10 +341,10 @@ export const InspectionExecutionPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setOverallStatus('FAILED')}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     overallStatus === 'FAILED'
-                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   <AlertTriangle className="w-4 h-4" /> Failed / Remediation
@@ -353,10 +353,10 @@ export const InspectionExecutionPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setOverallStatus('IN_PROGRESS')}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     overallStatus === 'IN_PROGRESS'
-                      ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   <Clock className="w-4 h-4" /> In Progress
@@ -370,16 +370,16 @@ export const InspectionExecutionPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting || isSubmitted}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 text-base font-extrabold shadow-2xl shadow-cyan-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-extrabold shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Submitting Field Report...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-4 h-4" />
                   <span>Sign & Complete Inspection</span>
                 </>
               )}
@@ -390,3 +390,4 @@ export const InspectionExecutionPage: React.FC = () => {
     </div>
   );
 };
+

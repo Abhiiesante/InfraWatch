@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Activity, ShieldAlert, Cpu, AlertTriangle, BarChart3, TrendingDown, Sliders } from 'lucide-react';
 import { io } from 'socket.io-client';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiClient } from '@/lib/api';
 import { KeepOutZoneEditor, KeepOutZoneConfig } from '../components/KeepOutZoneEditor';
 import { useCameras, useUpdateCamera } from '@/features/cameras/api/useCameras';
@@ -102,40 +102,40 @@ export function WarehouseDashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen p-8 max-w-7xl mx-auto space-y-8 animate-page-enter">
+    <div className="space-y-8 w-full animate-in fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-            <Boxes className="w-10 h-10 text-slate-900" />
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <Box className="w-8 h-8 text-indigo-600" />
             Warehouse Digital Twin
           </h1>
-          <p className="text-slate-800/70 mt-3 text-xl font-medium">
-            Logistics, Safety, & Fleet Tracking
+          <p className="text-slate-600 mt-1.5 text-base font-medium">
+            Logistics, Safety, & Autonomous Mobile Robot (AMR) Fleet Tracking.
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {frameSource === 'live' && (
-            <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+            <div className="px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-700 font-bold text-sm">Real Inference (Live Feed)</span>
+              <span className="text-emerald-800 font-bold text-xs">Real Inference (Live Feed)</span>
             </div>
           )}
           {frameSource === 'real_no_frame' && (
-            <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+            <div className="px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-amber-700 font-bold text-sm">Real Inference (Awaiting Stream)</span>
+              <span className="text-amber-800 font-bold text-xs">Real Inference (Awaiting Stream)</span>
             </div>
           )}
           {frameSource === 'simulated' && (
-            <div className="px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
+            <div className="px-4 py-2 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-              <span className="text-indigo-700 font-bold text-sm">Simulated Demo Mode</span>
+              <span className="text-indigo-800 font-bold text-xs">Simulated Demo Mode</span>
             </div>
           )}
           <button
             onClick={() => setIsZoneEditorOpen(true)}
-            className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 flex items-center gap-2"
+            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/20 flex items-center gap-2 text-xs cursor-pointer"
           >
             <Sliders className="w-4 h-4" />
             Configure Zones
@@ -155,60 +155,60 @@ export function WarehouseDashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-6 shadow-xl flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
           <div>
-            <p className="text-slate-600 font-bold mb-1">Active Fleet</p>
-            <p className="text-4xl font-extrabold text-slate-900">{stats.activeAMRs}</p>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Active Fleet</p>
+            <p className="text-3xl font-black text-slate-900">{stats.activeAMRs}</p>
           </div>
-          <div className="w-14 h-14 rounded-full bg-slate-900 flex items-center justify-center">
-            <Cpu className="w-7 h-7 text-white" />
+          <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
+            <Cpu className="w-7 h-7" />
           </div>
         </div>
 
-        <div className={`bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-6 shadow-xl flex items-center justify-between transition-colors ${stats.zoneViolations > 0 ? 'bg-rose-50/80 border-rose-200' : ''}`}>
+        <div className={`bg-white rounded-3xl border p-6 shadow-sm hover:shadow-md transition-all flex items-center justify-between ${stats.zoneViolations > 0 ? 'bg-rose-50/70 border-rose-300' : 'border-slate-200'}`}>
           <div>
-            <p className="text-slate-600 font-bold mb-1">Zone Violations</p>
-            <p className="text-4xl font-extrabold text-rose-600">{stats.zoneViolations}</p>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Zone Violations</p>
+            <p className="text-3xl font-black text-rose-600">{stats.zoneViolations}</p>
           </div>
-          <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center">
-            <ShieldAlert className="w-7 h-7 text-rose-600" />
+          <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+            <ShieldAlert className="w-7 h-7" />
           </div>
         </div>
 
-        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-6 shadow-xl flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
           <div>
-            <p className="text-slate-600 font-bold mb-1">Rack Utilization</p>
-            <p className="text-4xl font-extrabold text-slate-900">{stats.rackUtilization}%</p>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Rack Utilization</p>
+            <p className="text-3xl font-black text-slate-900">{stats.rackUtilization}%</p>
           </div>
-          <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center">
-            <Box className="w-7 h-7 text-indigo-600" />
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+            <Box className="w-7 h-7" />
           </div>
         </div>
 
-        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-6 shadow-xl flex items-center justify-between">
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
           <div>
-            <p className="text-slate-600 font-bold mb-1">Live Safety Score</p>
-            <p className={`text-4xl font-extrabold ${stats.safetyScore < 90 ? 'text-amber-500' : 'text-emerald-600'}`}>{stats.safetyScore}</p>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Live Safety Score</p>
+            <p className={`text-3xl font-black ${stats.safetyScore < 90 ? 'text-amber-600' : 'text-emerald-700'}`}>{stats.safetyScore}%</p>
           </div>
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${stats.safetyScore < 90 ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${stats.safetyScore < 90 ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
             <Activity className={`w-7 h-7 ${stats.safetyScore < 90 ? 'text-amber-600' : 'text-emerald-600'}`} />
           </div>
         </div>
       </div>
       
       {/* 2D Floorplan Live Map */}
-      <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-8 shadow-xl min-h-[600px] flex flex-col relative overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm min-h-[600px] flex flex-col relative overflow-hidden">
          <div className="flex items-center justify-between mb-4 relative z-10">
-           <h2 className="text-xl font-bold text-slate-800">Live Spatial Map & Tracking</h2>
+           <h2 className="text-xl font-extrabold text-slate-900">Live Spatial Map & Tracking</h2>
            <div className="flex gap-4 text-xs font-bold">
-             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-amber-500 rounded" /> Personnel</span>
-             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-cyan-500 rounded" /> Fleet (AMR/Forklift)</span>
-             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-rose-500 rounded" /> Violation</span>
+             <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-amber-500 rounded" /> Personnel</span>
+             <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-cyan-500 rounded" /> Fleet (AMR/Forklift)</span>
+             <span className="flex items-center gap-1.5"><div className="w-3 h-3 bg-rose-500 rounded" /> Violation</span>
            </div>
          </div>
          
          {/* The Map Area */}
-         <div className="flex-1 relative bg-slate-900 rounded-xl overflow-hidden border-2 border-slate-800">
+         <div className="flex-1 relative bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 min-h-[450px]">
            {/* Background Image of Warehouse */}
            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200" className="absolute inset-0 w-full h-full object-cover opacity-30" alt="Warehouse Map" />
            
@@ -259,14 +259,14 @@ export function WarehouseDashboardPage() {
       {/* Historical Safety Trends (Gold Layer) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Detections Over Time */}
-        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-8 shadow-xl">
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-800">Detection Trends (24h)</h3>
-              <p className="text-xs text-slate-500">Hourly aggregated from Gold metrics layer</p>
+              <h3 className="text-lg font-extrabold text-slate-900">Detection Trends (24h)</h3>
+              <p className="text-xs text-slate-500 font-medium">Hourly aggregated from Gold metrics layer</p>
             </div>
           </div>
           {goldMetrics.length > 0 ? (
@@ -282,12 +282,12 @@ export function WarehouseDashboardPage() {
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="timestamp" tickFormatter={(t: string) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} fontSize={11} stroke="#94a3b8" />
                 <YAxis fontSize={11} stroke="#94a3b8" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px' }}
-                  labelFormatter={(t: string) => new Date(t).toLocaleString()}
+                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '12px', color: '#0f172a' }}
+                  labelFormatter={(label) => String(label ? new Date(label as any).toLocaleString() : '')}
                 />
                 <Area type="monotone" dataKey="totalDetections" stroke="#6366f1" fill="url(#gradDetections)" strokeWidth={2} name="Total Detections" />
                 <Area type="monotone" dataKey="zoneViolations" stroke="#ef4444" fill="url(#gradViolations)" strokeWidth={2} name="Zone Violations" />
@@ -305,31 +305,31 @@ export function WarehouseDashboardPage() {
         </div>
 
         {/* Gold Totals Summary */}
-        <div className="bg-[rgba(255,255,255,0.65)] backdrop-blur-2xl rounded-2xl border border-[rgba(255,255,255,0.8)] p-8 shadow-xl">
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center">
               <TrendingDown className="w-5 h-5 text-rose-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-800">Safety Summary (24h)</h3>
-              <p className="text-xs text-slate-500">Aggregated from the Gold metrics pipeline</p>
+              <h3 className="text-lg font-extrabold text-slate-900">Safety Summary (24h)</h3>
+              <p className="text-xs text-slate-500 font-medium">Aggregated from the Gold metrics pipeline</p>
             </div>
           </div>
           {goldTotals ? (
             <div className="grid grid-cols-2 gap-6">
-              <div className="bg-slate-50 rounded-xl p-6 text-center">
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-center">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Total Detections</p>
                 <p className="text-4xl font-extrabold text-indigo-600">{goldTotals.totalDetections}</p>
               </div>
-              <div className="bg-rose-50 rounded-xl p-6 text-center">
+              <div className="bg-rose-50 border border-rose-100 rounded-2xl p-6 text-center">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Zone Violations</p>
                 <p className="text-4xl font-extrabold text-rose-600">{goldTotals.zoneViolations}</p>
               </div>
-              <div className="bg-cyan-50 rounded-xl p-6 text-center">
+              <div className="bg-cyan-50 border border-cyan-100 rounded-2xl p-6 text-center">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Peak Active AMRs</p>
                 <p className="text-4xl font-extrabold text-cyan-600">{goldTotals.maxActiveAMRs}</p>
               </div>
-              <div className="bg-emerald-50 rounded-xl p-6 text-center">
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 text-center">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Data Points</p>
                 <p className="text-4xl font-extrabold text-emerald-600">{goldTotals.dataPoints}</p>
               </div>
@@ -349,3 +349,4 @@ export function WarehouseDashboardPage() {
     </div>
   );
 }
+

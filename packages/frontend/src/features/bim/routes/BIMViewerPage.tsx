@@ -40,13 +40,18 @@ function generateStructure(
 
   const isTokamak = typeUpper.includes('REACTOR') || typeUpper.includes('TOKAMAK') || nameUpper.includes('ITER') || nameUpper.includes('TOKAMAK') || nameUpper.includes('FUSION') || assetId === 999;
   const isCERN = typeUpper.includes('COLLIDER') || nameUpper.includes('CERN') || nameUpper.includes('HADRON') || nameUpper.includes('ATLAS');
-  const isArchBridge = typeUpper.includes('ARCH') || nameUpper.includes('CHENAB') || nameUpper.includes('RAILWAY ARCH');
-  const isCableBridge = typeUpper.includes('BRIDGE') || nameUpper.includes('BANDRA') || nameUpper.includes('SEA LINK') || nameUpper.includes('AKASHI') || nameUpper.includes('PEARL');
-  const isDam = typeUpper.includes('DAM') || nameUpper.includes('THREE GORGES') || nameUpper.includes('YANGTZE') || nameUpper.includes('HOOVER');
-  const isTunnel = typeUpper.includes('TUNNEL') || nameUpper.includes('GOTTHARD');
-  const isWind = typeUpper.includes('WIND') || nameUpper.includes('HORNSEA') || nameUpper.includes('TURBINE');
-  const isSolar = typeUpper.includes('SOLAR') || nameUpper.includes('BHADLA') || nameUpper.includes('PHOTOVOLTAIC');
-  const isWarehouse = typeUpper.includes('WAREHOUSE') || typeUpper.includes('LOGISTICS') || nameUpper.includes('WAREHOUSE') || nameUpper.includes('HUB');
+  const isArchBridge = typeUpper.includes('ARCH') || nameUpper.includes('CHENAB') || nameUpper.includes('RAILWAY ARCH') || nameUpper.includes('KAMALA');
+  const isCableBridge = typeUpper.includes('CABLE') || typeUpper.includes('SUSPENSION') || typeUpper.includes('BRIDGE') || nameUpper.includes('BANDRA') || nameUpper.includes('SEA LINK') || nameUpper.includes('WESTSHORE') || nameUpper.includes('PEARL') || nameUpper.includes('NARUTO') || nameUpper.includes('AKASHI') || nameUpper.includes('STRAIT');
+  const isDam = typeUpper.includes('DAM') || nameUpper.includes('THREE GORGES') || nameUpper.includes('YANGTZE') || nameUpper.includes('HOOVER') || nameUpper.includes('LONGSHAN') || nameUpper.includes('REDROCK');
+  const isTunnel = typeUpper.includes('TUNNEL') || nameUpper.includes('GOTTHARD') || nameUpper.includes('ALBION');
+  const isWind = typeUpper.includes('WIND') || nameUpper.includes('HORNSEA') || nameUpper.includes('TURBINE') || nameUpper.includes('NORTHSEA');
+  const isSolar = typeUpper.includes('SOLAR') || nameUpper.includes('BHADLA') || nameUpper.includes('PHOTOVOLTAIC') || nameUpper.includes('SURYANAGAR');
+  const isSubstation = nameUpper.includes('SUBSTATION') || nameUpper.includes('DELTA STATION') || nameUpper.includes('TRANSFORMER') || typeUpper.includes('SUBSTATION');
+  const isPipelineCorridor = nameUpper.includes('PIPELINE') || nameUpper.includes('ZETA CORRIDOR') || (nameUpper.includes('REFINERY') && nameUpper.includes('PIPELINE'));
+  const isWarehouse = nameUpper.includes('WAREHOUSE') || nameUpper.includes('HUB EPSILON') || typeUpper.includes('WAREHOUSE') || nameUpper.includes('RACKING');
+  const isDemolition = nameUpper.includes('DEMOLITION') || nameUpper.includes('ALPHA SITE') || nameUpper.includes('CONSTRUCTION');
+  const isPlantTowers = nameUpper.includes('BETA COMPLEX') || nameUpper.includes('PROCESSING TOWERS') || (nameUpper.includes('PLANT') && nameUpper.includes('TOWER')) || nameUpper.includes('FRACTIONATION');
+  const isIndustrial = typeUpper.includes('INDUSTRIAL') || typeUpper.includes('FACILITY') || typeUpper.includes('PLANT') || nameUpper.includes('INDUSTRIAL');
 
   if (isTokamak) {
     // 1. Toroidal Vacuum Chamber Vessel (Torus Core)
@@ -495,6 +500,465 @@ function generateStructure(
     return { nodes, edges, hotspotNodes };
   }
 
+  if (isSubstation) {
+    // ⚡ 1. ELECTRICAL SUBSTATION & 230kV GRID TERMINAL (Delta Station)
+    // Detailed Power Transformers, Radiator Cooling Fin Banks, 3 Bushings, Lattice Gantry Towers & Switchgear
+
+    // Main Power Transformer Box Tank (Center)
+    const tW = 0.9, tH = 0.8, tD = 0.7;
+    const tBase = nodes.length;
+    nodes.push({ x: -tW/2, y: -0.6, z: -tD/2, stress: getStress(1) });
+    nodes.push({ x:  tW/2, y: -0.6, z: -tD/2, stress: getStress(2) });
+    nodes.push({ x:  tW/2, y: -0.6, z:  tD/2, stress: getStress(3) });
+    nodes.push({ x: -tW/2, y: -0.6, z:  tD/2, stress: getStress(4) });
+    nodes.push({ x: -tW/2, y: -0.6 + tH, z: -tD/2, stress: getStress(5) });
+    nodes.push({ x:  tW/2, y: -0.6 + tH, z: -tD/2, stress: getStress(6) });
+    nodes.push({ x:  tW/2, y: -0.6 + tH, z:  tD/2, stress: getStress(7) });
+    nodes.push({ x: -tW/2, y: -0.6 + tH, z:  tD/2, stress: getStress(8) });
+
+    // Transformer box edges
+    edges.push({ a: tBase, b: tBase + 1 }, { a: tBase + 1, b: tBase + 2 }, { a: tBase + 2, b: tBase + 3 }, { a: tBase + 3, b: tBase });
+    edges.push({ a: tBase + 4, b: tBase + 5 }, { a: tBase + 5, b: tBase + 6 }, { a: tBase + 6, b: tBase + 7 }, { a: tBase + 7, b: tBase + 4 });
+    edges.push({ a: tBase, b: tBase + 4 }, { a: tBase + 1, b: tBase + 5 }, { a: tBase + 2, b: tBase + 6 }, { a: tBase + 3, b: tBase + 7 });
+
+    // Radiator Cooling Fin Banks (Left and Right)
+    for (const side of [-1, 1]) {
+      const xOffset = side * (tW/2 + 0.25);
+      for (let fin = 0; fin < 5; fin++) {
+        const z = -tD/2 + (fin / 4) * tD;
+        const finBase = nodes.length;
+        nodes.push({ x: xOffset - 0.15, y: -0.55, z, stress: getStress(20 + fin) });
+        nodes.push({ x: xOffset + 0.15, y: -0.55, z, stress: getStress(21 + fin) });
+        nodes.push({ x: xOffset + 0.15, y:  0.1, z, stress: getStress(22 + fin) });
+        nodes.push({ x: xOffset - 0.15, y:  0.1, z, stress: getStress(23 + fin) });
+        edges.push({ a: finBase, b: finBase + 1 }, { a: finBase + 1, b: finBase + 2 }, { a: finBase + 2, b: finBase + 3 }, { a: finBase + 3, b: finBase });
+      }
+    }
+
+    // Top Oil Conservator Drum (Horizontal Cylinder on top of Transformer)
+    const drumSegs = 8;
+    for (let c = 0; c < 2; c++) {
+      const z = -0.3 + c * 0.6;
+      const cBase = nodes.length;
+      for (let s = 0; s < drumSegs; s++) {
+        const a = (s / drumSegs) * Math.PI * 2;
+        nodes.push({ x: Math.cos(a) * 0.18, y: 0.35 + Math.sin(a) * 0.18, z, stress: getStress(40 + s) });
+      }
+      for (let s = 0; s < drumSegs; s++) {
+        edges.push({ a: cBase + s, b: cBase + ((s + 1) % drumSegs) });
+        if (c === 0) {
+          edges.push({ a: cBase + s, b: cBase + s + drumSegs });
+        }
+      }
+    }
+
+    // 3 High-Voltage Porcelain Bushings on top of Transformer
+    for (let b = 0; b < 3; b++) {
+      const bx = -0.3 + b * 0.3;
+      const bBase = nodes.length;
+      nodes.push({ x: bx, y: 0.2, z: 0.25, stress: 0.3 });
+      nodes.push({ x: bx + 0.05, y: 0.55, z: 0.4, stress: 0.8 });
+      nodes.push({ x: bx + 0.08, y: 0.85, z: 0.55, stress: 0.9 });
+      edges.push({ a: bBase, b: bBase + 1 }, { a: bBase + 1, b: bBase + 2 });
+    }
+
+    // Substation Lattice Gantry Towers (Left and Right Overhead Gantry)
+    for (const gx of [-1.5, 1.5]) {
+      const gBase = nodes.length;
+      // 4 tower base legs
+      nodes.push({ x: gx - 0.2, y: -0.6, z: -0.5, stress: 0.3 });
+      nodes.push({ x: gx + 0.2, y: -0.6, z: -0.5, stress: 0.3 });
+      nodes.push({ x: gx + 0.2, y: -0.6, z:  0.5, stress: 0.3 });
+      nodes.push({ x: gx - 0.2, y: -0.6, z:  0.5, stress: 0.3 });
+      // Gantry peak top
+      nodes.push({ x: gx, y: 1.4, z: -0.2, stress: 0.5 });
+      nodes.push({ x: gx, y: 1.4, z:  0.2, stress: 0.5 });
+
+      // Legs to top
+      edges.push({ a: gBase, b: gBase + 4 }, { a: gBase + 1, b: gBase + 4 });
+      edges.push({ a: gBase + 2, b: gBase + 5 }, { a: gBase + 3, b: gBase + 5 });
+      edges.push({ a: gBase + 4, b: gBase + 5 });
+      // Cross lattice bracing
+      nodes.push({ x: gx, y: 0.4, z: 0, stress: 0.4 });
+      edges.push({ a: gBase, b: gBase + 6 }, { a: gBase + 1, b: gBase + 6 }, { a: gBase + 2, b: gBase + 6 }, { a: gBase + 3, b: gBase + 6 });
+    }
+
+    // Horizontal Overhead Busbar Crossarm & Conductors connecting gantries
+    const busBase = nodes.length;
+    for (let wire = 0; wire < 3; wire++) {
+      const wz = -0.3 + wire * 0.3;
+      nodes.push({ x: -1.5, y: 1.3, z: wz, stress: 0.6 });
+      nodes.push({ x:  1.5, y: 1.3, z: wz, stress: 0.6 });
+      edges.push({ a: busBase + wire * 2, b: busBase + wire * 2 + 1 });
+      // Hanging insulator string to transformer
+      nodes.push({ x: -0.3 + wire * 0.3, y: 1.1, z: wz, stress: 0.7 });
+      edges.push({ a: busBase + wire * 2, b: busBase + wire * 2 + 2 });
+    }
+
+    hotspotNodes.push({
+      x: 0.0,
+      y: 0.25,
+      z: 0.0,
+      label: rawHotspots[0]?.elementId || 'Power Transformer Primary Core Bay',
+      valueMPa: rawHotspots[0]?.valueMPa || 158.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+
+    return { nodes, edges, hotspotNodes };
+  }
+
+  if (isPipelineCorridor) {
+    // 🛢️ 2. OIL & GAS REFINERY & MULTI-TIER PIPELINE CORRIDOR (Zeta Corridor)
+    // Multi-tier Pipe Sleepers, Long Hydrocarbon Conduits, Thermal U-Expansion Loops, ESD Valve Manifold & Tank
+
+    // Multi-tier Pipe Sleeper Racks (8 bays spanning lengthwise)
+    const sleeperBays = 9;
+    const rackLen = 3.2;
+    for (let b = 0; b < sleeperBays; b++) {
+      const x = -rackLen/2 + (b / (sleeperBays - 1)) * rackLen;
+      const sBase = nodes.length;
+      // Foundation posts
+      nodes.push({ x, y: -0.6, z: -0.4, stress: getStress(10 + b) });
+      nodes.push({ x, y: -0.6, z:  0.4, stress: getStress(11 + b) });
+      // Lower tier crossbar (Y = -0.2)
+      nodes.push({ x, y: -0.2, z: -0.45, stress: getStress(12 + b) });
+      nodes.push({ x, y: -0.2, z:  0.45, stress: getStress(13 + b) });
+      // Upper tier crossbar (Y = 0.3)
+      nodes.push({ x, y: 0.3, z: -0.45, stress: getStress(14 + b) });
+      nodes.push({ x, y: 0.3, z:  0.45, stress: getStress(15 + b) });
+
+      edges.push({ a: sBase, b: sBase + 2 }, { a: sBase + 1, b: sBase + 3 });
+      edges.push({ a: sBase + 2, b: sBase + 3 });
+      edges.push({ a: sBase + 2, b: sBase + 4 }, { a: sBase + 3, b: sBase + 5 });
+      edges.push({ a: sBase + 4, b: sBase + 5 });
+    }
+
+    // 6 Continuous Parallel Process Pipelines (3 on lower tier, 3 on upper tier)
+    for (const tierY of [-0.2, 0.3]) {
+      for (let p = 0; p < 3; p++) {
+        const pZ = -0.3 + p * 0.3;
+        const pipeBase = nodes.length;
+        for (let b = 0; b < sleeperBays; b++) {
+          const px = -rackLen/2 + (b / (sleeperBays - 1)) * rackLen;
+          nodes.push({ x: px, y: tierY + 0.04, z: pZ, stress: getStress(50 + p * 10 + b) });
+          if (b > 0) {
+            edges.push({ a: pipeBase + b - 1, b: pipeBase + b });
+          }
+        }
+      }
+    }
+
+    // Thermal Expansion U-Loop (Omega Bend branching upwards at mid-span)
+    const uBase = nodes.length;
+    nodes.push({ x: -0.2, y: 0.34, z: 0.0, stress: 0.5 });
+    nodes.push({ x: -0.2, y: 0.75, z: 0.0, stress: 0.7 });
+    nodes.push({ x: -0.2, y: 0.75, z: 0.6, stress: 0.8 });
+    nodes.push({ x:  0.2, y: 0.75, z: 0.6, stress: 0.8 });
+    nodes.push({ x:  0.2, y: 0.75, z: 0.0, stress: 0.7 });
+    nodes.push({ x:  0.2, y: 0.34, z: 0.0, stress: 0.5 });
+    edges.push({ a: uBase, b: uBase + 1 }, { a: uBase + 1, b: uBase + 2 }, { a: uBase + 2, b: uBase + 3 }, { a: uBase + 3, b: uBase + 4 }, { a: uBase + 4, b: uBase + 5 });
+
+    // Floating-Roof Crude Oil Storage Tank (Offset in background)
+    const tankSegs = 16;
+    const tankR = 0.55;
+    const tankCx = 1.1, tankCz = -0.8;
+    for (let r = 0; r < 4; r++) {
+      const ty = -0.6 + (r / 3) * 0.7;
+      const tRingBase = nodes.length;
+      for (let s = 0; s < tankSegs; s++) {
+        const a = (s / tankSegs) * Math.PI * 2;
+        nodes.push({ x: tankCx + Math.cos(a) * tankR, y: ty, z: tankCz + Math.sin(a) * tankR, stress: getStress(80 + r * tankSegs + s) });
+      }
+      for (let s = 0; s < tankSegs; s++) {
+        edges.push({ a: tRingBase + s, b: tRingBase + ((s + 1) % tankSegs) });
+        if (r < 3) {
+          edges.push({ a: tRingBase + s, b: tRingBase + s + tankSegs });
+        }
+      }
+    }
+
+    // Automated Emergency Shutdown (ESD) Valve Manifold Block
+    const vBase = nodes.length;
+    nodes.push({ x: -0.8, y: -0.16, z: 0.0, stress: 0.8 });
+    nodes.push({ x: -0.8, y:  0.1, z: 0.0, stress: 0.9 });
+    nodes.push({ x: -0.7, y:  0.1, z: 0.0, stress: 0.6 });
+    nodes.push({ x: -0.9, y:  0.1, z: 0.0, stress: 0.6 });
+    edges.push({ a: vBase, b: vBase + 1 }, { a: vBase + 1, b: vBase + 2 }, { a: vBase + 1, b: vBase + 3 });
+
+    hotspotNodes.push({
+      x: 0.0,
+      y: 0.75,
+      z: 0.6,
+      label: rawHotspots[0]?.elementId || 'Thermal Expansion U-Loop Apex',
+      valueMPa: rawHotspots[0]?.valueMPa || 164.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+
+    return { nodes, edges, hotspotNodes };
+  }
+
+  if (isWarehouse) {
+    // 📦 3. LOGISTICS WAREHOUSE & HIGH-BAY AUTOMATED FACILITY (Hub Epsilon)
+    // 4 Aisle High-Bay Pallet Racks, AMR Travel Lanes, Sortation Conveyor Belt & Building Portal Trusses
+
+    const aisleCount = 3;
+    const baysPerAisle = 6;
+    const rackLevels = 4;
+    const rW = 2.4, rD = 1.4, rH = 1.4;
+
+    // Pallet Racking Matrix
+    for (let a = 0; a < aisleCount; a++) {
+      const az = -rD/2 + (a / (aisleCount - 1)) * rD;
+      for (let b = 0; b < baysPerAisle; b++) {
+        const bx = -rW/2 + (b / (baysPerAisle - 1)) * rW;
+        for (let l = 0; l <= rackLevels; l++) {
+          const ly = -0.6 + (l / rackLevels) * rH;
+          const nodeBase = nodes.length;
+          // Front and back upright posts
+          nodes.push({ x: bx, y: ly, z: az - 0.12, stress: getStress(a * 50 + b * 10 + l) });
+          nodes.push({ x: bx, y: ly, z: az + 0.12, stress: getStress(a * 50 + b * 10 + l + 1) });
+          // Cross beam between front and back
+          edges.push({ a: nodeBase, b: nodeBase + 1 });
+        }
+      }
+
+      // Connect upright vertical posts & horizontal load beams per aisle
+      const aisleStart = nodes.length - baysPerAisle * (rackLevels + 1) * 2;
+      for (let b = 0; b < baysPerAisle; b++) {
+        for (let l = 0; l < rackLevels; l++) {
+          const curr = aisleStart + (b * (rackLevels + 1) + l) * 2;
+          const next = curr + 2;
+          edges.push({ a: curr, b: next });
+          edges.push({ a: curr + 1, b: next + 1 });
+          // Diagonal bracing
+          if (l % 2 === 0) edges.push({ a: curr, b: next + 1 });
+        }
+        // Horizontal load beams to next bay
+        if (b < baysPerAisle - 1) {
+          for (let l = 1; l <= rackLevels; l++) {
+            const curr = aisleStart + (b * (rackLevels + 1) + l) * 2;
+            const adj = aisleStart + ((b + 1) * (rackLevels + 1) + l) * 2;
+            edges.push({ a: curr, b: adj });
+            edges.push({ a: curr + 1, b: adj + 1 });
+          }
+        }
+      }
+    }
+
+    // Continuous Sortation Conveyor Loop (Elevated at Y = -0.35)
+    const convBase = nodes.length;
+    const cLen = 2.0;
+    nodes.push({ x: -cLen/2, y: -0.4, z: 0.9, stress: 0.3 });
+    nodes.push({ x:  cLen/2, y: -0.4, z: 0.9, stress: 0.3 });
+    nodes.push({ x:  cLen/2, y: -0.4, z: 1.1, stress: 0.3 });
+    nodes.push({ x: -cLen/2, y: -0.4, z: 1.1, stress: 0.3 });
+    edges.push({ a: convBase, b: convBase + 1 }, { a: convBase + 1, b: convBase + 2 }, { a: convBase + 2, b: convBase + 3 }, { a: convBase + 3, b: convBase });
+    // Support legs
+    for (let i = 0; i < 4; i++) {
+      nodes.push({ x: (i % 2 === 0 ? -cLen/2 : cLen/2), y: -0.6, z: (i < 2 ? 0.9 : 1.1), stress: 0.2 });
+      edges.push({ a: convBase + i, b: convBase + 4 + i });
+    }
+
+    // Building Roof Portal Frame Trusses (Overhead Span)
+    const trussBases = [-1.1, 0, 1.1];
+    for (const tx of trussBases) {
+      const tBase = nodes.length;
+      nodes.push({ x: tx, y: 0.85, z: -1.0, stress: 0.4 });
+      nodes.push({ x: tx, y: 1.25, z:  0.0, stress: 0.6 });
+      nodes.push({ x: tx, y: 0.85, z:  1.0, stress: 0.4 });
+      edges.push({ a: tBase, b: tBase + 1 }, { a: tBase + 1, b: tBase + 2 });
+    }
+
+    hotspotNodes.push({
+      x: 0.0,
+      y: 0.1,
+      z: 0.0,
+      label: rawHotspots[0]?.elementId || 'High-Bay Rack Bay C-04 Load Beam',
+      valueMPa: rawHotspots[0]?.valueMPa || 128.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+
+    return { nodes, edges, hotspotNodes };
+  }
+
+  if (isDemolition) {
+    // 🏗️ 4. DEMOLITION & REBAR CONSTRUCTION SITE (Alpha Site)
+    // Exposed Concrete Rebar Column Cages, Tubular Scaffolding Tower, Mobile Crane Lattice Truss & Concrete Footings
+
+    // 4 Exposed Steel Rebar Column Cages (Grid of exposed vertical steel rods + tie hoops)
+    const rebarPositions = [
+      { x: -0.9, z: -0.6 },
+      { x: -0.9, z:  0.4 },
+      { x:  0.1, z: -0.6 },
+      { x:  0.1, z:  0.4 },
+    ];
+
+    for (const pos of rebarPositions) {
+      const rebarBase = nodes.length;
+      const barCount = 6;
+      const colR = 0.14;
+      // Vertical rebar rods
+      for (let b = 0; b < barCount; b++) {
+        const a = (b / barCount) * Math.PI * 2;
+        const rx = pos.x + Math.cos(a) * colR;
+        const rz = pos.z + Math.sin(a) * colR;
+        nodes.push({ x: rx, y: -0.6, z: rz, stress: 0.3 });
+        nodes.push({ x: rx, y:  0.7, z: rz, stress: 0.85 });
+        edges.push({ a: rebarBase + b * 2, b: rebarBase + b * 2 + 1 });
+      }
+      // Rebar tie hoops at 4 levels
+      for (let ring = 0; ring < 4; ring++) {
+        const ry = -0.4 + ring * 0.3;
+        const ringBase = nodes.length;
+        for (let b = 0; b < barCount; b++) {
+          const a = (b / barCount) * Math.PI * 2;
+          nodes.push({ x: pos.x + Math.cos(a) * colR, y: ry, z: pos.z + Math.sin(a) * colR, stress: 0.7 });
+        }
+        for (let b = 0; b < barCount; b++) {
+          edges.push({ a: ringBase + b, b: ringBase + ((b + 1) % barCount) });
+        }
+      }
+    }
+
+    // Tubular Scaffolding Framework Tower (Right Side)
+    const scW = 1.0, scD = 0.8, scH = 1.6;
+    const scBase = nodes.length;
+    for (let l = 0; l <= 4; l++) {
+      const sy = -0.6 + (l / 4) * scH;
+      nodes.push({ x: 0.5, y: sy, z: -scD/2, stress: getStress(10 + l) });
+      nodes.push({ x: 0.5 + scW, y: sy, z: -scD/2, stress: getStress(11 + l) });
+      nodes.push({ x: 0.5 + scW, y: sy, z:  scD/2, stress: getStress(12 + l) });
+      nodes.push({ x: 0.5, y: sy, z:  scD/2, stress: getStress(13 + l) });
+      const lb = scBase + l * 4;
+      edges.push({ a: lb, b: lb + 1 }, { a: lb + 1, b: lb + 2 }, { a: lb + 2, b: lb + 3 }, { a: lb + 3, b: lb });
+      if (l < 4) {
+        edges.push({ a: lb, b: lb + 4 }, { a: lb + 1, b: lb + 5 }, { a: lb + 2, b: lb + 6 }, { a: lb + 3, b: lb + 7 });
+        // Diagonal cross-brace
+        edges.push({ a: lb, b: lb + 5 }, { a: lb + 3, b: lb + 6 });
+      }
+    }
+
+    // Mobile Crane / Hoist Mast Lattice Truss (Tall Vertical Tower with Jib Boom)
+    const craneBase = nodes.length;
+    const cx = -0.4, cz = 0.9;
+    nodes.push({ x: cx - 0.12, y: -0.6, z: cz - 0.12, stress: 0.4 });
+    nodes.push({ x: cx + 0.12, y: -0.6, z: cz - 0.12, stress: 0.4 });
+    nodes.push({ x: cx + 0.12, y: -0.6, z: cz + 0.12, stress: 0.4 });
+    nodes.push({ x: cx - 0.12, y: -0.6, z: cz + 0.12, stress: 0.4 });
+
+    nodes.push({ x: cx - 0.12, y: 1.5, z: cz - 0.12, stress: 0.8 });
+    nodes.push({ x: cx + 0.12, y: 1.5, z: cz - 0.12, stress: 0.8 });
+    nodes.push({ x: cx + 0.12, y: 1.5, z: cz + 0.12, stress: 0.8 });
+    nodes.push({ x: cx - 0.12, y: 1.5, z: cz + 0.12, stress: 0.8 });
+
+    edges.push({ a: craneBase, b: craneBase + 4 }, { a: craneBase + 1, b: craneBase + 5 }, { a: craneBase + 2, b: craneBase + 6 }, { a: craneBase + 3, b: craneBase + 7 });
+    // Horizontal Crane Jib
+    nodes.push({ x: cx - 1.2, y: 1.45, z: cz, stress: 0.9 });
+    edges.push({ a: craneBase + 4, b: craneBase + 8 });
+
+    hotspotNodes.push({
+      x: -0.9,
+      y: 0.4,
+      z: -0.6,
+      label: rawHotspots[0]?.elementId || 'Steel Rebar Grid Foundation Cage #01',
+      valueMPa: rawHotspots[0]?.valueMPa || 172.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'CRITICAL',
+    });
+
+    return { nodes, edges, hotspotNodes };
+  }
+
+  if (isPlantTowers || isIndustrial) {
+    // 🏭 5. HEAVY INDUSTRIAL PLANT & PROCESSING TOWERS (Beta Complex)
+    // Vertical Fractionation Columns, Reaction Vessels, High-Pressure Pipe Bridges & Heat Exchangers
+
+    // Processing Column #1 (Tall Distillation Fractionation Column)
+    const towerSegs = 14;
+    const towerH = 2.6;
+    const towerR = 0.38;
+    for (let ring = 0; ring <= 10; ring++) {
+      const y = -0.6 + (ring / 10) * towerH;
+      const ringBase = nodes.length;
+      for (let s = 0; s < towerSegs; s++) {
+        const a = (s / towerSegs) * Math.PI * 2;
+        nodes.push({ x: -0.85 + Math.cos(a) * towerR, y, z: -0.2 + Math.sin(a) * towerR, stress: getStress(ring * towerSegs + s) });
+      }
+      for (let s = 0; s < towerSegs; s++) {
+        edges.push({ a: ringBase + s, b: ringBase + ((s + 1) % towerSegs) });
+        if (ring < 10) {
+          edges.push({ a: ringBase + s, b: ringBase + s + towerSegs });
+        }
+      }
+    }
+
+    // Secondary Stripper Tower (Shorter offset column)
+    const sColH = 1.7;
+    const sColR = 0.28;
+    for (let ring = 0; ring <= 6; ring++) {
+      const y = -0.6 + (ring / 6) * sColH;
+      const ringBase = nodes.length;
+      for (let s = 0; s < 10; s++) {
+        const a = (s / 10) * Math.PI * 2;
+        nodes.push({ x: 0.45 + Math.cos(a) * sColR, y, z: -0.5 + Math.sin(a) * sColR, stress: getStress(120 + ring * 10 + s) });
+      }
+      for (let s = 0; s < 10; s++) {
+        edges.push({ a: ringBase + s, b: ringBase + ((s + 1) % 10) });
+        if (ring < 6) {
+          edges.push({ a: ringBase + s, b: ringBase + s + 10 });
+        }
+      }
+    }
+
+    // Overhead High-Pressure Pipe Bridge connecting the towers
+    const pBridgeBase = nodes.length;
+    for (let b = 0; b < 6; b++) {
+      const bx = -0.85 + (b / 5) * 1.3;
+      nodes.push({ x: bx, y: 0.6, z: -0.2, stress: 0.7 });
+      nodes.push({ x: bx, y: 0.6, z: -0.5, stress: 0.7 });
+      if (b > 0) {
+        edges.push({ a: pBridgeBase + (b - 1) * 2, b: pBridgeBase + b * 2 });
+        edges.push({ a: pBridgeBase + (b - 1) * 2 + 1, b: pBridgeBase + b * 2 + 1 });
+      }
+    }
+
+    // Spherical Butane / LPG Storage Vessel (Sphere on 6 support legs)
+    const sphereSegs = 12;
+    const sphereR = 0.45;
+    const sx = 0.9, sz = 0.6;
+    for (let ring = 1; ring <= 4; ring++) {
+      const phi = (ring / 5) * Math.PI;
+      const ringR = Math.sin(phi) * sphereR;
+      const ry = -0.1 + Math.cos(phi) * sphereR;
+      const sRingBase = nodes.length;
+      for (let s = 0; s < sphereSegs; s++) {
+        const a = (s / sphereSegs) * Math.PI * 2;
+        nodes.push({ x: sx + Math.cos(a) * ringR, y: ry, z: sz + Math.sin(a) * ringR, stress: getStress(200 + ring * sphereSegs + s) });
+      }
+      for (let s = 0; s < sphereSegs; s++) {
+        edges.push({ a: sRingBase + s, b: sRingBase + ((s + 1) % sphereSegs) });
+      }
+    }
+    // 4 Sphere Legs
+    for (let l = 0; l < 4; l++) {
+      const a = (l / 4) * Math.PI * 2;
+      const lBase = nodes.length;
+      nodes.push({ x: sx + Math.cos(a) * 0.4, y: -0.1, z: sz + Math.sin(a) * 0.4, stress: 0.5 });
+      nodes.push({ x: sx + Math.cos(a) * 0.45, y: -0.6, z: sz + Math.sin(a) * 0.45, stress: 0.3 });
+      edges.push({ a: lBase, b: lBase + 1 });
+    }
+
+    hotspotNodes.push({
+      x: -0.85,
+      y: 0.9,
+      z: -0.2,
+      label: rawHotspots[0]?.elementId || 'Distillation Column Top Fractionation Section',
+      valueMPa: rawHotspots[0]?.valueMPa || 154.0,
+      stressLevel: rawHotspots[0]?.stressLevel || 'HIGH',
+    });
+
+    return { nodes, edges, hotspotNodes };
+  }
+
   // Fallback high-span truss
   const spans = 12;
   const w = 2.6, h = 1.4, d = 1.0;
@@ -705,11 +1169,11 @@ export const BIMViewerPage = () => {
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
     ctx.lineWidth = 1;
     for (let i = -20; i <= 20; i++) {
-      const p1 = project({ x: i * 0.15, y: -1.2, z: -3, stress: 0 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
-      const p2 = project({ x: i * 0.15, y: -1.2, z: 3, stress: 0 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
+      const p1 = project({ x: i * 0.15, y: -1.2, z: -3 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
+      const p2 = project({ x: i * 0.15, y: -1.2, z: 3 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
       ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
-      const p3 = project({ x: -3, y: -1.2, z: i * 0.15, stress: 0 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
-      const p4 = project({ x: 3, y: -1.2, z: i * 0.15, stress: 0 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
+      const p3 = project({ x: -3, y: -1.2, z: i * 0.15 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
+      const p4 = project({ x: 3, y: -1.2, z: i * 0.15 }, rotXRef.current, rotYRef.current, zoomRef.current, cx, cy, false);
       ctx.beginPath(); ctx.moveTo(p3.sx, p3.sy); ctx.lineTo(p4.sx, p4.sy); ctx.stroke();
     }
 

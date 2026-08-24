@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
-export const useCameras = (params: { skip: number; take: number; assetId?: number }) => {
+export const useCameras = (params: { skip?: number; take?: number; assetId?: number } = { skip: 0, take: 50 }) => {
   return useQuery({
     queryKey: ['cameras', params],
     queryFn: async () => {

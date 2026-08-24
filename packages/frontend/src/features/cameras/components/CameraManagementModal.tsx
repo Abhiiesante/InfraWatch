@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Shield, Link2, Eye, EyeOff, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Camera, Shield, Link2, Eye, EyeOff, X, AlertTriangle } from 'lucide-react';
 import { useCreateCamera, useUpdateCamera } from '../api/useCameras';
 import { useAssets } from '@/features/assets/api/useAssets';
 

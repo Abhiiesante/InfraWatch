@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, X, Check, Sliders, AlertTriangle, Move, Loader2 } from 'lucide-react';
+import { ShieldAlert, X, Check, AlertTriangle, Move, Loader2 } from 'lucide-react';
 
 export interface KeepOutZoneConfig {
   xMin: number; // 0-100%

@@ -26,12 +26,12 @@ export function PredictiveTrendChart({
   ],
 }: PredictiveTrendChartProps) {
   return (
-    <div className="bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)] rounded-3xl p-6 shadow-sm space-y-4">
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-extrabold text-base text-[#3A4046] flex items-center gap-2">
-          <Activity className="w-5 h-5 text-emerald-500" /> {title}
+        <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-emerald-600" /> {title}
         </h3>
-        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-bold">
           PROPHET AI FORECAST
         </span>
       </div>
@@ -39,7 +39,7 @@ export function PredictiveTrendChart({
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="day" stroke="#64748b" fontSize={11} tickLine={false} />
             <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
             <Tooltip

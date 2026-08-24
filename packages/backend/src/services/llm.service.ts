@@ -82,8 +82,8 @@ class MockProvider implements LLMProvider {
  */
 class GeminiProvider implements LLMProvider {
   private apiKey: string;
-  // Default to gemini-1.5-flash for speed and cost-effectiveness (generous free tier)
-  private model: string = 'gemini-1.5-flash'; 
+  // Default to gemini-flash-lite-latest for high-throughput reasoning
+  private model: string = process.env.GEMINI_VISION_MODEL || 'gemini-flash-lite-latest'; 
   private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   constructor(apiKey: string) {

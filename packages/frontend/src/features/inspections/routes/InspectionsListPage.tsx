@@ -1,118 +1,128 @@
 import { useState } from 'react';
 import { useInspections } from '../api/useInspections';
-import { ClipboardCheck, Search, Plus } from 'lucide-react';
+import { ClipboardCheck, Search, Plus, Play } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const InspectionsListPage = () => {
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const take = 10;
   const skip = (page - 1) * take;
 
   const { data, isLoading } = useInspections({ skip, take });
 
+  const inspectionsList = (data?.inspections || []).filter((i: any) =>
+    !searchQuery || i.asset?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || i.inspector?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 w-full animate-in fade-in">
+    <div className="space-y-8 w-full animate-in fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 drop-">
-            Inspections
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <ClipboardCheck className="w-8 h-8 text-indigo-600" />
+            Field Inspections & Compliance Audits
           </h1>
-          <p className="text-slate-800/70 mt-2 text-lg font-medium">Manage routine checks and audits.</p>
+          <p className="text-slate-600 mt-1.5 text-base font-medium">Schedule automated drone flights, robotic crawler audits, and manual structural inspections.</p>
         </div>
-        <button className="bg-gradient-to-r from-[#7FB8B0] to-[#6DA9A0] text-slate-800 px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-          <Plus className="w-5 h-5" />
+        <button
+          onClick={() => window.location.href = '/inspections'}
+          className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-slate-900/20 transition-all flex items-center gap-2 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
           Schedule Inspection
         </button>
       </div>
 
       {/* Main Content Area */}
-      <div className="glass rounded-2xl border border-white/20 overflow-hidden shadow-xl slide-in-bottom relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-800/5 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none"></div>
-        
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Toolbar */}
-        <div className="p-5 border-b border-white/10 glass-panel/40 backdrop-blur-md flex flex-col md:flex-row items-center gap-4 relative z-10">
-          <div className="relative flex-1 max-w-md w-full group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row items-center gap-4">
+          <div className="relative flex-1 max-w-md w-full">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
             </div>
             <input 
               type="text" 
-              placeholder="Search inspections..." 
-              className="w-full pl-11 pr-4 py-3 rounded-xl glass-panel/60 border border-white/30 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50  transition-all backdrop-blur-sm font-medium"
+              placeholder="Search inspections by asset or inspector name..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-all"
             />
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto relative z-10">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-100/50 text-slate-700 font-bold uppercase tracking-wider text-xs backdrop-blur-md">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-700 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-100">
               <tr>
-                <th className="px-8 py-5">Asset</th>
-                <th className="px-8 py-5">Inspector</th>
-                <th className="px-8 py-5">Scheduled Date</th>
-                <th className="px-8 py-5">Status</th>
-                <th className="px-8 py-5 text-right">Actions</th>
+                <th className="px-6 py-4">Asset Target</th>
+                <th className="px-6 py-4">Assigned Inspector</th>
+                <th className="px-6 py-4">Scheduled Date</th>
+                <th className="px-6 py-4">Audit Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200/50">
+            <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-                      <p className="text-slate-800/70 font-medium">Loading inspections...</p>
+                      <div className="w-8 h-8 border-3 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                      <p className="text-slate-500 font-medium">Loading inspections...</p>
                     </div>
                   </td>
                 </tr>
-              ) : data?.inspections?.length === 0 ? (
+              ) : inspectionsList.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <ClipboardCheck className="w-8 h-8 text-slate-400" />
+                      <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                        <ClipboardCheck className="w-6 h-6 text-slate-400" />
                       </div>
-                      <p className="text-slate-800/70 font-medium text-lg">No inspections found</p>
+                      <p className="text-slate-700 font-bold text-sm">No inspections found</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                data?.inspections?.map((inspection: any) => (
-                  <tr key={inspection.id} className="group hover:glass-panel/60 transition-colors duration-200">
-                    <td className="px-8 py-5" onClick={() => window.location.href = `/inspections/${inspection.id}`}>
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl text-slate-700 shadow-inner group-hover: transition-all">
-                          <ClipboardCheck className="w-5 h-5" />
+                inspectionsList.map((inspection: any) => (
+                  <tr key={inspection.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4 cursor-pointer" onClick={() => window.location.href = `/inspections/${inspection.id}`}>
+                      <div className="flex items-center gap-3.5">
+                        <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-600">
+                          <ClipboardCheck className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="font-bold text-[#3A4046] text-base group-hover:text-primary transition-colors">{inspection.asset?.name || 'Unknown Asset'}</p>
+                          <p className="font-extrabold text-slate-900 text-xs hover:text-indigo-600 transition-colors">{inspection.asset?.name || 'Unknown Asset'}</p>
+                          <p className="text-[11px] font-medium text-slate-500 mt-0.5">Inspection #{inspection.id}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5 font-medium text-slate-700">
+                    <td className="px-6 py-4 font-semibold text-slate-700 text-xs">
                       {inspection.inspector?.name || 'Unassigned'}
                     </td>
-                    <td className="px-8 py-5 font-medium text-slate-800/70">
+                    <td className="px-6 py-4 font-semibold text-slate-600 text-xs">
                       {format(new Date(inspection.scheduledDate), 'MMM d, yyyy')}
                     </td>
-                    <td className="px-8 py-5">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border  ${
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black border ${
                         inspection.status === 'COMPLETED' 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                       }`}>
-                        {inspection.status === 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>}
-                        {inspection.status !== 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2 animate-pulse"></span>}
+                        {inspection.status === 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>}
+                        {inspection.status !== 'COMPLETED' && <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 mr-1.5 animate-pulse"></span>}
                         {inspection.status}
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-right">
+                    <td className="px-6 py-4 text-right">
                       <a
                         href={`/inspections/${inspection.id}/execute`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10 transition-all hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-xs transition-all cursor-pointer"
                       >
+                        <Play className="w-3 h-3" />
                         <span>Execute Run</span>
                       </a>
                     </td>
@@ -124,20 +134,20 @@ export const InspectionsListPage = () => {
         </div>
         
         {/* Pagination controls */}
-        <div className="p-5 border-t border-white/10 glass-panel/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-medium text-slate-800/80 relative z-10">
-          <p>Showing <span className="font-bold text-[#3A4046]">{data?.inspections?.length || 0}</span> of <span className="font-bold text-[#3A4046]">{data?.total || 0}</span> results</p>
+        <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-600 bg-slate-50/50">
+          <p>Showing <span className="font-extrabold text-slate-900">{inspectionsList.length}</span> of <span className="font-extrabold text-slate-900">{data?.total || 0}</span> results</p>
           <div className="flex gap-2">
             <button 
               disabled={page === 1}
               onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-[rgba(255,255,255,0.55)] disabled:opacity-50 disabled:hover:bg-transparent  transition-all"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 transition-all cursor-pointer"
             >
               Previous
             </button>
             <button 
-              disabled={data?.inspections?.length < take}
+              disabled={(data?.inspections?.length || 0) < take}
               onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-[rgba(255,255,255,0.55)] disabled:opacity-50 disabled:hover:bg-transparent  transition-all"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 transition-all cursor-pointer"
             >
               Next
             </button>
@@ -147,3 +157,4 @@ export const InspectionsListPage = () => {
     </div>
   );
 };
+

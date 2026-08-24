@@ -5,7 +5,6 @@ import { ShieldCheck, Building2, AlertTriangle, CloudSun, Wind, Droplets, Gauge,
 import { Link } from 'react-router-dom';
 import { RealtimeTelemetryChart } from '@/components/charts/RealtimeTelemetryChart';
 import { useCountUp } from '@/lib/useCountUp';
-import { INFRA_IMAGES } from '@/lib/infraImages';
 import { motion } from 'framer-motion';
 
 function CountUpMetric({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -13,7 +12,7 @@ function CountUpMetric({ value, suffix = '' }: { value: number; suffix?: string 
   return <>{animated}{suffix}</>;
 }
 
-function getSeverityChipClass(severity: string) {
+function getSeverityChipClass(_severity: string) {
   return 'status-chip status-chip--uniform';
 }
 

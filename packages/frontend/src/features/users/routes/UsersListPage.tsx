@@ -9,13 +9,13 @@ import { format } from 'date-fns';
 const getRoleBadge = (role: string) => {
   switch (role) {
     case 'ADMIN':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
+      return 'bg-purple-50 text-purple-800 border-purple-200';
     case 'MANAGER':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-blue-50 text-blue-800 border-blue-200';
     case 'INSPECTOR':
-      return 'bg-slate-800/10 text-emerald-800 border-emerald-200';
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200';
     default:
-      return 'bg-slate-100 text-slate-800 border-[rgba(255,255,255,0.80)]';
+      return 'bg-slate-50 text-slate-700 border-slate-200';
   }
 };
 
@@ -23,6 +23,7 @@ export const UsersListPage = () => {
   const { user: currentUser } = useAuthStore();
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const take = 10;
   const skip = (page - 1) * take;
 
@@ -58,66 +59,71 @@ export const UsersListPage = () => {
     }
   };
 
+  const usersList = (data?.users || []).filter((u: any) =>
+    !searchQuery || u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 w-full animate-in fade-in">
+    <div className="space-y-8 w-full animate-in fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 drop-">
-            Team Members
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+            <Users className="w-8 h-8 text-indigo-600" />
+            Engineering Team & Personnel
           </h1>
-          <p className="text-slate-800/70 mt-2 text-lg font-medium">Manage users and role assignments.</p>
+          <p className="text-slate-600 mt-1.5 text-base font-medium">Manage organization accounts, certified inspectors, and RBAC permission tiers.</p>
         </div>
         {isAdmin && (
           <Dialog.Root open={showCreate} onOpenChange={setShowCreate}>
             <Dialog.Trigger asChild>
-              <button className="bg-gradient-to-r from-[#7FB8B0] to-[#6DA9A0] text-slate-800 px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2">
-                <Plus className="w-5 h-5" />
+              <button className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-slate-900/20 transition-all flex items-center gap-2 cursor-pointer">
+                <Plus className="w-4 h-4" />
                 Add User
               </button>
             </Dialog.Trigger>
             <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-              <Dialog.Content className="glass fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-8 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-2xl">
-                <div className="flex flex-col space-y-1.5 text-center sm:text-left">
-                  <Dialog.Title className="text-2xl font-bold leading-none tracking-tight text-foreground">Add New User</Dialog.Title>
-                  <Dialog.Description className="text-sm text-muted-foreground mt-1">
-                    Create a new team member with role-based access.
+              <Dialog.Overlay className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 z-50" />
+              <Dialog.Content className="bg-white fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-8 duration-200 border border-slate-200 shadow-2xl rounded-3xl animate-in fade-in">
+                <div className="flex flex-col space-y-1.5 text-left">
+                  <Dialog.Title className="text-xl font-extrabold text-slate-900">Add New Team Member</Dialog.Title>
+                  <Dialog.Description className="text-xs text-slate-500 mt-0.5 font-medium">
+                    Create a new personnel account with role-based access rights.
                   </Dialog.Description>
                 </div>
-                <form onSubmit={handleCreateUser} className="space-y-5 py-4">
-                  <div className="space-y-2">
-                    <label htmlFor="user-name" className="text-sm font-medium leading-none text-foreground">Full Name</label>
-                    <input required id="user-name" name="name" className="flex h-11 w-full rounded-xl border border-white/20 glass-panel/50 px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all  hover:" placeholder="e.g. Jane Smith" />
+                <form onSubmit={handleCreateUser} className="space-y-4 py-2">
+                  <div className="space-y-1">
+                    <label htmlFor="user-name" className="text-xs font-bold text-slate-700">Full Name</label>
+                    <input required id="user-name" name="name" className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-500 transition-all" placeholder="e.g. Inspector Jane Doe" />
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="user-email" className="text-sm font-medium leading-none text-foreground">Email Address</label>
-                    <input required id="user-email" name="email" type="email" className="flex h-11 w-full rounded-xl border border-white/20 glass-panel/50 px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all  hover:" placeholder="e.g. jane@company.com" />
+                  <div className="space-y-1">
+                    <label htmlFor="user-email" className="text-xs font-bold text-slate-700">Email Address</label>
+                    <input required id="user-email" name="email" type="email" className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-500 transition-all" placeholder="e.g. jane@infrawatch.corp" />
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="user-password" className="text-sm font-medium leading-none text-foreground">Password</label>
-                    <input required id="user-password" name="password" type="password" minLength={8} className="flex h-11 w-full rounded-xl border border-white/20 glass-panel/50 px-4 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all  hover:" placeholder="Minimum 8 characters" />
+                  <div className="space-y-1">
+                    <label htmlFor="user-password" className="text-xs font-bold text-slate-700">Password</label>
+                    <input required id="user-password" name="password" type="password" minLength={8} className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-500 transition-all" placeholder="Minimum 8 characters" />
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="user-role" className="text-sm font-medium leading-none text-foreground">Role</label>
-                    <select required id="user-role" name="role" className="flex h-11 w-full rounded-xl border border-white/20 glass-panel/50 px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all  hover:">
+                  <div className="space-y-1">
+                    <label htmlFor="user-role" className="text-xs font-bold text-slate-700">Role</label>
+                    <select required id="user-role" name="role" className="flex h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-500 transition-all">
                       <option value="INSPECTOR">Inspector</option>
                       <option value="MANAGER">Manager</option>
                       <option value="ADMIN">Admin</option>
                     </select>
                   </div>
-                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 pt-6">
+                  <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                     <Dialog.Close asChild>
-                      <button type="button" className="mt-2 sm:mt-0 inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all hover:bg-secondary hover:text-secondary-foreground h-11 px-6 py-2 ">Cancel</button>
+                      <button type="button" className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">Cancel</button>
                     </Dialog.Close>
-                    <button disabled={isCreating} type="submit" className="inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_4px_20px_hsla(242,84%,58%,0.4)] h-11 px-8 py-2">
-                      {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <button disabled={isCreating} type="submit" className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50">
+                      {isCreating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                       Create User
                     </button>
                   </div>
                 </form>
-                <Dialog.Close className="absolute right-6 top-6 rounded-full p-1 opacity-70 transition-all hover:opacity-100 hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                  <X className="h-5 w-5 text-foreground" />
+                <Dialog.Close className="absolute right-6 top-6 rounded-full p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                  <X className="h-5 w-5" />
                   <span className="sr-only">Close</span>
                 </Dialog.Close>
               </Dialog.Content>
@@ -126,107 +132,106 @@ export const UsersListPage = () => {
         )}
       </div>
 
-      {/* Main Content */}
-      <div className="glass rounded-2xl border border-white/20 overflow-hidden shadow-xl slide-in-bottom relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none"></div>
-
-        {/* Toolbar */}
-        <div className="p-5 border-b border-white/10 glass-panel/40 backdrop-blur-md flex flex-col md:flex-row items-center gap-4 relative z-10">
-          <div className="relative flex-1 max-w-md w-full group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="w-5 h-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+      {/* Main Content Card */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        {/* Search Toolbar */}
+        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row items-center gap-4">
+          <div className="relative flex-1 max-w-md w-full">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
             </div>
             <input
               type="text"
-              placeholder="Search team members..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl glass-panel/60 border border-white/30 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50  transition-all backdrop-blur-sm font-medium"
+              placeholder="Search team members by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 transition-all"
             />
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto relative z-10">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-100/50 text-slate-700 font-bold uppercase tracking-wider text-xs backdrop-blur-md">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-700 font-extrabold uppercase tracking-wider text-[11px] border-b border-slate-100">
               <tr>
-                <th className="px-8 py-5">Member</th>
-                <th className="px-8 py-5">Role</th>
-                <th className="px-8 py-5">Status</th>
-                <th className="px-8 py-5">Last Login</th>
-                <th className="px-8 py-5 text-right">Actions</th>
+                <th className="px-6 py-4">Member</th>
+                <th className="px-6 py-4">Role</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Last Login</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200/50">
+            <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-                      <p className="text-slate-800/70 font-medium">Loading team members...</p>
+                      <div className="w-8 h-8 border-3 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                      <p className="text-slate-500 font-medium">Loading team members...</p>
                     </div>
                   </td>
                 </tr>
-              ) : data?.users?.length === 0 ? (
+              ) : usersList.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
+                  <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <Users className="w-8 h-8 text-slate-400" />
+                      <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                        <Users className="w-6 h-6 text-slate-400" />
                       </div>
-                      <p className="text-slate-800/70 font-medium text-lg">No team members found</p>
+                      <p className="text-slate-700 font-bold text-sm">No team members found</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                data?.users?.map((user: any) => (
-                  <tr key={user.id} className="group hover:glass-panel/60 transition-colors duration-200">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7FB8B0]/80 to-[#6DA9A0] flex items-center justify-center text-slate-800 font-bold text-lg  group-hover:shadow-lg transition-all">
+                usersList.map((user: any) => (
+                  <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
                           {user.name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-[#3A4046] text-base group-hover:text-primary transition-colors">{user.name}</p>
-                          <p className="text-sm font-medium text-slate-800/70 mt-0.5">{user.email}</p>
+                          <p className="font-extrabold text-slate-900 text-xs">{user.name}</p>
+                          <p className="text-[11px] font-medium text-slate-500 mt-0.5">{user.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-8 py-5">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border  ${getRoleBadge(user.role)}`}>
-                        <Shield className="w-3 h-3 mr-1.5" />
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black border ${getRoleBadge(user.role)}`}>
+                        <Shield className="w-3 h-3 mr-1" />
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-8 py-5">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border  ${
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black border ${
                         user.isActive !== false
-                          ? 'bg-slate-800/10 text-emerald-800 border-emerald-200'
-                          : 'bg-slate-100 text-slate-800/80 border-[rgba(255,255,255,0.80)]'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
                       }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full mr-2 ${user.isActive !== false ? 'bg-slate-800 animate-pulse' : 'bg-slate-400'}`}></span>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.isActive !== false ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
                         {user.isActive !== false ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-8 py-5 font-medium text-slate-800/70">
+                    <td className="px-6 py-4 font-semibold text-slate-600 text-xs">
                       {user.lastLoginAt ? format(new Date(user.lastLoginAt), 'MMM d, yyyy') : 'Never'}
                     </td>
-                    <td className="px-8 py-5 text-right">
+                    <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           to={`/users/${user.id}`}
-                          className="inline-flex items-center justify-center p-2 rounded-lg text-sm font-bold text-slate-700 glass-panel/50 hover:bg-[rgba(255,255,255,0.55)] border border-[rgba(255,255,255,0.80)]  hover:shadow transition-all"
+                          className="inline-flex items-center justify-center p-2 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                           title="View details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </Link>
                         {isAdmin && user.id !== currentUser?.id && (
                           <button
                             onClick={() => handleDeactivateUser(user.id)}
-                            className="inline-flex items-center justify-center p-2 rounded-lg text-sm font-bold text-rose-600 bg-rose-50/50 hover:bg-rose-100 border border-rose-200  hover:shadow transition-all"
+                            className="inline-flex items-center justify-center p-2 rounded-lg text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors"
                             title="Deactivate user"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
@@ -239,20 +244,20 @@ export const UsersListPage = () => {
         </div>
 
         {/* Pagination */}
-        <div className="p-5 border-t border-white/10 glass-panel/20 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-medium text-slate-800/80 relative z-10">
-          <p>Showing <span className="font-bold text-[#3A4046]">{data?.users?.length || 0}</span> of <span className="font-bold text-[#3A4046]">{data?.total || 0}</span> results</p>
+        <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-600 bg-slate-50/50">
+          <p>Showing <span className="font-extrabold text-slate-900">{usersList.length}</span> of <span className="font-extrabold text-slate-900">{data?.total || 0}</span> results</p>
           <div className="flex gap-2">
             <button
               disabled={page === 1}
               onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-[rgba(255,255,255,0.55)] disabled:opacity-50 disabled:hover:bg-transparent  transition-all"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 transition-all cursor-pointer"
             >
               Previous
             </button>
             <button
-              disabled={data?.users?.length < take}
+              disabled={(data?.users?.length || 0) < take}
               onClick={() => setPage(p => p + 1)}
-              className="px-4 py-2 rounded-lg border border-slate-300 hover:bg-[rgba(255,255,255,0.55)] disabled:opacity-50 disabled:hover:bg-transparent  transition-all"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold disabled:opacity-40 transition-all cursor-pointer"
             >
               Next
             </button>
@@ -262,3 +267,4 @@ export const UsersListPage = () => {
     </div>
   );
 };
+

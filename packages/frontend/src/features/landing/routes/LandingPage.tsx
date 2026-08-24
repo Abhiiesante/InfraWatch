@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Building2, Activity, BrainCircuit, ArrowRight, Radio, Cpu, Shield } from 'lucide-react';
+import { Building2, Activity, BrainCircuit, ArrowRight } from 'lucide-react';
 
 export function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, X, ChevronRight, ShieldAlert, FileText, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Bot, Send, Sparkles, X, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 interface Message {
@@ -22,7 +22,7 @@ export const SiteAnalystPanel: React.FC<SiteAnalystPanelProps> = ({
   assetId,
   assetName,
 }) => {
-  const { tokens } = useAuthStore();
+  const { accessToken } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -74,7 +74,7 @@ export const SiteAnalystPanel: React.FC<SiteAnalystPanelProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokens?.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ query: textToSend, assetId }),
       });

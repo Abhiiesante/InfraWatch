@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Radio, Check, Copy, AlertCircle, Shield, Sparkles } from 'lucide-react';
+import { Camera, Radio, Check, Copy, AlertCircle, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
@@ -14,7 +14,6 @@ export const WebRtcCameraTransmitterPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [boxes, setBoxes] = useState<any[]>([]);
-  const [fpsCount, setFpsCount] = useState(0);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const socketRef = useRef<any>(null);
 
@@ -81,8 +80,6 @@ export const WebRtcCameraTransmitterPage = () => {
             cameraId: activePin,
             base64Image,
           });
-
-          setFpsCount((prev) => (prev + 1) % 60);
         }, 500);
 
         // 2. Initialize RTCPeerConnection for WebRTC Peer Streaming

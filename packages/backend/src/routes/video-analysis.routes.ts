@@ -148,6 +148,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
               confidence: true,
               severity: true,
               frameTimestamp: true,
+              frameImageUrl: true,
               status: true,
             },
           },
