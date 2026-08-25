@@ -21,7 +21,6 @@ import path from 'path';
 import prisma from '../lib/prisma.js';
 import { TriageAgent } from '../services/agents/triage.agent.js';
 import { ReportAgent } from '../services/agents/report.agent.js';
-import { StorageFactory } from '../services/storage/storage.adapter.js';
 
 interface DroneDatasetDef {
   fileName: string;
@@ -245,15 +244,16 @@ async function main() {
   });
 
   if (!asset) {
+    const admin = await prisma.user.findFirst({ where: { tenantId } });
     const assetType = await prisma.assetType.findFirst({ where: { tenantId } });
     asset = await prisma.asset.create({
       data: {
         tenantId,
+        createdById: admin?.id || 1,
         assetTypeId: assetType?.id || 1,
         name: 'Industrial Facility & Infrastructure Zone',
         status: 'OPERATIONAL',
-        criticality: 'HIGH',
-        metadata: { sector: 'Industrial & Drone Inspection' },
+        metadata: { sector: 'Industrial & Drone Inspection', criticality: 'HIGH' },
       },
     });
   }
@@ -281,7 +281,6 @@ async function main() {
     const matchingJpg = availableJpgFiles[i % availableJpgFiles.length] || `inspection-${Date.now()}-${i}.jpg`;
     const storageKey = `local:videos/${matchingMp4}`;
     const fileUrl = `/uploads/videos/${matchingMp4}`;
-    const thumbnailUrl = `/uploads/videos/${matchingJpg}`;
 
     console.log(`========================================================================`);
     console.log(`📹 INGESTING DRONE DATASET [${i + 1}/5]: "${dataset.fileName}"`);

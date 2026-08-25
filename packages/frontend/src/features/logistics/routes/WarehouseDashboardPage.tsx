@@ -16,11 +16,13 @@ export function WarehouseDashboardPage() {
   const [stats, setStats] = useState({
     activeAMRs: 0,
     zoneViolations: 0,
-    rackUtilization: 84,
-    safetyScore: 99
+    rackUtilization: 0,
+    occupiedBays: 0,
+    totalBays: 50,
+    safetyScore: 100
   });
   const [boxes, setBoxes] = useState<any[]>([]);
-  const [frameSource, setFrameSource] = useState<'live' | 'real_no_frame' | 'simulated'>('simulated');
+  const [frameSource, setFrameSource] = useState<'live' | 'real_no_frame' | 'simulated'>('real_no_frame');
   const [goldMetrics, setGoldMetrics] = useState<any[]>([]);
   const [goldTotals, setGoldTotals] = useState<any>(null);
   const [isZoneEditorOpen, setIsZoneEditorOpen] = useState(false);
@@ -59,13 +61,23 @@ export function WarehouseDashboardPage() {
   useEffect(() => {
     socket.on('cv-detections', (data) => {
       if (data && data.stats) {
-        setStats(prev => ({
-          ...prev,
-          activeAMRs: data.stats.activeAMRs,
-          // Calculate a simple rolling safety score
-          safetyScore: Math.max(0, 100 - (data.stats.zoneViolations * 5)),
-          zoneViolations: prev.zoneViolations + (data.stats.zoneViolations > 0 ? 1 : 0) // Just increment historically for demo
-        }));
+        setStats(prev => {
+          const activeAMRs = data.stats.activeAMRs ?? 0;
+          const violations = data.stats.zoneViolations ?? 0;
+          const occupied = data.stats.occupiedBays ?? (data.boxes ? data.boxes.filter((b: any) => b.y < (keepOutZone.yMin || 50)).length : 0);
+          const total = data.stats.totalBays ?? 50;
+          const rackUtil = data.stats.rackUtilization !== undefined ? data.stats.rackUtilization : Math.min(100, Math.round((occupied / total) * 100));
+
+          return {
+            ...prev,
+            activeAMRs,
+            safetyScore: Math.max(0, 100 - (violations * 5)),
+            zoneViolations: prev.zoneViolations + (violations > 0 ? 1 : 0),
+            rackUtilization: rackUtil,
+            occupiedBays: occupied,
+            totalBays: total,
+          };
+        });
       }
       if (data && data.boxes) {
         setBoxes(data.boxes);
@@ -81,13 +93,13 @@ export function WarehouseDashboardPage() {
     return () => {
       socket.off('cv-detections');
     };
-  }, []);
+  }, [keepOutZone.yMin]);
 
   // Fetch Gold-layer historical metrics
   useEffect(() => {
     const fetchGoldMetrics = async () => {
       try {
-        const res = await apiClient.get('/v4/dashboard/safety-metrics?hours=24');
+        const res = await apiClient.get('/dashboard/safety-metrics?hours=24');
         if (res.data?.data) {
           setGoldMetrics(res.data.data.timeSeries || []);
           setGoldTotals(res.data.data.totals || null);
@@ -178,7 +190,10 @@ export function WarehouseDashboardPage() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
           <div>
             <p className="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1">Rack Utilization</p>
-            <p className="text-3xl font-black text-slate-900">{stats.rackUtilization}%</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-black text-slate-900">{stats.rackUtilization}%</p>
+              <span className="text-xs font-semibold text-slate-400">({stats.occupiedBays}/{stats.totalBays} Bays)</span>
+            </div>
           </div>
           <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
             <Box className="w-7 h-7" />

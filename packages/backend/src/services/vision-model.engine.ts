@@ -86,7 +86,7 @@ function remapCocoToIndustrial(cocoClass: string, confPercent: number, bbox: [nu
  * Deterministic Industrial Scene Analyzer.
  * Extracts authentic domain features: Rebar mesh, Iron rods, Scaffolding, Tanks, Pipes, Machinery.
  */
-function analyzeIndustrialScene(imageWidth: number, imageHeight: number, frameIndexHint: number = 0): DetectedVisualAnomaly[] {
+function analyzeIndustrialScene(imageWidth: number, imageHeight: number, _frameIndexHint: number = 0): DetectedVisualAnomaly[] {
   const detections: DetectedVisualAnomaly[] = [];
 
   // 1. Steel Rebar & Iron Rod Grid

@@ -11,8 +11,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import fs from 'fs';
-import path from 'path';
 import prisma from '../lib/prisma.js';
 import { TriageAgent } from '../services/agents/triage.agent.js';
 import { ReportAgent } from '../services/agents/report.agent.js';
@@ -285,7 +283,7 @@ async function syncDroneFleet() {
   const uploadedById = admin?.id || 1;
 
   const defaultAssetType = await prisma.assetType.findFirst({ where: { tenantId } }) || 
-    await prisma.assetType.create({ data: { tenantId, name: 'Industrial Infrastructure', code: 'IND_INFRA' } });
+    await prisma.assetType.create({ data: { tenantId, name: 'Industrial Infrastructure' } });
 
   // Clear previous video findings and inspection records
   await prisma.videoFinding.deleteMany({ where: { tenantId } });

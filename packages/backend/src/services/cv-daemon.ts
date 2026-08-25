@@ -183,7 +183,10 @@ export class CVDaemon {
               boxes: [],
               stats: {
                 zoneViolations: 0,
-                activeAMRs: 0
+                activeAMRs: 0,
+                rackUtilization: 0,
+                occupiedBays: 0,
+                totalBays: 50
               }
             });
           }
@@ -224,10 +227,14 @@ export class CVDaemon {
           severity: 'CRITICAL',
         };
 
+        const totalRackBays = 50;
+        let occupiedBaysCount = 0;
+
         const boxes = (result.predictions || []).map((pred: any, idx: number) => {
           const cls = (pred.class || '').toLowerCase();
           const isPerson = cls === 'person' || cls === 'worker';
           const isForklift = cls === 'forklift' || cls === 'amr' || cls === 'vehicle' || cls === 'car' || cls === 'truck';
+          const isCargo = cls.includes('box') || cls.includes('pallet') || cls.includes('package') || cls.includes('container') || cls.includes('crate');
           
           // Spatial Rule: Read configured keepOutZone bounds (persisted in camera.config)
           const xCenter = (pred.x / imgW) * 100;
@@ -240,6 +247,9 @@ export class CVDaemon {
           
           if (isViolation) zoneViolationsCount++;
           if (isForklift) activeAmrsCount++;
+          if (isCargo || (!inZone && yCenter < (keepOutZone.yMin ?? 50))) {
+            occupiedBaysCount++;
+          }
 
           let color = '#10B981'; // green
           if (isViolation) color = '#EF4444'; // red
@@ -259,6 +269,8 @@ export class CVDaemon {
           };
         });
 
+        const computedRackUtilization = Math.min(100, Math.round((occupiedBaysCount / totalRackBays) * 100));
+
         // Emit real payload with LIVE status and configured zone parameters
         if (this.io) {
           this.io.emit('cv-detections', {
@@ -269,7 +281,10 @@ export class CVDaemon {
             boxes,
             stats: {
                zoneViolations: zoneViolationsCount,
-               activeAMRs: activeAmrsCount
+               activeAMRs: activeAmrsCount,
+               rackUtilization: computedRackUtilization,
+               occupiedBays: occupiedBaysCount,
+               totalBays: totalRackBays
             }
           });
         }
@@ -417,11 +432,22 @@ export class CVDaemon {
       return { ...box, x: newX, y: newY, dx: newDx, dy: newDy, conf: newConf };
     });
 
+    const occupiedBaysCount = this.simulatedBoxes.filter(b => b.y < 50).length;
+    const totalRackBays = 50;
+    const computedRackUtilization = Math.min(100, Math.round((occupiedBaysCount / totalRackBays) * 100));
+
     if (this.io) {
       this.io.emit('cv-detections', {
         frameSource: 'simulated' as FrameSource,
         simulationReason: reason || 'ROBOFLOW_API_KEY not configured',
         boxes: this.simulatedBoxes,
+        stats: {
+          zoneViolations: 0,
+          activeAMRs: this.simulatedBoxes.filter(b => b.label === 'AMR').length,
+          rackUtilization: computedRackUtilization,
+          occupiedBays: occupiedBaysCount,
+          totalBays: totalRackBays,
+        },
       });
     }
   }
