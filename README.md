@@ -6,45 +6,6 @@ InfraWatch is an open, modular digital twin and operations platform engineered f
 
 ---
 
-## 🏛️ System Architecture
-
-```
-                                    +-------------------------------------------------+
-                                    |              Frontend (React 18 / Vite)         |
-                                    |  • Real-Time Operations Cockpit  • SCADA Grid   |
-                                    |  • Procedural 3D BIM Visualizer  • AMR Tracking |
-                                    |  • Work Orders SLA Kanban Board  • GIS Sat Twin |
-                                    +------------------------+------------------------+
-                                                             |
-                                           HTTPS REST / WSS  |  (WebRTC Peer Streams)
-                                                             v
-                                    +------------------------+------------------------+
-                                    |             Backend (Node.js / Express)         |
-                                    |  • Multi-Tenant RBAC & Auth Engine              |
-                                    |  • CV Daemon & Video Frame Ingestion Streamer   |
-                                    |  • IoT Telemetry Ingestion & WebSocket Broadcast|
-                                    |  • Asynchronous Automated Report Generator      |
-                                    +------------+-----------------------+------------+
-                                                 |                       |
-                            Postgres / Prisma    |                       | Multi-Modal Inference API
-                                                 v                       v
-                             +-------------------+---+       +-----------+------------+
-                             | PostgreSQL Database   |       | Roboflow & Gemini 2.5  |
-                             | (Multi-Tenant OLTP)   |       | AI Vision Engine       |
-                             +-----------------------+       +------------------------+
-                                                 |
-                                                 | Event Streams / Storage Sink
-                                                 v
-                             +--------------------------------------------------------+
-                             |              Data Intelligence Lakehouse               |
-                             |  • Bronze: Lossless Raw JSON Event Ingestion           |
-                             |  • Silver: Schema Validation & RTSP Sanitization       |
-                             |  • Gold: Asset Health, MTTR & Compliance Aggregates    |
-                             +--------------------------------------------------------+
-```
-
----
-
 ## ⚡ Core Platform Capabilities
 
 ### 1. Multi-Modal Computer Vision & Aerial Drone Surveys
